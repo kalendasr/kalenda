@@ -15,30 +15,63 @@ the platform coordinates the workflow and issues QR tickets.
 
 ## Getting started
 
+Requires Node.js 22+ and a PostgreSQL server.
+
 ```bash
-# install dependencies
 npm install
-
-# set up environment
 cp .env.example .env
-# then fill in DATABASE_URL, auth secrets, R2 credentials, etc.
+```
 
-# database
-npx prisma migrate dev
-npx prisma generate
+Fill in `.env`. `DATABASE_URL` and `BETTER_AUTH_SECRET` are required to boot;
+the R2 variables are only validated when file storage is actually used, so you
+can start without a Cloudflare account.
 
-# run
+Create the development database once:
+
+```bash
+sudo -u postgres psql -c "CREATE ROLE kalenda LOGIN PASSWORD 'kalenda' CREATEDB;" -c "CREATE DATABASE kalenda OWNER kalenda;"
+```
+
+Then apply migrations and start the dev server:
+
+```bash
+npm run db:migrate
 npm run dev
 ```
+
+## Scripts
+
+| Command              | Purpose                                  |
+| -------------------- | ---------------------------------------- |
+| `npm run dev`        | Dev server on http://localhost:3000      |
+| `npm run build`      | Production build                         |
+| `npm run preview`    | Serve the production build               |
+| `npm run lint`       | ESLint                                   |
+| `npm run format`     | Prettier (write)                         |
+| `npm run typecheck`  | TypeScript, no emit                      |
+| `npm run test`       | Vitest                                   |
+| `npm run db:migrate` | Create and apply a migration in dev      |
+| `npm run db:deploy`  | Apply pending migrations (CI/production) |
+| `npm run db:studio`  | Inspect the database                     |
 
 ## Project structure
 
 ```
-CLAUDE.md      Development guide (read automatically by Claude Code)
-docs/          Source-of-truth specifications
-src/           Application code
-prisma/        Database schema & migrations
+CLAUDE.md            Development guide (read automatically by Claude Code)
+docs/                Source-of-truth specifications
+prisma/              Database schema & migrations
+src/
+  routes/            File-based routes; routes/api/** are server routes
+  components/ui/     shadcn/ui primitives (generated, not hand-edited)
+  components/        Shared application components
+  features/          Vertical slices per domain (added per roadmap phase)
+  lib/               Cross-cutting modules; *.server.ts is server-only
+  test/              Test setup
+  generated/         Prisma client output (git-ignored)
 ```
+
+Imports use the `#/` alias, which maps to `src/` via the `imports` field in
+`package.json` — no bundler-specific path plugin involved.
 
 ## Documentation
 

@@ -1,0 +1,18 @@
+// Domeinmodel: zie docs/DATABASE_DOMAIN.md.
+//
+// Conventies (niet-onderhandelbaar, zie CLAUDE.md):
+//   - UUID primary keys
+//   - createdAt / updatedAt op iedere entity
+//   - soft delete via deletedAt waar het domeinmodel dat voorschrijft
+//
+// Modellen worden per fase toegevoegd. Fase 1 voegt User, Organization en
+// PaymentSettings toe.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

@@ -22,6 +22,7 @@ build/
 # Prisma
 prisma/*.db
 prisma/*.db-journal
+src/generated/
 
 # Logs
 logs/
