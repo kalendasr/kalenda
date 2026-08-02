@@ -336,9 +336,9 @@ De applicatie klaar is voor productie.
 
 ## Evenementen
 
-- [ ] Event Workspace
-- [ ] Event publiceren
-- [ ] Event archiveren
+- [x] Event Workspace
+- [x] Event publiceren
+- [x] Event archiveren
 
 ---
 

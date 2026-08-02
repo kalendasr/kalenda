@@ -840,11 +840,11 @@ Wanneer krijg ik mijn tickets?
 
 ## Events
 
-☐ Event aanmaken
+☑ Event aanmaken
 
-☐ Publiceren
+☑ Publiceren
 
-☐ Bewerken
+☑ Bewerken
 
 ---
 

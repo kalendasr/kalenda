@@ -936,17 +936,17 @@ ticketId
 
 ☑ PaymentSettings
 
-☐ Category
+☑ Category
 
-☐ Venue
+☑ Venue
 
 ---
 
 ## Sprint 2
 
-☐ Event
+☑ Event
 
-☐ EventContent
+☑ EventContent
 
 ☐ TicketType
 

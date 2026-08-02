@@ -99,9 +99,18 @@ rules.
 
 ## Status
 
-Pre-MVP. **Phase 1 — Authentication & Organisation — complete.** An organizer
-can register, log in, reset their password (Resend e-mail), and create and fully
+Pre-MVP.
+
+**Phase 1 — Authentication & Organisation — complete.** An organizer can
+register, log in, reset their password (Resend e-mail), and create and fully
 configure their organisation (general details, branding with logo/cover upload
 to R2, and WhatsApp/bank payment settings) from the organisation workspace.
 
-Next: Phase 2 — Event management (see `docs/ROADMAP.md`).
+**Phase 2 — Event management — complete.** An organizer can create events, fill
+in the details (category, date/time, venue, cover image), add content
+(programme, speakers, FAQ, house rules), and publish, unpublish or archive them.
+Published events are visible on the public storefront at `/evenementen` and
+`/evenementen/:slug`. The full homepage redesign and search/filter are a later
+storefront pass.
+
+Next: Phase 3 — Ticketing (see `docs/ROADMAP.md`).

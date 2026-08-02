@@ -164,7 +164,9 @@ Muziek & Concerten · Nightlife · Cultuur & Festival · Food & Drinks · Busine
 
 De publieke storefront is grotendeels ingevuld: Homepage (4.1), Zoekpagina (4.2) en een publieke eventpagina (achtergrond van 4.3).
 
-Nog te ontwerpen / expliciet te maken: publieke eventpagina als zelfstandig scherm; klant-statuspagina `/aanvraag/$id` als vastgesteld scherm; empty state van de zoekpagina.
+**Gebouwd (Fase 2):** een eenvoudige publieke eventlijst (`/evenementen`) en een zelfstandige publieke eventpagina (`/evenementen/$slug`) — alleen gepubliceerde events (BR-202). Nog te doen als eigen storefront-ronde: homepage-herontwerp (hero/categorieën) en de zoekpagina met filters/sortering + empty state.
+
+Nog te ontwerpen / expliciet te maken: klant-statuspagina `/aanvraag/$id` als vastgesteld scherm (Fase 4).
 
 **Plaatsing** — Dit bestand hoort in `docs/` naast de andere `.md`-documenten in `kalendasr/kalenda`.
 

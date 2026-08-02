@@ -34,12 +34,18 @@ function Home() {
       </p>
       <div className="mt-8 flex flex-wrap gap-3">
         <Button asChild size="lg">
-          <Link to="/register">Account aanmaken</Link>
+          <Link to="/evenementen">Bekijk evenementen</Link>
         </Button>
         <Button asChild size="lg" variant="outline">
-          <Link to="/login">Inloggen</Link>
+          <Link to="/register">Word organisator</Link>
         </Button>
       </div>
+      <p className="mt-4 text-sm text-muted-foreground">
+        Al organisator?{' '}
+        <Link to="/login" className="font-medium text-primary hover:underline">
+          Inloggen
+        </Link>
+      </p>
     </main>
   )
 }

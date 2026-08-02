@@ -1,6 +1,12 @@
 import * as React from 'react'
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
-import { Building2, CalendarDays, LayoutDashboard, LogOut } from 'lucide-react'
+import {
+  Building2,
+  CalendarDays,
+  LayoutDashboard,
+  LogOut,
+  Ticket,
+} from 'lucide-react'
 
 import { signOut } from '#/lib/auth-client.ts'
 import { cn } from '#/lib/utils.ts'
@@ -23,6 +29,7 @@ type NavItem = {
 
 const NAV_ITEMS: Array<NavItem> = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/events', label: 'Evenementen', icon: Ticket },
   { to: '/organization', label: 'Organisatie', icon: Building2 },
 ]
 

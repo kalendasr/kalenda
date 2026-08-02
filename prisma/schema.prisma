@@ -144,6 +144,7 @@ model Organization {
   owner   User   @relation(fields: [ownerId], references: [id])
 
   paymentSettings OrganizationPaymentSettings?
+  events          Event[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -183,4 +184,118 @@ model OrganizationPaymentSettings {
 
   @@index([organizationId])
   @@map("organization_payment_settings")
+}
+
+// ---------------------------------------------------------------------------
+// Evenementen (DATABASE_DOMAIN.md §5, §6, §15, §16; BUSINESS_RULES BR-200..BR-204)
+//
+// Fase 2: een organisatie kan evenementen aanmaken, van content voorzien,
+// publiceren en archiveren. Live/Finished worden in de UI afgeleid uit
+// startsAt/endsAt, dus de opgeslagen status blijft Draft/Published/Archived.
+// ---------------------------------------------------------------------------
+
+// Vaste, geseede lijst (SCREENS.md §5). Beheer is admin/seed, geen organizer-UI.
+model Category {
+  id        String  @id @default(uuid())
+  name      String
+  slug      String  @unique
+  icon      String?
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
+
+  events Event[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([slug])
+  @@map("category")
+}
+
+// Eén venue per event, inline bewerkt binnen het eventformulier (geen aparte
+// venue-bibliotheek in de MVP).
+model Venue {
+  id        String  @id @default(uuid())
+  name      String
+  address   String?
+  district  String?
+  country   String  @default("Suriname")
+  latitude  Float?
+  longitude Float?
+  capacity  Int?
+
+  event Event?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("venue")
+}
+
+enum EventStatus {
+  Draft
+  Published
+  Archived
+}
+
+model Event {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  title            String
+  slug             String  @unique
+  shortDescription String?
+  description      String?
+  coverImage       String?
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  venueId String? @unique
+  venue   Venue?  @relation(fields: [venueId], references: [id])
+
+  startsAt DateTime?
+  endsAt   DateTime?
+  timezone String    @default("America/Paramaribo")
+
+  status EventStatus @default(Draft)
+
+  content EventContent[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([slug])
+  @@index([organizationId])
+  @@index([categoryId])
+  @@map("event")
+}
+
+enum EventContentType {
+  Agenda
+  Faq
+  Speaker
+  Rules
+}
+
+model EventContent {
+  id      String @id @default(uuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  type      EventContentType
+  sortOrder Int              @default(0)
+  title     String
+  content   String
+  published Boolean          @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@map("event_content")
 }
