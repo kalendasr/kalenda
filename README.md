@@ -70,8 +70,10 @@ src/
   generated/         Prisma client output (git-ignored)
 ```
 
-Imports use the `#/` alias, which maps to `src/` via the `imports` field in
-`package.json` — no bundler-specific path plugin involved.
+Imports use the `#/` alias for `src/`, resolved by Vite (`imports` in
+`package.json`), TypeScript (`paths` in `tsconfig.json`) and Vitest
+(`resolve.alias`). Plain Node does not accept `#/` as a specifier, so
+standalone scripts run with `node` must use relative imports.
 
 ## Documentation
 
