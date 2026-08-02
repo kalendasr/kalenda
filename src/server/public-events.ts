@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 
 import { db } from '#/lib/db.server.ts'
+import { reservedByTicketType } from '#/server/reservations.server.ts'
 
 /**
  * Publieke evenement-queries (geen authenticatie).
@@ -37,7 +38,7 @@ export const listPublishedEvents = createServerFn({ method: 'GET' }).handler(
 export const getPublishedEventBySlug = createServerFn({ method: 'GET' })
   .validator(z.object({ slug: z.string().min(1) }))
   .handler(async ({ data }) => {
-    return db.event.findFirst({
+    const event = await db.event.findFirst({
       where: { slug: data.slug, ...publishedWhere },
       select: {
         id: true,
@@ -89,4 +90,20 @@ export const getPublishedEventBySlug = createServerFn({ method: 'GET' })
         },
       },
     })
+
+    if (!event) return null
+
+    // Gereserveerde aantallen meesturen zodat de publieke selector de actuele
+    // beschikbaarheid toont (BR-507).
+    const reserved = await reservedByTicketType(
+      event.ticketTypes.map((type) => type.id),
+    )
+
+    return {
+      ...event,
+      ticketTypes: event.ticketTypes.map((type) => ({
+        ...type,
+        reserved: reserved[type.id] ?? 0,
+      })),
+    }
   })

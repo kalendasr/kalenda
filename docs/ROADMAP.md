@@ -361,9 +361,9 @@ De applicatie klaar is voor productie.
 
 ## Orders
 
-- [ ] Checkout
-- [ ] Orderoverzicht
-- [ ] Orderstatus
+- [x] Checkout
+- [x] Orderoverzicht
+- [x] Orderstatus
 
 ---
 

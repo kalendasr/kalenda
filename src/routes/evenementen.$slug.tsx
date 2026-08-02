@@ -186,7 +186,10 @@ function PublicEventDetail() {
                 ) : null}
 
                 {event.ticketTypes.length > 0 ? (
-                  <TicketSelector ticketTypes={event.ticketTypes} />
+                  <TicketSelector
+                    slug={event.slug}
+                    ticketTypes={event.ticketTypes}
+                  />
                 ) : (
                   <div className="rounded-lg border border-dashed p-3 text-center">
                     <p className="inline-flex items-center gap-1.5 text-sm font-medium">

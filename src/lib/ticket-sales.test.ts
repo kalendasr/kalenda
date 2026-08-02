@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { isOnSale, ticketSaleStatus } from '#/lib/ticket-sales.ts'
+import {
+  availableQuantity,
+  isOnSale,
+  ticketSaleStatus,
+} from '#/lib/ticket-sales.ts'
 import type { SaleableTicketType } from '#/lib/ticket-sales.ts'
 
 const now = new Date('2026-06-01T12:00:00-03:00')
@@ -60,5 +64,22 @@ describe('isOnSale', () => {
   it('weerspiegelt de status', () => {
     expect(isOnSale(type(), now)).toBe(true)
     expect(isOnSale(type({ visible: false }), now)).toBe(false)
+  })
+})
+
+describe('availableQuantity', () => {
+  it('trekt gereserveerde tickets af van de capaciteit', () => {
+    expect(availableQuantity({ quantity: 100 }, 30)).toBe(70)
+    expect(availableQuantity({ quantity: 100 })).toBe(100)
+  })
+
+  it('gaat nooit onder nul', () => {
+    expect(availableQuantity({ quantity: 10 }, 15)).toBe(0)
+  })
+})
+
+describe('ticketSaleStatus met reserveringen', () => {
+  it('is uitverkocht wanneer alles gereserveerd is', () => {
+    expect(ticketSaleStatus(type({ quantity: 5 }), now, 5)).toBe('sold-out')
   })
 })

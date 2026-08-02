@@ -1,15 +1,17 @@
 import * as React from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { Minus, Plus } from 'lucide-react'
 
 import { formatSrd } from '#/lib/money.ts'
 import { availableQuantity, ticketSaleStatus } from '#/lib/ticket-sales.ts'
 import type { SaleStatus } from '#/lib/ticket-sales.ts'
+import { encodeSelection } from '#/lib/selection.ts'
 import { Button } from '#/components/ui/button.tsx'
 
 /**
- * Publieke ticketselectie (USER_FLOWS §7, DoD Fase 3). Bezoekers kiezen
- * hoeveelheden binnen de min/max- en beschikbaarheidsgrenzen en zien een live
- * subtotaal. Het daadwerkelijk afrekenen (order aanmaken) komt in Fase 4; de
+ * Publieke ticketselectie (USER_FLOWS §7). Bezoekers kiezen hoeveelheden binnen
+ * de min/max- en beschikbaarheidsgrenzen en zien een live subtotaal. "Doorgaan"
+ * neemt de selectie mee naar de checkout (Fase 4). Legacy-noot: de
  * knop is daarom nog uitgeschakeld — geen dode flow (CLAUDE.md §38).
  */
 
@@ -19,6 +21,7 @@ type PublicTicketType = {
   description: string | null
   priceCents: number
   quantity: number
+  reserved: number
   minimumPerOrder: number
   maximumPerOrder: number
   salesStart: string | Date | null
@@ -38,20 +41,30 @@ function toDate(value: string | Date | null): Date | null {
 }
 
 export function TicketSelector({
+  slug,
   ticketTypes,
 }: {
+  slug: string
   ticketTypes: Array<PublicTicketType>
 }) {
+  const navigate = useNavigate()
   const [quantities, setQuantities] = React.useState<Record<string, number>>({})
 
   const rows = ticketTypes.map((type) => {
-    const status = ticketSaleStatus({
-      quantity: type.quantity,
-      visible: type.visible,
-      salesStart: toDate(type.salesStart),
-      salesEnd: toDate(type.salesEnd),
-    })
-    const cap = Math.min(type.maximumPerOrder, availableQuantity(type))
+    const status = ticketSaleStatus(
+      {
+        quantity: type.quantity,
+        visible: type.visible,
+        salesStart: toDate(type.salesStart),
+        salesEnd: toDate(type.salesEnd),
+      },
+      new Date(),
+      type.reserved,
+    )
+    const cap = Math.min(
+      type.maximumPerOrder,
+      availableQuantity(type, type.reserved),
+    )
     return { type, status, cap, onSale: status === 'on-sale' }
   })
 
@@ -62,7 +75,10 @@ export function TicketSelector({
   const totalTickets = Object.values(quantities).reduce((a, b) => a + b, 0)
 
   function setQty(type: PublicTicketType, next: number) {
-    const cap = Math.min(type.maximumPerOrder, availableQuantity(type))
+    const cap = Math.min(
+      type.maximumPerOrder,
+      availableQuantity(type, type.reserved),
+    )
     const clamped =
       next <= 0 ? 0 : Math.min(Math.max(next, type.minimumPerOrder), cap)
     setQuantities((current) => ({ ...current, [type.id]: clamped }))
@@ -146,14 +162,22 @@ export function TicketSelector({
         </span>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <Button disabled className="w-full">
-          Doorgaan naar afrekenen
-        </Button>
-        <p className="text-center text-xs text-muted-foreground">
-          Afrekenen is binnenkort beschikbaar.
-        </p>
-      </div>
+      <Button
+        className="w-full"
+        disabled={totalTickets === 0}
+        onClick={() => {
+          const selection = Object.entries(quantities).map(
+            ([ticketTypeId, quantity]) => ({ ticketTypeId, quantity }),
+          )
+          navigate({
+            to: '/evenementen/$slug/afrekenen',
+            params: { slug },
+            search: { t: encodeSelection(selection) },
+          })
+        }}
+      >
+        Doorgaan naar afrekenen
+      </Button>
     </div>
   )
 }

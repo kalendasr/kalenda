@@ -15,17 +15,24 @@ export type SaleableTicketType = {
   salesEnd: Date | null
 }
 
-/** Aantal dat nog beschikbaar is (Fase 3: gelijk aan de capaciteit). */
-export function availableQuantity(type: { quantity: number }): number {
-  return type.quantity
+/**
+ * Aantal dat nog beschikbaar is: capaciteit minus wat door orders is
+ * gereserveerd (BR-507). `reserved` is standaard 0 wanneer er geen orders zijn.
+ */
+export function availableQuantity(
+  type: { quantity: number },
+  reserved = 0,
+): number {
+  return Math.max(0, type.quantity - reserved)
 }
 
 export function ticketSaleStatus(
   type: SaleableTicketType,
   now: Date = new Date(),
+  reserved = 0,
 ): SaleStatus {
   if (!type.visible) return 'hidden'
-  if (availableQuantity(type) <= 0) return 'sold-out'
+  if (availableQuantity(type, reserved) <= 0) return 'sold-out'
   if (type.salesStart && now < type.salesStart) return 'not-started'
   if (type.salesEnd && now > type.salesEnd) return 'ended'
   return 'on-sale'
@@ -35,6 +42,7 @@ export function ticketSaleStatus(
 export function isOnSale(
   type: SaleableTicketType,
   now: Date = new Date(),
+  reserved = 0,
 ): boolean {
-  return ticketSaleStatus(type, now) === 'on-sale'
+  return ticketSaleStatus(type, now, reserved) === 'on-sale'
 }

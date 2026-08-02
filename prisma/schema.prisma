@@ -265,6 +265,7 @@ model Event {
 
   content     EventContent[]
   ticketTypes TicketType[]
+  orders      Order[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -325,10 +326,112 @@ model TicketType {
   visible   Boolean @default(true)
   sortOrder Int     @default(0)
 
+  orderItems OrderItem[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   @@index([eventId])
   @@map("ticket_type")
+}
+
+// ---------------------------------------------------------------------------
+// Orders (DATABASE_DOMAIN.md §8–10, BUSINESS_RULES BR-400..BR-507, BR-608)
+//
+// Een order is het hart van het platform. Gastbestellingen: de klant heeft geen
+// account (BR-400/403) en benadert de bestelling via een deelbare orderlink.
+// Bedragen als gehele centen. Reservering: een order houdt capaciteit bezet tot
+// hij verloopt (48u, BR-506) of geannuleerd wordt (BR-507).
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id        String  @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String
+  phone     String
+
+  orders Order[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([email])
+  @@map("customer")
+}
+
+enum PaymentMethod {
+  WhatsApp
+  BankTransfer
+}
+
+enum OrderStatus {
+  PendingPayment
+  AwaitingReview
+  Paid
+  Completed
+  Cancelled
+  Expired
+}
+
+enum PaymentStatus {
+  Unpaid
+  Pending
+  Verified
+  Rejected
+}
+
+model Order {
+  id      String @id @default(uuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  orderNumber String @unique
+
+  paymentMethod PaymentMethod
+  paymentApp    PaymentApp?
+  orderStatus   OrderStatus   @default(PendingPayment)
+  paymentStatus PaymentStatus @default(Unpaid)
+
+  currency        String @default("SRD")
+  subtotalCents   Int
+  serviceFeeCents Int    @default(0)
+  discountCents   Int    @default(0)
+  totalCents      Int
+
+  notes     String?
+  expiresAt DateTime
+
+  items OrderItem[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([eventId])
+  @@index([customerId])
+  @@index([orderNumber])
+  @@map("order")
+}
+
+model OrderItem {
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  ticketTypeId String
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
+
+  quantity        Int
+  unitPriceCents  Int
+  totalPriceCents Int
+
+  @@index([orderId])
+  @@index([ticketTypeId])
+  @@map("order_item")
 }

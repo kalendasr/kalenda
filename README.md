@@ -119,4 +119,12 @@ workspace, and publishing now requires at least one ticket type. Visitors can
 select ticket quantities on the public event page and see a live subtotal;
 checkout (order creation) follows in Phase 4. Money is stored as integer cents.
 
-Next: Phase 4 — Orders (see `docs/ROADMAP.md`).
+**Phase 4 — Orders — complete.** A visitor goes through checkout (personal
+details + payment method WhatsApp/bank), an order is saved with a unique number
+and a 48-hour hold that reserves capacity (released on expiry), and they land on
+a shareable, login-free order status page (`/bestelling/:orderNumber`) with the
+next-step payment instructions, plus a confirmation email (Resend). Orders
+appear read-only in the event workspace's Orders tab. Order creation locks the
+ticket-type rows to prevent overselling. Confirming/rejecting payments is Phase 5.
+
+Next: Phase 5 — Payments (see `docs/ROADMAP.md`).

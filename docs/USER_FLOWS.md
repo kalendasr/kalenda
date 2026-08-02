@@ -862,7 +862,7 @@ Wanneer krijg ik mijn tickets?
 
 ## Orders
 
-☐ Nieuwe order
+☑ Nieuwe order
 
 ☐ WhatsApp flow
 

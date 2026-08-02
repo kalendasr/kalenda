@@ -29,6 +29,7 @@ export const Route = createFileRoute('/_app/events_/$eventId')({
 
 const TABS = [
   { to: '/events/$eventId', label: 'Overzicht', exact: true },
+  { to: '/events/$eventId/orders', label: 'Orders', exact: false },
   { to: '/events/$eventId/tickets', label: 'Tickets', exact: false },
   { to: '/events/$eventId/content', label: 'Inhoud', exact: false },
   { to: '/events/$eventId/settings', label: 'Instellingen', exact: false },

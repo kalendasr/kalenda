@@ -104,7 +104,7 @@ Iedere screen-entry bevat vaste velden: Prototype, Doel, User type, Realiseert f
 
 **Fase** — ROADMAP Phase 3 (ticketkeuze) + Phase 4 (order), doorloop in Phase 5 (betalingen) en Phase 6 (e-ticket).
 
-**Status** — Concept — klikbaar prototype.
+**Status** — Gebouwd (Fase 4, checkout + order-save + statuspagina). Checkout is een eigen route `/evenementen/$slug/afrekenen`; de deelbare statuspagina is `/bestelling/$orderNumber` (geen login, BR-403). Het bevestigen van betalingen + betaalbewijs-upload volgt in Fase 5.
 
 ---
 

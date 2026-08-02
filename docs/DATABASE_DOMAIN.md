@@ -954,11 +954,11 @@ ticketId
 
 ## Sprint 3
 
-☐ Customer
+☑ Customer
 
-☐ Order
+☑ Order
 
-☐ OrderItem
+☑ OrderItem
 
 ☐ Payment
 
