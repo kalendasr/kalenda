@@ -57,6 +57,23 @@ export const getPublishedEventBySlug = createServerFn({ method: 'GET' })
           orderBy: [{ type: 'asc' }, { sortOrder: 'asc' }],
           select: { id: true, type: true, title: true, content: true },
         },
+        ticketTypes: {
+          where: { visible: true, deletedAt: null },
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            priceCents: true,
+            currency: true,
+            quantity: true,
+            minimumPerOrder: true,
+            maximumPerOrder: true,
+            salesStart: true,
+            salesEnd: true,
+            visible: true,
+          },
+        },
         organization: {
           select: {
             name: true,

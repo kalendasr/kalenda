@@ -11,6 +11,7 @@ const completeEvent: ReadinessEvent = {
   categoryId: 'cat-1',
   venueId: 'venue-1',
   coverImage: 'https://cdn.example.com/cover.jpg',
+  ticketTypeCount: 1,
 }
 
 const activePayments = { whatsappEnabled: true, bankEnabled: false }
@@ -48,6 +49,15 @@ describe('eventPublishReadiness', () => {
     expect(result.missing.map((m) => m.key)).toContain('payment')
   })
 
+  it('meldt een ontbrekend tickettype', () => {
+    const result = eventPublishReadiness(
+      { ...completeEvent, ticketTypeCount: 0 },
+      activePayments,
+    )
+    expect(result.ready).toBe(false)
+    expect(result.missing.map((m) => m.key)).toContain('ticketType')
+  })
+
   it('somt alle ontbrekende onderdelen op voor een leeg event', () => {
     const empty: ReadinessEvent = {
       title: null,
@@ -57,6 +67,7 @@ describe('eventPublishReadiness', () => {
       categoryId: null,
       venueId: null,
       coverImage: null,
+      ticketTypeCount: 0,
     }
     const result = eventPublishReadiness(empty, null)
     expect(result.ready).toBe(false)
@@ -67,6 +78,7 @@ describe('eventPublishReadiness', () => {
       'category',
       'venue',
       'cover',
+      'ticketType',
       'payment',
     ])
   })

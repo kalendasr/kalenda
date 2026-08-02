@@ -113,4 +113,10 @@ Published events are visible on the public storefront at `/evenementen` and
 `/evenementen/:slug`. The full homepage redesign and search/filter are a later
 storefront pass.
 
-Next: Phase 3 — Ticketing (see `docs/ROADMAP.md`).
+**Phase 3 — Ticketing — complete.** An organizer can define ticket types (price
+in SRD, capacity, per-order limits, sales window, visibility) in the event
+workspace, and publishing now requires at least one ticket type. Visitors can
+select ticket quantities on the public event page and see a live subtotal;
+checkout (order creation) follows in Phase 4. Money is stored as integer cents.
+
+Next: Phase 4 — Orders (see `docs/ROADMAP.md`).

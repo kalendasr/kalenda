@@ -948,7 +948,7 @@ ticketId
 
 ☑ EventContent
 
-☐ TicketType
+☑ TicketType
 
 ---
 

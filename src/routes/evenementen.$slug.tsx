@@ -14,6 +14,7 @@ import { formatDateTimeNl } from '#/lib/datetime.ts'
 import { Badge } from '#/components/ui/badge.tsx'
 import { Card, CardContent } from '#/components/ui/card.tsx'
 import { PublicHeader } from '#/components/public/public-header.tsx'
+import { TicketSelector } from '#/components/public/ticket-selector.tsx'
 
 export const Route = createFileRoute('/evenementen/$slug')({
   loader: async ({ params }) => ({
@@ -184,12 +185,16 @@ function PublicEventDetail() {
                   </div>
                 ) : null}
 
-                {/* Ticketverkoop komt in fase 3 — geen dode knop (CLAUDE.md §38). */}
-                <div className="rounded-lg border border-dashed p-3 text-center">
-                  <p className="inline-flex items-center gap-1.5 text-sm font-medium">
-                    <Ticket className="size-4" /> Ticketverkoop start binnenkort
-                  </p>
-                </div>
+                {event.ticketTypes.length > 0 ? (
+                  <TicketSelector ticketTypes={event.ticketTypes} />
+                ) : (
+                  <div className="rounded-lg border border-dashed p-3 text-center">
+                    <p className="inline-flex items-center gap-1.5 text-sm font-medium">
+                      <Ticket className="size-4" /> Ticketverkoop start
+                      binnenkort
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

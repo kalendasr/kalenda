@@ -32,6 +32,7 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AppEventsEventIdIndexRouteImport } from './routes/_app.events_.$eventId.index'
 import { Route as AppEventsEventIdContentRouteImport } from './routes/_app.events_.$eventId.content'
 import { Route as AppEventsEventIdSettingsRouteImport } from './routes/_app.events_.$eventId.settings'
+import { Route as AppEventsEventIdTicketsRouteImport } from './routes/_app.events_.$eventId.tickets'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -147,6 +148,11 @@ const AppEventsEventIdSettingsRoute =
     path: '/settings',
     getParentRoute: () => AppEventsEventIdRoute,
   } as any)
+const AppEventsEventIdTicketsRoute = AppEventsEventIdTicketsRouteImport.update({
+  id: '/tickets',
+  path: '/tickets',
+  getParentRoute: () => AppEventsEventIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/organization/': typeof AppOrganizationIndexRoute
   '/events/$eventId/content': typeof AppEventsEventIdContentRoute
   '/events/$eventId/settings': typeof AppEventsEventIdSettingsRoute
+  '/events/$eventId/tickets': typeof AppEventsEventIdTicketsRoute
   '/events/$eventId/': typeof AppEventsEventIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/organization': typeof AppOrganizationIndexRoute
   '/events/$eventId/content': typeof AppEventsEventIdContentRoute
   '/events/$eventId/settings': typeof AppEventsEventIdSettingsRoute
+  '/events/$eventId/tickets': typeof AppEventsEventIdTicketsRoute
   '/events/$eventId': typeof AppEventsEventIdIndexRoute
 }
 export interface FileRoutesById {
@@ -216,6 +224,7 @@ export interface FileRoutesById {
   '/_app/organization/': typeof AppOrganizationIndexRoute
   '/_app/events_/$eventId/content': typeof AppEventsEventIdContentRoute
   '/_app/events_/$eventId/settings': typeof AppEventsEventIdSettingsRoute
+  '/_app/events_/$eventId/tickets': typeof AppEventsEventIdTicketsRoute
   '/_app/events_/$eventId/': typeof AppEventsEventIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/organization/'
     | '/events/$eventId/content'
     | '/events/$eventId/settings'
+    | '/events/$eventId/tickets'
     | '/events/$eventId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -262,6 +272,7 @@ export interface FileRouteTypes {
     | '/organization'
     | '/events/$eventId/content'
     | '/events/$eventId/settings'
+    | '/events/$eventId/tickets'
     | '/events/$eventId'
   id:
     | '__root__'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/_app/organization/'
     | '/_app/events_/$eventId/content'
     | '/_app/events_/$eventId/settings'
+    | '/_app/events_/$eventId/tickets'
     | '/_app/events_/$eventId/'
   fileRoutesById: FileRoutesById
 }
@@ -463,6 +475,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEventsEventIdSettingsRouteImport
       parentRoute: typeof AppEventsEventIdRoute
     }
+    '/_app/events_/$eventId/tickets': {
+      id: '/_app/events_/$eventId/tickets'
+      path: '/tickets'
+      fullPath: '/events/$eventId/tickets'
+      preLoaderRoute: typeof AppEventsEventIdTicketsRouteImport
+      parentRoute: typeof AppEventsEventIdRoute
+    }
   }
 }
 
@@ -487,12 +506,14 @@ const AppOrganizationRouteWithChildren = AppOrganizationRoute._addFileChildren(
 interface AppEventsEventIdRouteChildren {
   AppEventsEventIdContentRoute: typeof AppEventsEventIdContentRoute
   AppEventsEventIdSettingsRoute: typeof AppEventsEventIdSettingsRoute
+  AppEventsEventIdTicketsRoute: typeof AppEventsEventIdTicketsRoute
   AppEventsEventIdIndexRoute: typeof AppEventsEventIdIndexRoute
 }
 
 const AppEventsEventIdRouteChildren: AppEventsEventIdRouteChildren = {
   AppEventsEventIdContentRoute: AppEventsEventIdContentRoute,
   AppEventsEventIdSettingsRoute: AppEventsEventIdSettingsRoute,
+  AppEventsEventIdTicketsRoute: AppEventsEventIdTicketsRoute,
   AppEventsEventIdIndexRoute: AppEventsEventIdIndexRoute,
 }
 

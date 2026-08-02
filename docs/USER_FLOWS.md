@@ -850,7 +850,7 @@ Wanneer krijg ik mijn tickets?
 
 ## Tickets
 
-☐ Tickettypes
+☑ Tickettypes
 
 ☐ Checkout
 

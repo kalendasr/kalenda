@@ -43,7 +43,7 @@ function EventOverview() {
   const [busy, setBusy] = React.useState(false)
 
   const readiness = eventPublishReadiness(
-    event,
+    { ...event, ticketTypeCount: event.ticketTypes.length },
     event.organization.paymentSettings,
   )
 
@@ -218,7 +218,7 @@ function EventOverview() {
 const READINESS_ITEMS: Array<{
   key: string
   label: string
-  to?: '/events/$eventId/settings'
+  to?: '/events/$eventId/settings' | '/events/$eventId/tickets'
 }> = [
   { key: 'title', label: 'Titel', to: '/events/$eventId/settings' },
   {
@@ -230,6 +230,11 @@ const READINESS_ITEMS: Array<{
   { key: 'category', label: 'Categorie', to: '/events/$eventId/settings' },
   { key: 'venue', label: 'Locatie', to: '/events/$eventId/settings' },
   { key: 'cover', label: 'Coverfoto', to: '/events/$eventId/settings' },
+  {
+    key: 'ticketType',
+    label: 'Minimaal één tickettype',
+    to: '/events/$eventId/tickets',
+  },
   { key: 'payment', label: 'Actieve betaalmethode' },
 ]
 

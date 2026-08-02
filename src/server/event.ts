@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 
 import { db } from '#/lib/db.server.ts'
 import { requireUser } from '#/lib/session.server.ts'
+import { requireOwnedEvent } from '#/lib/event-guard.server.ts'
 import { makeUniqueSlug } from '#/lib/slug.ts'
 import { surinameLocalToDate } from '#/lib/datetime.ts'
 import {
@@ -26,19 +27,6 @@ async function requireOwnedOrganization(userId: string) {
   })
   if (!organization) throw new Error('ORGANIZATION_NOT_FOUND')
   return organization
-}
-
-/** Haalt een event op dat aantoonbaar bij de gebruiker hoort. */
-async function requireOwnedEvent(userId: string, eventId: string) {
-  const event = await db.event.findFirst({
-    where: {
-      id: eventId,
-      deletedAt: null,
-      organization: { ownerId: userId, deletedAt: null },
-    },
-  })
-  if (!event) throw new Error('EVENT_NOT_FOUND')
-  return event
 }
 
 const eventIdSchema = z.object({ eventId: z.uuid() })
@@ -70,6 +58,10 @@ export const getMyEvent = createServerFn({ method: 'GET' })
         category: true,
         venue: true,
         content: { orderBy: [{ type: 'asc' }, { sortOrder: 'asc' }] },
+        ticketTypes: {
+          where: { deletedAt: null },
+          orderBy: { sortOrder: 'asc' },
+        },
         organization: { include: { paymentSettings: true } },
       },
     })

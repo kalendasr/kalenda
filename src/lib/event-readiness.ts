@@ -14,6 +14,7 @@ export type ReadinessEvent = {
   categoryId: string | null
   venueId: string | null
   coverImage: string | null
+  ticketTypeCount: number
 }
 
 export type ReadinessPaymentSettings = {
@@ -51,6 +52,9 @@ export function eventPublishReadiness(
   }
   if (!event.coverImage) {
     missing.push({ key: 'cover', label: 'Coverfoto' })
+  }
+  if (event.ticketTypeCount < 1) {
+    missing.push({ key: 'ticketType', label: 'Minimaal één tickettype' })
   }
   if (!paymentSettings?.whatsappEnabled && !paymentSettings?.bankEnabled) {
     missing.push({ key: 'payment', label: 'Actieve betaalmethode' })

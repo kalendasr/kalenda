@@ -353,9 +353,9 @@ De applicatie klaar is voor productie.
 
 ## Ticketing
 
-- [ ] Tickettypes
-- [ ] Capaciteit
-- [ ] Verkoopperiode
+- [x] Tickettypes
+- [x] Capaciteit
+- [x] Verkoopperiode
 
 ---
 

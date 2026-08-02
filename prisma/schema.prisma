@@ -263,7 +263,8 @@ model Event {
 
   status EventStatus @default(Draft)
 
-  content EventContent[]
+  content     EventContent[]
+  ticketTypes TicketType[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -298,4 +299,36 @@ model EventContent {
 
   @@index([eventId])
   @@map("event_content")
+}
+
+// Tickettype (DATABASE_DOMAIN.md §7, BUSINESS_RULES BR-300..BR-304).
+//
+// Bedragen worden als gehele centen opgeslagen (priceCents) om afrondings- en
+// serialisatieproblemen te voorkomen. MVP: alleen SRD.
+model TicketType {
+  id      String @id @default(uuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  priceCents  Int     @default(0)
+  currency    String  @default("SRD")
+  quantity    Int
+
+  minimumPerOrder Int @default(1)
+  maximumPerOrder Int @default(10)
+
+  salesStart DateTime?
+  salesEnd   DateTime?
+
+  visible   Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([eventId])
+  @@map("ticket_type")
 }
