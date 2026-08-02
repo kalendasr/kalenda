@@ -50,11 +50,19 @@ const storageEnvSchema = z.object({
   R2_PUBLIC_URL: z.url(),
 })
 
+const mailEnvSchema = z.object({
+  MAIL_API_KEY: z.string().min(1),
+  MAIL_AFZENDER_NAAM: z.string().min(1),
+  MAIL_AFZENDER_EMAIL: z.email(),
+})
+
 export type ServerEnv = z.infer<typeof coreEnvSchema>
 export type StorageEnv = z.infer<typeof storageEnvSchema>
+export type MailEnv = z.infer<typeof mailEnvSchema>
 
 let cachedServerEnv: ServerEnv | undefined
 let cachedStorageEnv: StorageEnv | undefined
+let cachedMailEnv: MailEnv | undefined
 
 export function getServerEnv(): ServerEnv {
   cachedServerEnv ??= parse(coreEnvSchema, 'de applicatie')
@@ -65,4 +73,10 @@ export function getServerEnv(): ServerEnv {
 export function getStorageEnv(): StorageEnv {
   cachedStorageEnv ??= parse(storageEnvSchema, 'bestandsopslag (Cloudflare R2)')
   return cachedStorageEnv
+}
+
+/** Resend e-mail. Valideert pas wanneer er daadwerkelijk gemaild wordt. */
+export function getMailEnv(): MailEnv {
+  cachedMailEnv ??= parse(mailEnvSchema, 'e-mail (Resend)')
+  return cachedMailEnv
 }

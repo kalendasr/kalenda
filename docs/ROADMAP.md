@@ -327,10 +327,10 @@ De applicatie klaar is voor productie.
 
 ## Organisatie
 
-- [ ] Registreren
-- [ ] Inloggen
-- [ ] Organisatie aanmaken
-- [ ] Betaalinstellingen
+- [x] Registreren
+- [x] Inloggen
+- [x] Organisatie aanmaken
+- [x] Betaalinstellingen
 
 ---
 

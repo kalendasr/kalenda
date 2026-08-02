@@ -1,7 +1,19 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { CalendarDays } from 'lucide-react'
 
-export const Route = createFileRoute('/')({ component: Home })
+import { fetchSessionUser } from '#/server/session.ts'
+import { Button } from '#/components/ui/button.tsx'
+
+export const Route = createFileRoute('/')({
+  beforeLoad: async () => {
+    // Ingelogde organisatoren horen in de app, niet op de landingspagina.
+    const user = await fetchSessionUser()
+    if (user) {
+      throw redirect({ to: '/dashboard' })
+    }
+  },
+  component: Home,
+})
 
 function Home() {
   return (
@@ -17,9 +29,17 @@ function Home() {
         Evenementen en tickets voor Suriname
       </h1>
       <p className="mt-3 max-w-xl text-base text-muted-foreground">
-        Het platform is opgezet. De eerste werkende workflow — registreren,
-        inloggen en een organisatie beheren — volgt in fase 1.
+        Publiceer je evenementen, verkoop tickets en verwerk betalingen — alles
+        op één plek. Maak een account aan om te beginnen.
       </p>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Button asChild size="lg">
+          <Link to="/register">Account aanmaken</Link>
+        </Button>
+        <Button asChild size="lg" variant="outline">
+          <Link to="/login">Inloggen</Link>
+        </Button>
+      </div>
     </main>
   )
 }

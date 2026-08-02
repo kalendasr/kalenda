@@ -10,12 +10,88 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AuthRouteImport } from './routes/_auth'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
+import { Route as AppOrganizationRouteImport } from './routes/_app.organization'
+import { Route as AuthForgotPasswordRouteImport } from './routes/_auth.forgot-password'
+import { Route as AuthLoginRouteImport } from './routes/_auth.login'
+import { Route as AuthRegisterRouteImport } from './routes/_auth.register'
+import { Route as AuthResetPasswordRouteImport } from './routes/_auth.reset-password'
+import { Route as AppOrganizationIndexRouteImport } from './routes/_app.organization.index'
+import { Route as AppOrganizationBrandingRouteImport } from './routes/_app.organization.branding'
+import { Route as AppOrganizationGeneralRouteImport } from './routes/_app.organization.general'
+import { Route as AppOrganizationPaymentsRouteImport } from './routes/_app.organization.payments'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOrganizationRoute = AppOrganizationRouteImport.update({
+  id: '/organization',
+  path: '/organization',
+  getParentRoute: () => AppRoute,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthRegisterRoute = AuthRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AppOrganizationIndexRoute = AppOrganizationIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppOrganizationRoute,
+} as any)
+const AppOrganizationBrandingRoute = AppOrganizationBrandingRouteImport.update({
+  id: '/branding',
+  path: '/branding',
+  getParentRoute: () => AppOrganizationRoute,
+} as any)
+const AppOrganizationGeneralRoute = AppOrganizationGeneralRouteImport.update({
+  id: '/general',
+  path: '/general',
+  getParentRoute: () => AppOrganizationRoute,
+} as any)
+const AppOrganizationPaymentsRoute = AppOrganizationPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => AppOrganizationRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -25,27 +101,105 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/organization': typeof AppOrganizationRouteWithChildren
+  '/forgot-password': typeof AuthForgotPasswordRoute
+  '/login': typeof AuthLoginRoute
+  '/register': typeof AuthRegisterRoute
+  '/reset-password': typeof AuthResetPasswordRoute
+  '/organization/branding': typeof AppOrganizationBrandingRoute
+  '/organization/general': typeof AppOrganizationGeneralRoute
+  '/organization/payments': typeof AppOrganizationPaymentsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/organization/': typeof AppOrganizationIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
+  '/dashboard': typeof AppDashboardRoute
+  '/forgot-password': typeof AuthForgotPasswordRoute
+  '/login': typeof AuthLoginRoute
+  '/register': typeof AuthRegisterRoute
+  '/reset-password': typeof AuthResetPasswordRoute
+  '/organization/branding': typeof AppOrganizationBrandingRoute
+  '/organization/general': typeof AppOrganizationGeneralRoute
+  '/organization/payments': typeof AppOrganizationPaymentsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/organization': typeof AppOrganizationIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_auth': typeof AuthRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
+  '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/organization': typeof AppOrganizationRouteWithChildren
+  '/_auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/_auth/login': typeof AuthLoginRoute
+  '/_auth/register': typeof AuthRegisterRoute
+  '/_auth/reset-password': typeof AuthResetPasswordRoute
+  '/_app/organization/branding': typeof AppOrganizationBrandingRoute
+  '/_app/organization/general': typeof AppOrganizationGeneralRoute
+  '/_app/organization/payments': typeof AppOrganizationPaymentsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_app/organization/': typeof AppOrganizationIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/onboarding'
+    | '/dashboard'
+    | '/organization'
+    | '/forgot-password'
+    | '/login'
+    | '/register'
+    | '/reset-password'
+    | '/organization/branding'
+    | '/organization/general'
+    | '/organization/payments'
+    | '/api/auth/$'
+    | '/organization/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/auth/$'
-  id: '__root__' | '/' | '/api/auth/$'
+  to:
+    | '/'
+    | '/onboarding'
+    | '/dashboard'
+    | '/forgot-password'
+    | '/login'
+    | '/register'
+    | '/reset-password'
+    | '/organization/branding'
+    | '/organization/general'
+    | '/organization/payments'
+    | '/api/auth/$'
+    | '/organization'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/_auth'
+    | '/onboarding'
+    | '/_app/dashboard'
+    | '/_app/organization'
+    | '/_auth/forgot-password'
+    | '/_auth/login'
+    | '/_auth/register'
+    | '/_auth/reset-password'
+    | '/_app/organization/branding'
+    | '/_app/organization/general'
+    | '/_app/organization/payments'
+    | '/api/auth/$'
+    | '/_app/organization/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  AuthRoute: typeof AuthRouteWithChildren
+  OnboardingRoute: typeof OnboardingRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -58,6 +212,97 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/organization': {
+      id: '/_app/organization'
+      path: '/organization'
+      fullPath: '/organization'
+      preLoaderRoute: typeof AppOrganizationRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_auth/forgot-password': {
+      id: '/_auth/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/login': {
+      id: '/_auth/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/register': {
+      id: '/_auth/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof AuthRegisterRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/reset-password': {
+      id: '/_auth/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_app/organization/': {
+      id: '/_app/organization/'
+      path: '/'
+      fullPath: '/organization/'
+      preLoaderRoute: typeof AppOrganizationIndexRouteImport
+      parentRoute: typeof AppOrganizationRoute
+    }
+    '/_app/organization/branding': {
+      id: '/_app/organization/branding'
+      path: '/branding'
+      fullPath: '/organization/branding'
+      preLoaderRoute: typeof AppOrganizationBrandingRouteImport
+      parentRoute: typeof AppOrganizationRoute
+    }
+    '/_app/organization/general': {
+      id: '/_app/organization/general'
+      path: '/general'
+      fullPath: '/organization/general'
+      preLoaderRoute: typeof AppOrganizationGeneralRouteImport
+      parentRoute: typeof AppOrganizationRoute
+    }
+    '/_app/organization/payments': {
+      id: '/_app/organization/payments'
+      path: '/payments'
+      fullPath: '/organization/payments'
+      preLoaderRoute: typeof AppOrganizationPaymentsRouteImport
+      parentRoute: typeof AppOrganizationRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -68,8 +313,57 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppOrganizationRouteChildren {
+  AppOrganizationBrandingRoute: typeof AppOrganizationBrandingRoute
+  AppOrganizationGeneralRoute: typeof AppOrganizationGeneralRoute
+  AppOrganizationPaymentsRoute: typeof AppOrganizationPaymentsRoute
+  AppOrganizationIndexRoute: typeof AppOrganizationIndexRoute
+}
+
+const AppOrganizationRouteChildren: AppOrganizationRouteChildren = {
+  AppOrganizationBrandingRoute: AppOrganizationBrandingRoute,
+  AppOrganizationGeneralRoute: AppOrganizationGeneralRoute,
+  AppOrganizationPaymentsRoute: AppOrganizationPaymentsRoute,
+  AppOrganizationIndexRoute: AppOrganizationIndexRoute,
+}
+
+const AppOrganizationRouteWithChildren = AppOrganizationRoute._addFileChildren(
+  AppOrganizationRouteChildren,
+)
+
+interface AppRouteChildren {
+  AppDashboardRoute: typeof AppDashboardRoute
+  AppOrganizationRoute: typeof AppOrganizationRouteWithChildren
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppDashboardRoute: AppDashboardRoute,
+  AppOrganizationRoute: AppOrganizationRouteWithChildren,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
+interface AuthRouteChildren {
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthRegisterRoute: typeof AuthRegisterRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthRegisterRoute: AuthRegisterRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  AuthRoute: AuthRouteWithChildren,
+  OnboardingRoute: OnboardingRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

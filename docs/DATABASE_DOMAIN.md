@@ -1,6 +1,6 @@
 # DATABASE_DOMAIN.md
 
-Version: 1.0 (MVP)
+Version: 1.1 (MVP)
 
 ---
 
@@ -432,6 +432,8 @@ orderNumber
 
 paymentMethod
 
+paymentApp
+
 orderStatus
 
 paymentStatus
@@ -459,6 +461,24 @@ updatedAt
 WhatsApp
 
 Bank Transfer
+
+---
+
+### Payment App
+
+Alleen van toepassing bij paymentMethod = WhatsApp.
+
+Mope
+
+Uni5Pay
+
+Waarden komen uit Organization Payment Settings → WhatsApp.supportedApps.
+
+Bij Bank Transfer is paymentApp leeg.
+
+Bewaar methode en app in aparte velden.
+
+Nooit samenvoegen tot één string (bijv. "whatsapp:mope").
 
 ---
 
@@ -910,11 +930,11 @@ ticketId
 
 ## Sprint 1
 
-☐ User
+☑ User
 
-☐ Organization
+☑ Organization
 
-☐ PaymentSettings
+☑ PaymentSettings
 
 ☐ Category
 

@@ -11,7 +11,8 @@ the platform coordinates the workflow and issues QR tickets.
 - Tailwind CSS + shadcn/ui
 - PostgreSQL + Prisma
 - Better Auth
-- Cloudflare R2
+- Cloudflare R2 (file storage)
+- Resend (transactional e-mail)
 
 ## Getting started
 
@@ -22,9 +23,11 @@ npm install
 cp .env.example .env
 ```
 
-Fill in `.env`. `DATABASE_URL` and `BETTER_AUTH_SECRET` are required to boot;
-the R2 variables are only validated when file storage is actually used, so you
-can start without a Cloudflare account.
+Fill in `.env`. `DATABASE_URL` and `BETTER_AUTH_SECRET` are required to boot.
+The R2 variables are only validated when file storage is actually used and the
+`MAIL_*` (Resend) variables only when e-mail is sent (e.g. password reset), so
+you can start without those accounts — those specific features just won't work
+until they are filled in.
 
 Create the development database once:
 
@@ -62,10 +65,11 @@ docs/                Source-of-truth specifications
 prisma/              Database schema & migrations
 src/
   routes/            File-based routes; routes/api/** are server routes
-  components/ui/     shadcn/ui primitives (generated, not hand-edited)
-  components/        Shared application components
-  features/          Vertical slices per domain (added per roadmap phase)
+  server/            Server functions (loaders & mutations) per domain
+  components/ui/     shadcn/ui primitives
+  components/        Shared application components (app shell, auth, …)
   lib/               Cross-cutting modules; *.server.ts is server-only
+  lib/validation/    Shared zod schemas (one source of truth, client + server)
   test/              Test setup
   generated/         Prisma client output (git-ignored)
 ```
@@ -95,4 +99,9 @@ rules.
 
 ## Status
 
-Pre-MVP. Currently at Phase 0 (project setup).
+Pre-MVP. **Phase 1 — Authentication & Organisation — complete.** An organizer
+can register, log in, reset their password (Resend e-mail), and create and fully
+configure their organisation (general details, branding with logo/cover upload
+to R2, and WhatsApp/bank payment settings) from the organisation workspace.
+
+Next: Phase 2 — Event management (see `docs/ROADMAP.md`).

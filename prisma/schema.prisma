@@ -4,9 +4,11 @@
 //   - UUID primary keys
 //   - createdAt / updatedAt op iedere entity
 //   - soft delete via deletedAt waar het domeinmodel dat voorschrijft
+//   - camelCase velden, PascalCase modellen en enums
 //
-// Modellen worden per fase toegevoegd. Fase 1 voegt User, Organization en
-// PaymentSettings toe.
+// Fase 1 voegt de authenticatie- en organisatiemodellen toe: de Better Auth
+// kern (User, Session, Account, Verification) en het organisatiedomein
+// (Organization, OrganizationPaymentSettings). Latere fasen breiden dit uit.
 
 generator client {
   provider = "prisma-client"
@@ -15,4 +17,170 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Authenticatie (Better Auth)
+//
+// De veldnamen van de kern-modellen volgen het Better Auth standaardschema.
+// User is uitgebreid met de domeinvelden uit DATABASE_DOMAIN.md §4. `name`
+// blijft bestaan (samengesteld uit voor- en achternaam bij registratie) omdat
+// Better Auth het verwacht; `image` fungeert als avatar.
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+
+  // Domeinvelden (DATABASE_DOMAIN.md §4).
+  firstName String
+  lastName  String
+  phone     String?
+  locale    String  @default("nl")
+  timezone  String  @default("America/Paramaribo")
+
+  sessions     Session[]
+  accounts     Account[]
+  organization Organization?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ---------------------------------------------------------------------------
+// Organisatie (DATABASE_DOMAIN.md §4, BUSINESS_RULES BR-100..BR-103)
+//
+// MVP: precies één organisatie per gebruiker (BR-100) met precies één eigenaar
+// (BR-101). Daarom is ownerId uniek. Betaalinstellingen horen bij de
+// organisatie, nooit bij een evenement (BR-103).
+// ---------------------------------------------------------------------------
+
+model Organization {
+  id          String  @id @default(uuid())
+  name        String
+  slug        String  @unique
+  description String?
+  logo        String?
+  coverImage  String?
+
+  // Contact
+  email   String?
+  phone   String?
+  website String?
+
+  // Sociale media
+  facebook  String?
+  instagram String?
+  tiktok    String?
+  linkedin  String?
+
+  // Adres
+  address String?
+  city    String?
+  country String @default("Suriname")
+
+  isVerified Boolean @default(false)
+
+  ownerId String @unique
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  paymentSettings OrganizationPaymentSettings?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([slug])
+  @@index([ownerId])
+  @@map("organization")
+}
+
+enum PaymentApp {
+  Mope
+  Uni5Pay
+}
+
+model OrganizationPaymentSettings {
+  id String @id @default(uuid())
+
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // WhatsApp-betaalverzoek (DATABASE_DOMAIN.md §4).
+  whatsappEnabled Boolean      @default(false)
+  whatsappPhone   String?
+  whatsappApps    PaymentApp[]
+
+  // Bankoverschrijving.
+  bankEnabled         Boolean @default(false)
+  bankName            String?
+  accountHolder       String?
+  accountNumber       String?
+  branch              String?
+  paymentInstructions String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@map("organization_payment_settings")
 }
