@@ -17,6 +17,7 @@ import { Button } from '#/components/ui/button.tsx'
 import { Input } from '#/components/ui/input.tsx'
 import { FormField } from '#/components/ui/form-field.tsx'
 import { FormError } from '#/components/auth/form-error.tsx'
+import { Alert, AlertDescription } from '#/components/ui/alert.tsx'
 import { PublicHeader } from '#/components/public/public-header.tsx'
 
 export const Route = createFileRoute('/evenementen/$slug_/afrekenen')({
@@ -68,6 +69,10 @@ function Checkout() {
     },
   })
 
+  const clamped = (data?.lines ?? []).filter(
+    (line) => line.requestedQuantity > line.quantity,
+  )
+
   if (!data || data.lines.length === 0) {
     return (
       <>
@@ -115,6 +120,19 @@ function Checkout() {
         >
           <div className="flex flex-col gap-6">
             <FormError message={form.formError} />
+
+            {clamped.length > 0 ? (
+              <Alert variant="warning">
+                <AlertDescription>
+                  We hebben je aantal aangepast — sommige tickets zijn intussen
+                  uitverkocht:{' '}
+                  {clamped
+                    .map((line) => `${line.name} (${line.quantity}×)`)
+                    .join(', ')}
+                  .
+                </AlertDescription>
+              </Alert>
+            ) : null}
 
             <Card>
               <CardHeader>

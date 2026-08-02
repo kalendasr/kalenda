@@ -55,3 +55,12 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   Cancelled: 'Geannuleerd',
   Expired: 'Verlopen',
 }
+
+/** Badgevariant per status — één bron van waarheid voor alle statusbadges. */
+export function orderStatusBadgeVariant(
+  status: OrderStatus,
+): 'secondary' | 'outline' | 'destructive' {
+  if (status === 'Paid' || status === 'Completed') return 'secondary'
+  if (status === 'Cancelled' || status === 'Expired') return 'destructive'
+  return 'outline'
+}

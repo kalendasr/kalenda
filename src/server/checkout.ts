@@ -59,6 +59,7 @@ export const getCheckoutData = createServerFn({ method: 'GET' })
           name: type.name,
           unitPriceCents: type.priceCents,
           quantity,
+          requestedQuantity: item.quantity,
           totalPriceCents: type.priceCents * quantity,
           available,
         }
@@ -124,7 +125,7 @@ export const createOrder = createServerFn({ method: 'POST' })
           deletedAt: null,
         },
       })
-      const reserved = await reservedByTicketType(ids, now)
+      const reserved = await reservedByTicketType(ids, now, tx)
 
       const orderItems = data.items.map((item) => {
         const type = types.find((t) => t.id === item.ticketTypeId)
@@ -179,30 +180,39 @@ export const createOrder = createServerFn({ method: 'POST' })
         },
       })
 
-      // Uniek ordernummer (BR-500), met een paar pogingen bij een botsing.
+      // Uniek ordernummer (BR-500). We genereren en schrijven direct, en vangen
+      // een P2002 (unique-botsing) op om opnieuw te proberen. Een read-vooraf
+      // dekt de gelijktijdige race niet — twee transacties kunnen beiden "vrij"
+      // zien; de unique-constraint is de echte grens en vangt de verliezer.
       let number = generateOrderNumber()
       for (let attempt = 0; attempt < 5; attempt += 1) {
-        const clash = await tx.order.findUnique({
-          where: { orderNumber: number },
-        })
-        if (!clash) break
-        number = generateOrderNumber()
+        try {
+          await tx.order.create({
+            data: {
+              eventId: event.id,
+              customerId: customer.id,
+              orderNumber: number,
+              paymentMethod: data.paymentMethod,
+              paymentApp:
+                data.paymentMethod === 'WhatsApp' ? data.paymentApp : null,
+              subtotalCents,
+              totalCents: subtotalCents, // servicefee 0 in de MVP (BR-608)
+              expiresAt: new Date(now.getTime() + ORDER_TTL_MS),
+              items: { create: orderItems },
+            },
+          })
+          break
+        } catch (err) {
+          if (
+            err instanceof Prisma.PrismaClientKnownRequestError &&
+            err.code === 'P2002'
+          ) {
+            number = generateOrderNumber()
+            continue
+          }
+          throw err
+        }
       }
-
-      await tx.order.create({
-        data: {
-          eventId: event.id,
-          customerId: customer.id,
-          orderNumber: number,
-          paymentMethod: data.paymentMethod,
-          paymentApp:
-            data.paymentMethod === 'WhatsApp' ? data.paymentApp : null,
-          subtotalCents,
-          totalCents: subtotalCents, // servicefee 0 in de MVP (BR-608)
-          expiresAt: new Date(now.getTime() + ORDER_TTL_MS),
-          items: { create: orderItems },
-        },
-      })
 
       return number
     })

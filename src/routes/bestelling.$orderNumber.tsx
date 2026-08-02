@@ -7,8 +7,8 @@ import { formatDateTimeNl } from '#/lib/datetime.ts'
 import {
   ORDER_STATUS_LABELS,
   effectiveOrderStatus,
+  orderStatusBadgeVariant,
 } from '#/lib/order-status.ts'
-import type { OrderStatus } from '#/lib/order-status.ts'
 import { Badge } from '#/components/ui/badge.tsx'
 import {
   Card,
@@ -30,14 +30,6 @@ export const Route = createFileRoute('/bestelling/$orderNumber')({
   }),
   component: OrderStatusPage,
 })
-
-function statusVariant(
-  status: OrderStatus,
-): 'secondary' | 'outline' | 'destructive' {
-  if (status === 'Paid' || status === 'Completed') return 'secondary'
-  if (status === 'Cancelled' || status === 'Expired') return 'destructive'
-  return 'outline'
-}
 
 function OrderStatusPage() {
   const { order } = Route.useLoaderData()
@@ -85,7 +77,7 @@ function OrderStatusPage() {
             Bestelnummer{' '}
             <span className="font-medium">{order.orderNumber}</span>
           </p>
-          <Badge variant={statusVariant(status)}>
+          <Badge variant={orderStatusBadgeVariant(status)}>
             {ORDER_STATUS_LABELS[status]}
           </Badge>
         </div>
@@ -193,8 +185,11 @@ function OrderStatusPage() {
             </div>
 
             <ul className="flex flex-col gap-2 border-t pt-3">
-              {order.items.map((item, index) => (
-                <li key={index} className="flex justify-between gap-2 text-sm">
+              {order.items.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex justify-between gap-2 text-sm"
+                >
                   <span>
                     {item.quantity}× {item.ticketType.name}
                   </span>

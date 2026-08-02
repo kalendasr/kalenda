@@ -1,4 +1,7 @@
 import { db } from '#/lib/db.server.ts'
+import type { Prisma } from '#/generated/prisma/client.ts'
+
+type TransactionClient = Prisma.TransactionClient
 
 /**
  * Telt hoeveel tickets per tickettype gereserveerd zijn door lopende orders.
@@ -6,14 +9,18 @@ import { db } from '#/lib/db.server.ts'
  * Server-only helper. Een order reserveert zolang hij Paid/Completed is, of
  * nog niet verlopen wacht op betaling/controle (lazy expiry, BR-506/507).
  * Verlopen onbetaalde orders tellen dus niet mee en geven hun plekken vrij.
+ *
+ * Geef `tx` mee wanneer je binnen een transactie draait, zodat de telling de
+ * vooraf genomen rij-locks respecteert en niet via de globale client leest.
  */
 export async function reservedByTicketType(
   ticketTypeIds: Array<string>,
   now: Date = new Date(),
+  tx: TransactionClient = db,
 ): Promise<Record<string, number>> {
   if (ticketTypeIds.length === 0) return {}
 
-  const grouped = await db.orderItem.groupBy({
+  const grouped = await tx.orderItem.groupBy({
     by: ['ticketTypeId'],
     where: {
       ticketTypeId: { in: ticketTypeIds },

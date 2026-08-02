@@ -7,8 +7,8 @@ import { formatDateTimeNl } from '#/lib/datetime.ts'
 import {
   ORDER_STATUS_LABELS,
   effectiveOrderStatus,
+  orderStatusBadgeVariant,
 } from '#/lib/order-status.ts'
-import type { OrderStatus } from '#/lib/order-status.ts'
 import { Badge } from '#/components/ui/badge.tsx'
 import { Card } from '#/components/ui/card.tsx'
 
@@ -18,14 +18,6 @@ export const Route = createFileRoute('/_app/events_/$eventId/orders')({
   }),
   component: EventOrders,
 })
-
-function statusVariant(
-  status: OrderStatus,
-): 'secondary' | 'outline' | 'destructive' {
-  if (status === 'Paid' || status === 'Completed') return 'secondary'
-  if (status === 'Cancelled' || status === 'Expired') return 'destructive'
-  return 'outline'
-}
 
 function EventOrders() {
   const { orders } = Route.useLoaderData()
@@ -62,7 +54,7 @@ function EventOrders() {
                 <span className="font-medium">
                   {order.customer.firstName} {order.customer.lastName}
                 </span>
-                <Badge variant={statusVariant(status)}>
+                <Badge variant={orderStatusBadgeVariant(status)}>
                   {ORDER_STATUS_LABELS[status]}
                 </Badge>
               </div>
