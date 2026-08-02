@@ -1,6 +1,6 @@
 # USER_FLOWS.md
 
-Version: 1.0 (MVP)
+Version: 1.1 (MVP)
 
 ---
 
@@ -50,6 +50,10 @@ Kan:
 - betaalbewijs uploaden
 - tickets downloaden
 - QR-code tonen
+
+Heeft geen account (MVP).
+
+Opent de bestelling en tickets via een unieke orderlink en via e-mail.
 
 ---
 
@@ -303,6 +307,12 @@ Order aanmaken
 ↓
 
 Bevestigingspagina
+
+↓
+
+Unieke orderlink
+
+(zonder login te openen, ook per e-mail verstuurd)
 
 ---
 

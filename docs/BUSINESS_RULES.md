@@ -1,6 +1,6 @@
 # BUSINESS_RULES.md
 
-Version: 1.0 (MVP)
+Version: 1.1 (MVP)
 
 ---
 
@@ -204,6 +204,24 @@ Voor WhatsApp-contact.
 
 ---
 
+## BR-403
+
+Een klant heeft in de MVP geen account.
+
+Toegang tot de bestelling en de tickets verloopt via een unieke, deelbare orderlink en via e-mail.
+
+Geen login vereist.
+
+---
+
+## BR-404
+
+Een klantaccount ("Mijn tickets") is V1.
+
+Verwijs in de MVP nooit naar "je account" waar de orderlink wordt bedoeld.
+
+---
+
 # 7. Order Rules
 
 ## BR-500
@@ -371,6 +389,18 @@ Bij afkeuring ontvangt klant automatisch een melding.
 Organisator bepaalt of betaling correct is.
 
 Niet het platform.
+
+---
+
+## BR-608
+
+Het platform int geen servicefee uit de betaling.
+
+Omdat alle betaling rechtstreeks tussen klant en organisator loopt (BR-600), wordt de servicefee niet automatisch ingehouden.
+
+In de MVP wordt de servicefee per order vastgelegd (Order.serviceFee) voor rapportage en afrekening.
+
+De daadwerkelijke facturatie aan de organisator valt buiten de MVP-betaalflow.
 
 ---
 
