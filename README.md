@@ -125,6 +125,15 @@ and a 48-hour hold that reserves capacity (released on expiry), and they land on
 a shareable, login-free order status page (`/bestelling/:orderNumber`) with the
 next-step payment instructions, plus a confirmation email (Resend). Orders
 appear read-only in the event workspace's Orders tab. Order creation locks the
-ticket-type rows to prevent overselling. Confirming/rejecting payments is Phase 5.
+ticket-type rows to prevent overselling.
 
-Next: Phase 5 — Payments (see `docs/ROADMAP.md`).
+**Phase 5 — Payments — complete.** The organizer can process payments. Each
+order now has a payment record created at checkout, and the organizer can
+confirm WhatsApp payments and approve or reject bank payments from the Orders
+tab. For bank transfers, the customer uploads a proof of payment (image stored
+privately in R2, shown to the organizer via a signed short-lived URL) directly
+on their order page, and can re-submit after a rejection. Statuses stay in sync
+between the payment record and the order's order/payment status. Ticket/QR
+issuance is Phase 6.
+
+Next: Phase 6 — Tickets (see `docs/ROADMAP.md`).

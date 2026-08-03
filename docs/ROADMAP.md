@@ -369,11 +369,12 @@ De applicatie klaar is voor productie.
 
 ## Betalingen
 
-- [ ] WhatsApp
-- [ ] Mope
-- [ ] Uni5Pay
-- [ ] Bankoverschrijving
-- [ ] Upload betaalbewijs
+- [x] WhatsApp
+- [x] Mope
+- [x] Uni5Pay
+- [x] Bankoverschrijving
+- [x] Upload betaalbewijs
+- [x] Betaling bevestigen / afkeuren
 
 ---
 

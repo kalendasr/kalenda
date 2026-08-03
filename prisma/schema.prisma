@@ -383,6 +383,18 @@ enum PaymentStatus {
   Rejected
 }
 
+// Betaaltoestand van een Payment-record (Fase 5). Zie DATABASE_DOMAIN.md §11.
+// Benoemd als `PaymentState` om de bestaande `PaymentStatus`-enum op Order niet
+// te verstoren — de Order draagt de gedenormaliseerde projectie, dit is de
+// werkelijke betaaladministratie.
+enum PaymentState {
+  Waiting
+  Submitted
+  Verified
+  Rejected
+  Cancelled
+}
+
 model Order {
   id      String @id @default(uuid())
   eventId String
@@ -408,6 +420,7 @@ model Order {
   expiresAt DateTime
 
   items OrderItem[]
+  payment Payment?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -434,4 +447,36 @@ model OrderItem {
   @@index([orderId])
   @@index([ticketTypeId])
   @@map("order_item")
+}
+
+// Betaaladministratie per order (Fase 5, DATABASE_DOMAIN.md §11).
+//
+// Het platform verwerkt geen geld (BR-600); dit vast de workflow. Eén Payment
+// per order (1:1), aangemaakt bij checkout en bijgewerkt bij elke stap:
+//
+//   WhatsApp:  Waiting → Verified (organisator bevestigt) | Rejected
+//   Bank:      Waiting → Submitted (klant uploadt bewijs) → Verified (goedkeuren) | Rejected
+//              Rejected → Submitted (opnieuw indienen, BR-605)
+//
+// `proofKey` is de private R2-sleutel van het betaalbewijs; organisatoren zien
+// het alleen via een beveiligde, korte download-URL (opslag.server getSignedDownloadUrl).
+model Payment {
+  id      String @id @default(uuid())
+  orderId String @unique
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  method   PaymentMethod
+  state    PaymentState @default(Waiting)
+  reference String?
+  proofKey  String?
+
+  verifiedBy String?
+  verifiedAt DateTime?
+  notes      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@map("payment")
 }

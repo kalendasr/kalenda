@@ -29,6 +29,15 @@ export const listEventOrders = createServerFn({ method: 'GET' })
             ticketType: { select: { name: true } },
           },
         },
+        payment: {
+          select: {
+            state: true,
+            proofKey: true,
+            verifiedAt: true,
+            reference: true,
+            notes: true,
+          },
+        },
       },
     })
   })

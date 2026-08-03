@@ -1,7 +1,9 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
-import { CalendarDays, CheckCircle2, Clock, MapPin } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { CalendarDays, CheckCircle2, Clock, MapPin, Upload } from 'lucide-react'
 
 import { getOrderByNumber } from '#/server/checkout.ts'
+import { submitProofOfPayment } from '#/server/payments.ts'
 import { formatSrd } from '#/lib/money.ts'
 import { formatDateTimeNl } from '#/lib/datetime.ts'
 import {
@@ -17,6 +19,10 @@ import {
   CardTitle,
 } from '#/components/ui/card.tsx'
 import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert.tsx'
+import { Button } from '#/components/ui/button.tsx'
+import { Input } from '#/components/ui/input.tsx'
+import { Label } from '#/components/ui/label.tsx'
+import { toast } from '#/components/ui/sonner.tsx'
 import { PublicHeader } from '#/components/public/public-header.tsx'
 
 export const Route = createFileRoute('/bestelling/$orderNumber')({
@@ -161,6 +167,16 @@ function OrderStatusPage() {
           </Alert>
         ) : null}
 
+        {/* Bank: betaalbewijs uploaden/opnieuw indienen (BR-603/605) */}
+        {order.paymentMethod === 'BankTransfer' && status !== 'Expired' ? (
+          <BankProofUpload
+            orderStatus={status}
+            paymentState={order.payment?.state ?? 'Waiting'}
+            paymentNotes={order.payment?.notes ?? null}
+            orderNumber={order.orderNumber}
+          />
+        ) : null}
+
         {/* Ordersamenvatting */}
         <Card className="mt-6">
           <CardHeader>
@@ -211,5 +227,135 @@ function OrderStatusPage() {
         </p>
       </main>
     </>
+  )
+}
+
+function BankProofUpload({
+  orderStatus,
+  paymentState,
+  paymentNotes,
+  orderNumber,
+}: {
+  orderStatus: string
+  paymentState: string
+  paymentNotes: string | null
+  orderNumber: string
+}) {
+  const router = useRouter()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [reference, setReference] = useState('')
+  const [uploading, setUploading] = useState(false)
+
+  const isSubmitted = paymentState === 'Submitted'
+  const isRejected = paymentState === 'Rejected'
+  const isPaid = orderStatus === 'Paid' || orderStatus === 'Completed'
+
+  async function handleUpload() {
+    const file = fileRef.current?.files?.[0]
+    if (!file) {
+      toast.error('Kies eerst een betaalbewijs (PNG, JPG of WebP).')
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('orderNumber', orderNumber)
+    if (reference.trim()) formData.append('reference', reference.trim())
+
+    setUploading(true)
+    try {
+      await submitProofOfPayment({ data: formData })
+      toast.success('Je betaalbewijs is ontvangen.')
+      await router.invalidate()
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Uploaden is niet gelukt. Probeer het opnieuw.',
+      )
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  if (isPaid) return null
+
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle className="text-base">Betaalbewijs uploaden</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {isSubmitted ? (
+          <Alert variant="info">
+            <Clock />
+            <AlertTitle>Bewijs ontvangen</AlertTitle>
+            <AlertDescription>
+              We hebben je betaalbewijs ontvangen. Zodra de organisator het
+              heeft gecontroleerd, ontvang je je tickets per e-mail.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        {isRejected ? (
+          <Alert variant="destructive">
+            <AlertTitle>Betaling afgekeurd</AlertTitle>
+            <AlertDescription>
+              {paymentNotes
+                ? `De organisator gaf als reden: “${paymentNotes}”. `
+                : 'De organisator heeft je betaalbewijs niet goedgekeurd. '}
+              Je kunt hieronder een nieuw betaalbewijs uploaden.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        {!isSubmitted ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="reference">
+                Betalingsreferentie{' '}
+                <span className="text-muted-foreground">(optioneel)</span>
+              </Label>
+              <Input
+                id="reference"
+                value={reference}
+                onChange={(e) => setReference(e.target.value)}
+                placeholder="Bijv. TRN-1425 of je naam"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="sr-only"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                disabled={uploading}
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload />
+                {fileRef.current?.files?.[0]?.name ?? 'Kies een afbeelding'}
+              </Button>
+              <Button type="button" disabled={uploading} onClick={handleUpload}>
+                {uploading
+                  ? 'Bezig met uploaden…'
+                  : isRejected
+                    ? 'Opnieuw uploaden'
+                    : 'Betaalbewijs versturen'}
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Upload een foto of scan van je overschrijving (max. 5 MB,
+              PNG/JPG/WebP).
+            </p>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
   )
 }

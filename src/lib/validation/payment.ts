@@ -74,3 +74,46 @@ export const paymentSettingsSchema = z
   })
 
 export type PaymentSettingsInput = z.infer<typeof paymentSettingsSchema>
+
+// --- Fase 5: betalingsverwerking ---------------------------------------------
+
+/** Organisator bevestigt/keurt een betaling goed (BR-602/603). */
+export const approvePaymentSchema = z.object({
+  orderId: z.uuid(),
+})
+
+/** Organisator keurt een betaling af (BR-603/607). */
+export const rejectPaymentSchema = z.object({
+  orderId: z.uuid(),
+  notes: z
+    .string()
+    .trim()
+    .transform((value) => (value === '' ? undefined : value))
+    .optional(),
+})
+
+/** Klant dient een bankbetaalbewijs in (BR-603). */
+export function parseProofUpload(data: unknown): {
+  orderNumber: string
+  reference?: string
+  file: File
+} {
+  if (!(data instanceof FormData)) {
+    throw new Error('Er is geen betaalbewijs ontvangen.')
+  }
+  const orderNumber = data.get('orderNumber')
+  if (typeof orderNumber !== 'string' || orderNumber === '') {
+    throw new Error('Er ontbreekt een bestelnummer.')
+  }
+  const reference = data.get('reference')
+  if (reference !== null && typeof reference !== 'string') {
+    throw new Error('Vul een geldige betalingsreferentie in.')
+  }
+  const file = data.get('file')
+  return {
+    orderNumber,
+    reference:
+      typeof reference === 'string' ? reference.trim() || undefined : undefined,
+    file: file as File,
+  }
+}

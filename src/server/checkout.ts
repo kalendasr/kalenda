@@ -199,6 +199,11 @@ export const createOrder = createServerFn({ method: 'POST' })
               totalCents: subtotalCents, // servicefee 0 in de MVP (BR-608)
               expiresAt: new Date(now.getTime() + ORDER_TTL_MS),
               items: { create: orderItems },
+              // Betaaladministratie (Fase 5): één Payment per order, aangemaakt
+              // bij checkout in de toestand Waiting (BR-602/603).
+              payment: {
+                create: { method: data.paymentMethod },
+              },
             },
           })
           break
@@ -248,6 +253,9 @@ export const getOrderByNumber = createServerFn({ method: 'GET' })
       include: {
         customer: true,
         items: { include: { ticketType: { select: { name: true } } } },
+        payment: {
+          select: { state: true, reference: true, notes: true },
+        },
         event: {
           select: {
             title: true,

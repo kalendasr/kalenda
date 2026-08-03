@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { db } from '#/lib/db.server.ts'
 import { requireUser } from '#/lib/session.server.ts'
 import { getPublicUrl, uploadObject } from '#/lib/storage.server.ts'
+import { validateImageFile } from '#/lib/upload-file.server.ts'
 
 /**
  * Uploaden van afbeeldingen (organisatie-branding en event-covers) naar R2.
@@ -10,32 +11,6 @@ import { getPublicUrl, uploadObject } from '#/lib/storage.server.ts'
  * De bytes lopen via de server function naar R2. Dat houdt de bucket privé (geen
  * publieke CORS/PUT nodig) en laat validatie op de server plaatsvinden.
  */
-
-const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
-const ALLOWED = {
-  'image/png': 'png',
-  'image/jpeg': 'jpg',
-  'image/webp': 'webp',
-} as const
-
-type AllowedType = keyof typeof ALLOWED
-
-/** Valideert een geüpload bestand en geeft de bijbehorende extensie terug. */
-function validateImageFile(file: unknown): {
-  file: File
-  extension: string
-} {
-  if (!(file instanceof File)) {
-    throw new Error('Er is geen geldig bestand ontvangen.')
-  }
-  if (!(file.type in ALLOWED)) {
-    throw new Error('Gebruik een PNG-, JPG- of WebP-afbeelding.')
-  }
-  if (file.size > MAX_BYTES) {
-    throw new Error('De afbeelding mag maximaal 5 MB groot zijn.')
-  }
-  return { file, extension: ALLOWED[file.type as AllowedType] }
-}
 
 /** Uploadt de bytes naar R2 en geeft de publieke URL terug. */
 async function storeImage(file: File, key: string): Promise<string> {
