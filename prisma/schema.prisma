@@ -444,6 +444,8 @@ model OrderItem {
   unitPriceCents  Int
   totalPriceCents Int
 
+  tickets Ticket[]
+
   @@index([orderId])
   @@index([ticketTypeId])
   @@map("order_item")
@@ -479,4 +481,42 @@ model Payment {
 
   @@index([orderId])
   @@map("payment")
+}
+
+// ---------------------------------------------------------------------------
+// Tickets (DATABASE_DOMAIN.md §12, BUSINESS_RULES BR-700..BR-704)
+//
+// Fase 6: één ticket per "stoel" (per eenheid in een OrderItem), aangemaakt
+// zodra de betaling is bevestigd (BR-604). QR-inhoud wordt afgeleid uit het
+// unieke ticketnummer (BR-700/701) — er is geen afzonderlijke qrCode-kolom,
+// zodat er maar één bron van waarheid is en bij opnieuw versturen de QR gelijk
+// blijft (BR-704). Scan/check-in statussen (CheckedIn/Cancelled) komen in Fase 7
+// en worden nu al in het model gezet (BR-702).
+// ---------------------------------------------------------------------------
+
+enum TicketStatus {
+  Issued
+  Sent
+  CheckedIn
+  Cancelled
+}
+
+model Ticket {
+  id           String       @id @default(uuid())
+  orderItemId  String
+  orderItem    OrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  // Uniek, botvrij nummer (UUID) dat in de QR-code staat (BR-700/701).
+  ticketNumber String       @unique
+  status       TicketStatus @default(Issued)
+  issuedAt     DateTime     @default(now())
+  // Laatste keer dat de ticket per e-mail verstuurd is (BR-702/704).
+  sentAt       DateTime?
+  cancelledAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderItemId])
+  @@map("ticket")
 }

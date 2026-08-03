@@ -380,10 +380,10 @@ De applicatie klaar is voor productie.
 
 ## Tickets
 
-- [ ] QR-code
-- [ ] PDF
-- [ ] Email
-- [ ] Opnieuw versturen
+- [x] QR-code
+- [x] PDF
+- [x] Email
+- [x] Opnieuw versturen
 
 ---
 

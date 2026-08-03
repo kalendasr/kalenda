@@ -852,11 +852,11 @@ Wanneer krijg ik mijn tickets?
 
 ☑ Tickettypes
 
-☐ Checkout
+☑ Checkout
 
-☐ QR generatie
+☑ QR generatie
 
-☐ Ticket versturen
+☑ Ticket versturen
 
 ---
 
@@ -864,13 +864,13 @@ Wanneer krijg ik mijn tickets?
 
 ☑ Nieuwe order
 
-☐ WhatsApp flow
+☑ WhatsApp flow
 
-☐ Bankoverschrijving
+☑ Bankoverschrijving
 
-☐ Betaling bevestigen
+☑ Betaling bevestigen
 
-☐ Betaalbewijs afkeuren
+☑ Betaalbewijs afkeuren
 
 ---
 

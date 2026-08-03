@@ -27,6 +27,7 @@ export const listEventOrders = createServerFn({ method: 'GET' })
           select: {
             quantity: true,
             ticketType: { select: { name: true } },
+            tickets: { select: { id: true, status: true } },
           },
         },
         payment: {

@@ -133,7 +133,13 @@ confirm WhatsApp payments and approve or reject bank payments from the Orders
 tab. For bank transfers, the customer uploads a proof of payment (image stored
 privately in R2, shown to the organizer via a signed short-lived URL) directly
 on their order page, and can re-submit after a rejection. Statuses stay in sync
-between the payment record and the order's order/payment status. Ticket/QR
-issuance is Phase 6.
+between the payment record and the order's order/payment status.
 
-Next: Phase 6 — Tickets (see `docs/ROADMAP.md`).
+**Phase 6 — Tickets — complete.** When a payment is approved, the platform
+automatically issues one QR ticket per seat (unique UUID ticket number) and
+emails the customer a PDF with the QR codes attached; the order is then marked
+Completed. Customers can view and show their tickets (QR) on the login-free
+order page, and the organizer can resend the ticket email from the Orders tab
+(the QR stays identical on resend). Ticket scanning/check-in is Phase 7.
+
+Next: Phase 7 — Scanner (see `docs/ROADMAP.md`).

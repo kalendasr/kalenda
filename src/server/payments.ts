@@ -11,14 +11,20 @@ import {
   rejectPaymentSchema,
 } from '#/lib/validation/payment.ts'
 import { nextState } from '#/lib/payment-transitions.ts'
+import { generateTicketNumber } from '#/lib/ticket-number.ts'
+import { sendTicketEmailForOrder } from '#/server/tickets.server.ts'
 
 /**
- * Betalingen voor de organisator (Fase 5).
+ * Betalingen voor de organisator (Fase 5 + Fase 6).
  *
  * Owner-geguarde mutaties (`approve`/`reject`/`getProofSignedUrl`) lopen via
  * `requireOwnedEvent`; het indienen van een betaalbewijs is publiek
  * (zelfbediening door de klant, BR-603). Het platform verwerkt geen geld
  * (BR-600) — het bevestigt alleen de workflow.
+ *
+ * Bij goedkeuren (Fase 6) worden direct de tickets aangemaakt en per e-mail
+ * verstuurd zodra de betaling is geverifieerd (BR-604). De order wordt daarna
+ * `Completed`.
  */
 
 /** Zet een order + bijbehorende Payment in de Betaald-toestand (BR-602/603/604). */
@@ -29,7 +35,10 @@ export const approvePayment = createServerFn({ method: 'POST' })
 
     const order = await db.order.findUnique({
       where: { id: data.orderId },
-      include: { payment: true },
+      include: {
+        payment: true,
+        items: { select: { id: true, quantity: true } },
+      },
     })
     if (!order) throw new Error('ORDER_NOT_FOUND')
 
@@ -48,20 +57,43 @@ export const approvePayment = createServerFn({ method: 'POST' })
       throw new Error('Deze betaling kan niet worden goedgekeurd.')
     }
 
+    // Eén ticket per "stoel": elke eenheid in een orderregel krijgt een eigen,
+    // uniek ticketnummer (BR-700/701).
+    const ticketCreates = order.items.flatMap((item) =>
+      Array.from({ length: item.quantity }, () => ({
+        orderItemId: item.id,
+        ticketNumber: generateTicketNumber(),
+      })),
+    )
+
     await db.$transaction([
       db.payment.update({
         where: { id: order.payment.id },
         data: { state: 'Verified', verifiedBy: user.id, verifiedAt: now },
       }),
+      // Zodra tickets bestaan is de order afgerond (Completed).
       db.order.update({
         where: { id: order.id },
         data: {
-          orderStatus: 'Paid',
+          orderStatus: 'Completed',
           paymentStatus: 'Verified',
           notes: order.notes,
         },
       }),
+      ...ticketCreates.map((ticket) =>
+        db.ticket.create({
+          data: ticket,
+        }),
+      ),
     ])
+
+    // Ticketmail met PDF na commit; een mailfout mag de uitgifte niet ongedaan
+    // maken (zelfde patroon als de checkout-bevestiging).
+    try {
+      await sendTicketEmailForOrder(order.id)
+    } catch {
+      // Stil: de tickets staan; de klant kan ze ook op de orderpagina zien.
+    }
 
     return { ok: true }
   })

@@ -1,6 +1,14 @@
 import { useRef, useState } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
-import { CalendarDays, CheckCircle2, Clock, MapPin, Upload } from 'lucide-react'
+import {
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  MapPin,
+  QrCode,
+  Upload,
+} from 'lucide-react'
+import { TicketQr } from '#/components/public/ticket-qr.tsx'
 
 import { getOrderByNumber } from '#/server/checkout.ts'
 import { submitProofOfPayment } from '#/server/payments.ts'
@@ -221,6 +229,20 @@ function OrderStatusPage() {
           </CardContent>
         </Card>
 
+        {/* Tickets tonen zodra de betaling is bevestigd (Fase 6). */}
+        {status === 'Paid' || status === 'Completed' ? (
+          <TicketsCard
+            allTickets={order.items.flatMap((item) =>
+              item.tickets.map((ticket) => ({
+                id: ticket.id,
+                ticketNumber: ticket.ticketNumber,
+                ticketTypeName: item.ticketType.name,
+              })),
+            )}
+            baseUrl={order.baseUrl}
+          />
+        ) : null}
+
         <p className="mt-4 text-center text-xs text-muted-foreground">
           Bewaar deze pagina — je hebt geen account nodig om je bestelling te
           bekijken.
@@ -355,6 +377,69 @@ function BankProofUpload({
             </p>
           </div>
         ) : null}
+      </CardContent>
+    </Card>
+  )
+}
+
+type OrderTicket = {
+  id: string
+  ticketNumber: string
+  ticketTypeName: string
+}
+
+function TicketsCard({
+  allTickets,
+  baseUrl,
+}: {
+  allTickets: OrderTicket[]
+  baseUrl: string
+}) {
+  if (allTickets.length === 0) {
+    return (
+      <Card className="mt-6">
+        <CardContent className="flex flex-col items-center gap-2 py-8 text-center">
+          <QrCode className="size-6 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            Je tickets worden aangemaakt. Kom over een paar minuten terug, of je
+            ontvangt ze per e-mail.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <QrCode className="size-4" />
+          Jouw tickets
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {allTickets.map((ticket) => (
+          <div
+            key={ticket.id}
+            className="flex items-center gap-4 rounded-lg border p-4"
+          >
+            <TicketQr
+              ticketNumber={ticket.ticketNumber}
+              baseUrl={baseUrl}
+              size={132}
+            />
+            <div className="min-w-0 flex-1">
+              <div className="font-medium">{ticket.ticketTypeName}</div>
+              <div className="mt-1 font-mono text-xs text-muted-foreground">
+                {ticket.ticketNumber}
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Toon deze QR-code bij de ingang. Je ontvangt je tickets ook per
+                e-mail als PDF.
+              </p>
+            </div>
+          </div>
+        ))}
       </CardContent>
     </Card>
   )

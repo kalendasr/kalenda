@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
-import { Check, Inbox, X } from 'lucide-react'
+import { Check, Inbox, Send, X } from 'lucide-react'
 
 import { listEventOrders } from '#/server/orders.ts'
 import {
@@ -8,6 +8,7 @@ import {
   getProofSignedUrl,
   rejectPayment,
 } from '#/server/payments.ts'
+import { resendOrderTickets } from '#/server/tickets.ts'
 import { formatSrd } from '#/lib/money.ts'
 import { formatDateTimeNl } from '#/lib/datetime.ts'
 import {
@@ -99,6 +100,12 @@ function EventOrders() {
               'Betaling afgekeurd.',
             )
           }
+          onResend={() =>
+            runAction(
+              () => resendOrderTickets({ data: { orderId: order.id } }),
+              'Tickets zijn opnieuw verstuurd.',
+            )
+          }
         />
       ))}
     </ul>
@@ -109,13 +116,19 @@ function OrderCard({
   order,
   onApprove,
   onReject,
+  onResend,
 }: {
   order: OrderRow
   onApprove: () => Promise<void>
   onReject: (notes?: string) => Promise<void>
+  onResend: () => Promise<void>
 }) {
   const status = effectiveOrderStatus(order)
   const tickets = order.items.reduce((sum, i) => sum + i.quantity, 0)
+  const issuedTickets = order.items.reduce(
+    (sum, i) => sum + i.tickets.length,
+    0,
+  )
   const pay = order.payment
   const isWhatsApp = order.paymentMethod === 'WhatsApp'
   const showActions =
@@ -123,6 +136,7 @@ function OrderCard({
     (pay.state === 'Waiting' || pay.state === 'Submitted') &&
     status !== 'Expired' &&
     status !== 'Cancelled'
+  const canResend = issuedTickets > 0 && status !== 'Expired'
 
   return (
     <li className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border bg-card p-4 shadow-sm">
@@ -141,6 +155,11 @@ function OrderCard({
           ) : null}
           {pay?.notes ? (
             <span className="text-xs text-muted-foreground">· {pay.notes}</span>
+          ) : null}
+          {issuedTickets > 0 ? (
+            <span className="text-xs text-muted-foreground">
+              · {issuedTickets} ticket{issuedTickets === 1 ? '' : 's'}
+            </span>
           ) : null}
         </div>
         <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
@@ -181,6 +200,13 @@ function OrderCard({
             </Button>
             <RejectButton onReject={onReject} />
           </div>
+        ) : null}
+
+        {canResend ? (
+          <Button size="sm" variant="outline" onClick={onResend}>
+            <Send />
+            Verstuur tickets
+          </Button>
         ) : null}
       </div>
     </li>

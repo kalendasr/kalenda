@@ -1,143 +1,971 @@
 # CLAUDE.md
 
-Event Management & Ticketing Platform for Suriname.
+# Event Platform - AI Development Guide
 
-This file is the operating guide for Claude Code. If code conflicts with this
-document, this document wins. Detailed specifications live in `docs/` — always
-consult them before implementing a feature.
+Version: 1.0
 
----
+This document defines the development philosophy, architecture principles, UX rules and engineering standards for this project.
 
-## 1. What this project is
+Every AI-generated change must comply with this document.
 
-A professional event management & ticketing platform. Organizers manage the full
-event lifecycle; visitors discover events and buy tickets. Payments are handled
-**manually outside the platform** — the platform coordinates the workflow and
-tracks status, it never processes money.
-
-The heart of the platform is the **Order**: customer creates an order → organizer
-processes the payment → platform issues QR tickets → tickets get scanned at the door.
+If code conflicts with this document, this document always wins.
 
 ---
 
-## 2. Tech stack
+# 1. PROJECT VISION
 
-- Framework: TanStack Start (React) + TypeScript
-- Styling: Tailwind CSS + shadcn/ui (Lucide icons only)
-- Database: PostgreSQL via Prisma
-- Auth: Better Auth
-- File storage: Cloudflare R2
-- Tooling: ESLint, Prettier, Husky, GitHub Actions
+This project is NOT an event website.
 
----
+It is a professional Event Management & Ticketing Platform built for Suriname.
 
-## 3. Common commands
+The goal is to create software that organizers use to manage their complete event lifecycle.
 
-These become active after the Phase 0 scaffold is in place.
+Visitors discover events.
 
-```bash
-npm run dev            # start dev server
-npm run build          # production build
-npm run lint           # ESLint
-npm run format         # Prettier
-npm run test           # run tests
+Organizers manage events.
 
-npx prisma migrate dev # create/apply a migration in dev
-npx prisma generate    # regenerate the Prisma client
-npx prisma studio      # inspect the database
-```
+The platform manages orders, tickets and workflows.
 
-Run `lint` and `test` before every commit.
+Payments are currently handled manually outside the platform.
+
+The platform manages the process.
+
+NOT the transaction.
 
 ---
 
-## 4. Project structure
+# 2. PRODUCT PHILOSOPHY
 
-```
-CLAUDE.md              # this file (read automatically by Claude Code)
-README.md
-docs/                  # source-of-truth specifications
-  PRODUCT_ARCHITECTURE.md
-  DATABASE_DOMAIN.md
-  USER_FLOWS.md
-  DESIGN_SYSTEM.md
-  BUSINESS_RULES.md
-  ROADMAP.md
-src/                   # application code (created during Phase 0)
-prisma/                # schema + migrations
-```
+Always design around workflows.
 
----
+Never around pages.
 
-## 5. Reference documents
+Never around CRUD.
 
-Before building, read the relevant spec — do not guess.
+Never around forms.
 
-- Architecture & domains: `docs/PRODUCT_ARCHITECTURE.md`
-- Domain / data model: `docs/DATABASE_DOMAIN.md`
-- User flows: `docs/USER_FLOWS.md`
-- Design system & UI rules: `docs/DESIGN_SYSTEM.md`
-- Business rules (BR-xxx): `docs/BUSINESS_RULES.md`
-- Build order & phases: `docs/ROADMAP.md`
+Always ask:
+
+"What is the user trying to accomplish?"
+
+Instead of:
+
+"What information can we display?"
+
+Every screen must have exactly one primary responsibility.
+
+If a screen starts solving multiple problems, split it.
 
 ---
 
-## 6. How to work in this repo
+# 3. DESIGN PRINCIPLES
 
-Follow the roadmap in `docs/ROADMAP.md`. Build **vertical slices**: each feature
-must work end to end (database → API → frontend → validation → UX) before moving on.
-Do not build isolated screens or half-finished workflows. Do not build a later
-phase during an earlier one.
+The platform should feel like premium SaaS software.
 
-Architecture-first order for every feature:
-user workflow → business rules → domain model → database → API → frontend → polish.
+Design inspiration:
 
-Commit and push after every completed slice.
+• Stripe
+• Shopify
+• Eventbrite
+• Airbnb
+• Linear
+• Notion
 
----
+Avoid interfaces that resemble:
 
-## 7. Core principles (always apply)
+• Bootstrap Admin
+• AdminLTE
+• Generic CRUD dashboards
+• Enterprise software from 2012
 
-- **Workflow first.** Design around what the user is trying to accomplish, never
-  around pages, CRUD or forms. Every screen has exactly one primary responsibility.
-- **Orders are the center.** Optimize for order handling and payment processing,
-  not for configuration screens.
-- **One source of truth.** Never duplicate data, pages, settings or actions.
-  Organization info lives only in Organization; payment settings only in
-  Organization → Payments; ticket types only in Ticket Types.
-- **Delete before create.** Before adding anything, ask whether something can be
-  removed or an existing workflow reused. Simpler always wins.
-- **Don't surprise the user.** Every important action must say what happened, what
-  happens next, who acts next, and when to expect a result.
-- **Mobile first.** Organizers process payments and scan tickets on their phone.
-  Desktop extends mobile, never the other way around.
-- **Premium SaaS feel.** Aim for Stripe / Linear / Notion quality. Avoid generic
-  admin-dashboard aesthetics.
+The interface must feel modern, calm and highly usable.
 
 ---
 
-## 8. Payment workflows (critical, do not deviate)
+# 4. CORE PRODUCT PRINCIPLES
 
-**WhatsApp**
-Customer selects tickets → chooses WhatsApp payment request → picks Mope or Uni5Pay
-→ order created → organizer is notified → organizer manually sends the payment
-request from their own app → customer pays → organizer confirms payment in the
-platform → platform issues QR tickets.
+Always optimize for:
 
-**Bank transfer**
-Customer creates order → platform shows bank details → customer transfers → customer
-uploads proof of payment → organizer verifies and approves → platform issues tickets.
+• Simplicity
+• Clarity
+• Trust
+• Speed
+• Scalability
+• Accessibility
 
-Tickets are only issued when `PaymentStatus == Verified`. The organizer decides
-whether a payment is valid, never the platform.
+Never optimize for:
+
+• More buttons
+• More options
+• More menus
+• More configuration
+
+Less is almost always better.
 
 ---
 
-## 9. Non-negotiables
+# 5. MVP PHILOSOPHY
 
-- UUID primary keys; soft delete (`deletedAt`) where specified in the domain model.
-- `createdAt` / `updatedAt` on every entity.
-- Order status only moves forward (see BR-505). Orders never skip steps.
-- Accessibility on every component: keyboard, visible focus, ARIA, contrast.
-- No `TODO`, `FIXME`, dead code or placeholder implementations in committed code.
-- Follow the design system exactly; use only the approved component library.
+The MVP should solve one complete workflow extremely well.
+
+It should NOT solve every possible workflow.
+
+Avoid premature complexity.
+
+Avoid enterprise features.
+
+Avoid building future functionality today.
+
+Design for expansion.
+
+Implement only what is needed.
+
+---
+
+# 6. ARCHITECTURE FIRST
+
+Whenever implementing a feature, always think in this order.
+
+1.
+User workflow
+
+↓
+
+2.
+Business rules
+
+↓
+
+3.
+Domain model
+
+↓
+
+4.
+Database
+
+↓
+
+5.
+API
+
+↓
+
+6.
+Frontend
+
+↓
+
+7.
+Animations
+
+Never reverse this order.
+
+---
+
+# 7. DOMAIN DRIVEN THINKING
+
+The software consists of domains.
+
+Each domain owns its own responsibility.
+
+Examples:
+
+Organization
+
+Events
+
+Orders
+
+Tickets
+
+Payments
+
+Scanner
+
+Reports
+
+Notifications
+
+Settings
+
+Never mix domains together.
+
+Example:
+
+FAQ does not belong inside Ticket Management.
+
+Agenda does not belong inside Orders.
+
+Payments do not belong inside Tickets.
+
+---
+
+# 8. SINGLE RESPONSIBILITY
+
+Every page has one purpose.
+
+Examples
+
+Dashboard
+
+Purpose:
+
+Show what needs attention today.
+
+NOT:
+
+Editing data.
+
+---
+
+Orders
+
+Purpose:
+
+Handle customer orders.
+
+NOT:
+
+Edit event information.
+
+---
+
+Tickets
+
+Purpose:
+
+Manage issued tickets.
+
+NOT:
+
+Manage payments.
+
+---
+
+Content
+
+Purpose:
+
+Manage public event information.
+
+NOT:
+
+Handle ticket sales.
+
+---
+
+# 9. INFORMATION ARCHITECTURE
+
+Never duplicate functionality.
+
+Never create two pages that solve the same problem.
+
+Avoid:
+
+Settings
+
+and
+
+Edit Event
+
+containing identical fields.
+
+Avoid:
+
+Profile
+
+and
+
+Organization
+
+containing identical information.
+
+One location.
+
+One source of truth.
+
+---
+
+# 10. USER EXPERIENCE
+
+The user should never wonder:
+
+"What happens now?"
+
+Every important action should explain:
+
+What happened.
+
+What happens next.
+
+Who performs the next action.
+
+When something happens.
+
+Good UX removes uncertainty.
+
+---
+
+# 11. MICROCOPY
+
+Always write for humans.
+
+Avoid technical wording.
+
+Examples
+
+Bad
+
+Payment registered.
+
+Good
+
+We received your payment.
+
+Bad
+
+Validation failed.
+
+Good
+
+Please enter a valid phone number.
+
+Every message should reduce support questions.
+
+---
+
+# 12. EMPTY STATES
+
+Never show
+
+"No data."
+
+Instead explain:
+
+Why the page is empty.
+
+What the user can do.
+
+Provide one clear CTA.
+
+Example
+
+You don't have any events yet.
+
+Create your first event to start selling tickets.
+
+[ Create Event ]
+
+---
+
+# 13. FORMS
+
+Long forms should be split into logical steps.
+
+Do not create forms with 25 fields.
+
+Group information.
+
+Examples
+
+General
+
+Location
+
+Tickets
+
+Payments
+
+Publishing
+
+Review
+
+---
+
+# 14. CONFIRMATION SCREENS
+
+After important actions always provide confirmation.
+
+Examples
+
+Event published
+
+Order completed
+
+Payment confirmed
+
+Ticket sent
+
+Do not silently redirect users.
+
+---
+
+# 15. MOBILE FIRST
+
+Always design mobile first.
+
+Desktop extends mobile.
+
+Never create desktop-only interactions.
+
+---
+
+# 16. ACCESSIBILITY
+
+Every new component must support:
+
+Keyboard navigation
+
+Visible focus
+
+ARIA labels
+
+Proper contrast
+
+Semantic HTML
+
+Never sacrifice accessibility for aesthetics.
+
+---
+
+# 17. PERFORMANCE
+
+Optimize for perceived speed.
+
+Lazy load where appropriate.
+
+Avoid unnecessary renders.
+
+Avoid huge component trees.
+
+Prefer composition over deeply nested components.
+
+---
+
+# 18. REUSABILITY
+
+Before creating a component ask:
+
+Can an existing component solve this?
+
+Avoid duplicate UI.
+
+Create reusable building blocks.
+
+Buttons
+
+Cards
+
+Tables
+
+Dialogs
+
+Status badges
+
+Inputs
+
+Selectors
+
+Tabs
+
+Every new component should be reusable.
+
+---
+
+# 19. CONSISTENCY
+
+The same action should always look the same.
+
+Primary buttons
+
+Same color.
+
+Same spacing.
+
+Same radius.
+
+Same typography.
+
+Danger actions
+
+Always red.
+
+Success
+
+Always green.
+
+Information
+
+Always blue.
+
+Warning
+
+Always orange.
+
+Consistency builds trust.
+
+---
+
+# 20. ORDERS ARE THE HEART OF THE PLATFORM
+
+The most important workflow is:
+
+Customer
+
+↓
+
+Creates Order
+
+↓
+
+Organizer processes payment
+
+↓
+
+Platform issues tickets
+
+Everything revolves around orders.
+
+Optimize around this workflow.
+
+---
+
+# 21. PAYMENT PHILOSOPHY
+
+The platform is NOT a payment processor.
+
+Payments happen outside the platform.
+
+The platform coordinates the process.
+
+Never assume the platform receives money.
+
+It only tracks payment status.
+
+---
+
+# 22. WHATSAPP PAYMENT FLOW
+
+Customer selects tickets.
+
+↓
+
+Customer selects:
+
+Payment Request via WhatsApp.
+
+↓
+
+Customer selects
+
+Mope
+
+or
+
+Uni5Pay.
+
+↓
+
+Order created.
+
+↓
+
+Organizer receives notification.
+
+↓
+
+Organizer manually sends payment request using their own payment app.
+
+↓
+
+Customer pays.
+
+↓
+
+Organizer confirms payment inside platform.
+
+↓
+
+Platform automatically issues QR tickets.
+
+---
+
+# 23. BANK TRANSFER FLOW
+
+Customer creates order.
+
+↓
+
+Platform displays bank details.
+
+↓
+
+Customer transfers money.
+
+↓
+
+Customer uploads proof of payment.
+
+↓
+
+Organizer verifies payment.
+
+↓
+
+Organizer approves payment.
+
+↓
+
+Platform automatically issues tickets.
+
+---
+
+# 24. FUTURE PAYMENT METHODS
+
+Future integrations may include:
+
+Online PSP
+
+Card payments
+
+Wallets
+
+Installments
+
+Never design the MVP around these.
+
+Keep architecture extensible.
+
+---
+
+# 25. CODE QUALITY
+
+Never leave:
+
+TODO
+
+FIXME
+
+Placeholder implementations
+
+Dead code
+
+Commented production code
+
+Always deliver production-ready code.
+
+---
+
+# 26. REFACTOR RULE
+
+Whenever touching existing code:
+
+Improve readability.
+
+Reduce duplication.
+
+Simplify architecture.
+
+Leave the project better than before.
+
+---
+
+# 27. DOCUMENTATION
+
+Complex business logic must be documented.
+
+Never rely on assumptions.
+
+Code should explain HOW.
+
+Documentation explains WHY.
+
+---
+
+# 28. WHEN UNSURE
+
+If multiple implementations are possible, choose the one that:
+
+Reduces cognitive load.
+
+Improves maintainability.
+
+Improves scalability.
+
+Reduces future technical debt.
+
+Creates the best organizer experience.
+
+---
+
+# 29. AI SELF REVIEW
+
+Before generating code always ask:
+
+Does this solve a real user problem?
+
+Does this fit the architecture?
+
+Does this duplicate functionality?
+
+Can this be simplified?
+
+Would Stripe, Shopify or Eventbrite design it this way?
+
+If the answer is "no", redesign before coding.
+
+---
+
+# 30. GOLDEN RULE
+
+This project is not about writing code.
+
+It is about creating the best event management experience in Suriname.
+
+Every decision must move the platform toward that goal.
+
+---
+
+# 31. MVP FIRST
+
+The primary goal of this project is to launch a professional, reliable MVP as quickly as possible.
+
+Every decision must help us get to market faster without sacrificing code quality or user experience.
+
+When implementing a feature, always ask:
+
+- Does this help us launch?
+- Does this improve the organizer experience?
+- Does this reduce manual work?
+- Does this make ticket sales easier?
+
+If the answer is no, postpone the feature.
+
+Design for future expansion.
+
+Implement only what the MVP requires.
+
+Never build future functionality before it is needed.
+
+---
+
+# 32. DELETE BEFORE CREATE
+
+Before adding anything new, first ask:
+
+Can something be removed?
+
+Can an existing screen be improved?
+
+Can an existing workflow solve this?
+
+The best software usually has fewer screens, fewer buttons and fewer settings.
+
+Adding functionality is the last option.
+
+Simplifying is always the first option.
+
+---
+
+# 33. WORKSPACE PHILOSOPHY
+
+Large edit pages are not allowed.
+
+Every major object in the platform should behave like a workspace.
+
+Example:
+
+Organization Workspace
+
+- Overview
+- Branding
+- Payments
+- Team
+- Notifications
+- Defaults
+
+Event Workspace
+
+- Overview
+- Orders
+- Tickets
+- Ticket Types
+- Content
+- Reports
+- Scanner
+- Settings
+
+Users should remain inside the same workspace while completing tasks.
+
+Avoid navigating users across unrelated pages.
+
+---
+
+# 34. ORDERS FIRST
+
+Orders are the operational center of the platform.
+
+The organizer spends most of their time:
+
+- receiving new orders
+- sending payment requests
+- verifying payments
+- issuing tickets
+- handling customer questions
+
+Therefore:
+
+Always optimize workflows around Orders.
+
+Not around editing Events.
+
+Whenever a design decision must be made, prioritize operational efficiency over configuration screens.
+
+---
+
+# 35. DON'T SURPRISE THE USER
+
+The user should always know:
+
+What just happened.
+
+What happens next.
+
+Who performs the next action.
+
+When they can expect a result.
+
+Every important action must clearly communicate the current status.
+
+Every workflow should reduce uncertainty.
+
+---
+
+# 36. NO DUPLICATE FEATURES
+
+Never introduce duplicate functionality.
+
+Before creating a new page, setting or action ask:
+
+Does this already exist somewhere else?
+
+If yes:
+
+Improve the existing workflow instead.
+
+There must always be one source of truth.
+
+Examples:
+
+Organization information exists only inside Organization.
+
+Event settings exist only inside Event Settings.
+
+Ticket types exist only inside Ticket Types.
+
+Payment settings exist only inside Organization Payments.
+
+Avoid duplicate buttons, duplicate menus and duplicate edit pages.
+
+---
+
+# 37. IMPLEMENTATION STRATEGY
+
+Development follows these phases.
+
+Phase 1
+
+Build the complete MVP.
+
+Phase 2
+
+Improve workflows.
+
+Phase 3
+
+Improve automation.
+
+Phase 4
+
+Add advanced functionality.
+
+Do not skip phases.
+
+Do not build Phase 4 functionality during Phase 1.
+
+---
+
+# 38. BUILD COMPLETE FLOWS
+
+Never build isolated screens.
+
+Every feature must be usable from start to finish.
+
+Example:
+
+Bad
+
+✔ Create Order page
+
+Good
+
+Create Order
+
+↓
+
+Receive payment
+
+↓
+
+Approve payment
+
+↓
+
+Issue tickets
+
+↓
+
+Customer receives QR ticket
+
+↓
+
+Ticket can be scanned
+
+Always finish complete user journeys.
+
+---
+
+# 39. PRODUCT OVER FEATURES
+
+Do not think in features.
+
+Think in problems.
+
+Example:
+
+Wrong mindset
+
+"We need a FAQ module."
+
+Correct mindset
+
+"Visitors need answers before buying tickets."
+
+The solution may or may not be a FAQ.
+
+Always solve user problems.
+
+Never collect features.
+
+---
+
+# 40. FINAL GOLDEN RULE
+
+This platform is built for organizers.
+
+Every screen, workflow and feature should help organizers spend less time managing events and more time creating successful events.
+
+If a feature increases complexity without creating clear value, do not build it.
+
+Simple software wins.

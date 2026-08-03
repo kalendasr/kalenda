@@ -15,6 +15,8 @@ type SendMailInput = {
   html: string
   /** Platte-tekstvariant voor clients zonder HTML. */
   text: string
+  /** Optionele bijlagen (bijv. ticket-PDF, Fase 6). */
+  attachments?: Array<{ filename: string; content: Uint8Array }>
 }
 
 const RESEND_ENDPOINT = 'https://api.resend.com/emails'
@@ -24,6 +26,7 @@ export async function sendMail({
   subject,
   html,
   text,
+  attachments,
 }: SendMailInput): Promise<void> {
   const env = getMailEnv()
 
@@ -39,6 +42,16 @@ export async function sendMail({
       subject,
       html,
       text,
+      // Resend accepteert bijlagen als base64-gecodeerde inhoud.
+      ...(attachments && attachments.length > 0
+        ? {
+            attachments: attachments.map((attachment) => ({
+              filename: attachment.filename,
+              content: Buffer.from(attachment.content).toString('base64'),
+              encoding: 'base64',
+            })),
+          }
+        : {}),
     }),
   })
 

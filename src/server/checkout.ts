@@ -248,11 +248,18 @@ export const createOrder = createServerFn({ method: 'POST' })
 export const getOrderByNumber = createServerFn({ method: 'GET' })
   .validator(z.object({ orderNumber: z.string().min(1) }))
   .handler(async ({ data }) => {
-    return db.order.findUnique({
+    const order = await db.order.findUnique({
       where: { orderNumber: data.orderNumber },
       include: {
         customer: true,
-        items: { include: { ticketType: { select: { name: true } } } },
+        items: {
+          include: {
+            ticketType: { select: { name: true } },
+            tickets: {
+              select: { id: true, ticketNumber: true, status: true },
+            },
+          },
+        },
         payment: {
           select: { state: true, reference: true, notes: true },
         },
@@ -273,4 +280,9 @@ export const getOrderByNumber = createServerFn({ method: 'GET' })
         },
       },
     })
+    if (!order) return null
+
+    // `baseUrl` wordt op de orderpagina gebruikt om dezelfde QR-payload op te
+    // bouwen als op de server-PDF (ticketQrPayload).
+    return { ...order, baseUrl: getServerEnv().BETTER_AUTH_URL }
   })
