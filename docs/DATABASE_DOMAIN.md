@@ -620,25 +620,30 @@ Cancelled
 
 # 13. Check In
 
-Logt iedere scan.
+Logt iedere scan bij de ingang (Fase 7, BUSINESS_RULES BR-800..BR-804).
 
 ### Velden
 
 id
 
-ticketId
+eventId
 
-checkedBy
+ticketId (optioneel — ontbreekt bij een NotFound-scan, BR-804)
 
-location
+ticketNumber (altijd ingevuld, ook als het ticket niet bestaat — audit)
 
-device
+scannedById
 
-createdAt
+result (CheckInResult: Valid / AlreadyCheckedIn / Invalid / NotFound)
+
+scannedAt
 
 Iedere scan wordt opgeslagen.
 
-Ook dubbele scans.
+Ook dubbele scans (BR-800/802) — geen unieke constraint op ticketId.
+
+Het ticket zelf draagt `checkedInAt`/`checkedInBy` gedenormaliseerd mee voor
+snelle weergave; de volledige geschiedenis staat in CheckIn.
 
 ---
 
@@ -966,9 +971,9 @@ ticketId
 
 ## Sprint 4
 
-☐ Ticket
+☑ Ticket
 
-☐ CheckIn
+☑ CheckIn
 
 ---
 

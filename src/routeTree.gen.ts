@@ -34,6 +34,7 @@ import { Route as EvenementenSlugAfrekenenRouteImport } from './routes/evenement
 import { Route as AppEventsEventIdIndexRouteImport } from './routes/_app.events_.$eventId.index'
 import { Route as AppEventsEventIdContentRouteImport } from './routes/_app.events_.$eventId.content'
 import { Route as AppEventsEventIdOrdersRouteImport } from './routes/_app.events_.$eventId.orders'
+import { Route as AppEventsEventIdScannerRouteImport } from './routes/_app.events_.$eventId.scanner'
 import { Route as AppEventsEventIdSettingsRouteImport } from './routes/_app.events_.$eventId.settings'
 import { Route as AppEventsEventIdTicketsRouteImport } from './routes/_app.events_.$eventId.tickets'
 
@@ -161,6 +162,11 @@ const AppEventsEventIdOrdersRoute = AppEventsEventIdOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AppEventsEventIdRoute,
 } as any)
+const AppEventsEventIdScannerRoute = AppEventsEventIdScannerRouteImport.update({
+  id: '/scanner',
+  path: '/scanner',
+  getParentRoute: () => AppEventsEventIdRoute,
+} as any)
 const AppEventsEventIdSettingsRoute =
   AppEventsEventIdSettingsRouteImport.update({
     id: '/settings',
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/organization/': typeof AppOrganizationIndexRoute
   '/events/$eventId/content': typeof AppEventsEventIdContentRoute
   '/events/$eventId/orders': typeof AppEventsEventIdOrdersRoute
+  '/events/$eventId/scanner': typeof AppEventsEventIdScannerRoute
   '/events/$eventId/settings': typeof AppEventsEventIdSettingsRoute
   '/events/$eventId/tickets': typeof AppEventsEventIdTicketsRoute
   '/events/$eventId/': typeof AppEventsEventIdIndexRoute
@@ -221,6 +228,7 @@ export interface FileRoutesByTo {
   '/organization': typeof AppOrganizationIndexRoute
   '/events/$eventId/content': typeof AppEventsEventIdContentRoute
   '/events/$eventId/orders': typeof AppEventsEventIdOrdersRoute
+  '/events/$eventId/scanner': typeof AppEventsEventIdScannerRoute
   '/events/$eventId/settings': typeof AppEventsEventIdSettingsRoute
   '/events/$eventId/tickets': typeof AppEventsEventIdTicketsRoute
   '/events/$eventId': typeof AppEventsEventIdIndexRoute
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/_app/organization/': typeof AppOrganizationIndexRoute
   '/_app/events_/$eventId/content': typeof AppEventsEventIdContentRoute
   '/_app/events_/$eventId/orders': typeof AppEventsEventIdOrdersRoute
+  '/_app/events_/$eventId/scanner': typeof AppEventsEventIdScannerRoute
   '/_app/events_/$eventId/settings': typeof AppEventsEventIdSettingsRoute
   '/_app/events_/$eventId/tickets': typeof AppEventsEventIdTicketsRoute
   '/_app/events_/$eventId/': typeof AppEventsEventIdIndexRoute
@@ -280,6 +289,7 @@ export interface FileRouteTypes {
     | '/organization/'
     | '/events/$eventId/content'
     | '/events/$eventId/orders'
+    | '/events/$eventId/scanner'
     | '/events/$eventId/settings'
     | '/events/$eventId/tickets'
     | '/events/$eventId/'
@@ -305,6 +315,7 @@ export interface FileRouteTypes {
     | '/organization'
     | '/events/$eventId/content'
     | '/events/$eventId/orders'
+    | '/events/$eventId/scanner'
     | '/events/$eventId/settings'
     | '/events/$eventId/tickets'
     | '/events/$eventId'
@@ -334,6 +345,7 @@ export interface FileRouteTypes {
     | '/_app/organization/'
     | '/_app/events_/$eventId/content'
     | '/_app/events_/$eventId/orders'
+    | '/_app/events_/$eventId/scanner'
     | '/_app/events_/$eventId/settings'
     | '/_app/events_/$eventId/tickets'
     | '/_app/events_/$eventId/'
@@ -528,6 +540,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEventsEventIdOrdersRouteImport
       parentRoute: typeof AppEventsEventIdRoute
     }
+    '/_app/events_/$eventId/scanner': {
+      id: '/_app/events_/$eventId/scanner'
+      path: '/scanner'
+      fullPath: '/events/$eventId/scanner'
+      preLoaderRoute: typeof AppEventsEventIdScannerRouteImport
+      parentRoute: typeof AppEventsEventIdRoute
+    }
     '/_app/events_/$eventId/settings': {
       id: '/_app/events_/$eventId/settings'
       path: '/settings'
@@ -566,6 +585,7 @@ const AppOrganizationRouteWithChildren = AppOrganizationRoute._addFileChildren(
 interface AppEventsEventIdRouteChildren {
   AppEventsEventIdContentRoute: typeof AppEventsEventIdContentRoute
   AppEventsEventIdOrdersRoute: typeof AppEventsEventIdOrdersRoute
+  AppEventsEventIdScannerRoute: typeof AppEventsEventIdScannerRoute
   AppEventsEventIdSettingsRoute: typeof AppEventsEventIdSettingsRoute
   AppEventsEventIdTicketsRoute: typeof AppEventsEventIdTicketsRoute
   AppEventsEventIdIndexRoute: typeof AppEventsEventIdIndexRoute
@@ -574,6 +594,7 @@ interface AppEventsEventIdRouteChildren {
 const AppEventsEventIdRouteChildren: AppEventsEventIdRouteChildren = {
   AppEventsEventIdContentRoute: AppEventsEventIdContentRoute,
   AppEventsEventIdOrdersRoute: AppEventsEventIdOrdersRoute,
+  AppEventsEventIdScannerRoute: AppEventsEventIdScannerRoute,
   AppEventsEventIdSettingsRoute: AppEventsEventIdSettingsRoute,
   AppEventsEventIdTicketsRoute: AppEventsEventIdTicketsRoute,
   AppEventsEventIdIndexRoute: AppEventsEventIdIndexRoute,

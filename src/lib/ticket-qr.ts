@@ -19,3 +19,26 @@
 export function ticketQrPayload(ticketNumber: string, baseUrl: string): string {
   return `${baseUrl.replace(/\/+$/, '')}/ticket/${ticketNumber}`
 }
+
+/**
+ * Haalt het ticketnummer uit een gescande QR-payload (BR-700/701, Fase 7).
+ *
+ * De QR bevat een resolvende URL `…/ticket/<ticketnummer>`, maar een scanner
+ * mag ook een kaal ticketnummer teruggeven. Beide worden geaccepteerd; witruimte
+ * wordt genegeerd. Geeft `null` als er geen bruikbaar nummer in zit, zodat de
+ * aanroeper dat als een NotFound-scan (BR-804) kan behandelen.
+ */
+export function parseTicketNumberFromQr(payload: string): string | null {
+  if (!payload) return null
+  const trimmed = payload.trim()
+  if (!trimmed) return null
+
+  // Probeert eerst het laatste padsegment van een `/ticket/…`-URL.
+  const match = trimmed.match(/\/ticket\/([^/?#]+)/)
+  if (match?.[1]) return decodeURIComponent(match[1])
+
+  // Een kaal UUID / nummer: accepteer als het geen URL met scheme is.
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) return trimmed
+
+  return null
+}

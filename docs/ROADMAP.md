@@ -389,9 +389,9 @@ De applicatie klaar is voor productie.
 
 ## Scanner
 
-- [ ] QR Scan
-- [ ] Dubbele scan
-- [ ] Ticket zoeken
+- [x] QR Scan
+- [x] Dubbele scan
+- [x] Ticket zoeken
 
 ---
 

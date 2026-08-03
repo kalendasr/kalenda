@@ -142,4 +142,14 @@ Completed. Customers can view and show their tickets (QR) on the login-free
 order page, and the organizer can resend the ticket email from the Orders tab
 (the QR stays identical on resend). Ticket scanning/check-in is Phase 7.
 
-Next: Phase 7 — Scanner (see `docs/ROADMAP.md`).
+**Phase 7 — Scanner — complete.** The event workspace has a Scanner tab. The
+organizer scans a ticket's QR with the device's rear camera (mobile-first) or
+enters the ticket number manually; each scan is resolved atomically — a valid
+ticket is checked in (green "Welkom"), an already-checked-in ticket is refused
+(orange "Dubbele scan"), a cancelled ticket is invalid (red), and an unknown or
+wrong-event number returns "Ticket niet gevonden". Every scan, successful or
+not, is recorded as a CheckIn row, and the scan history with per-result stats
+is shown in the tab. Manual check-in reuses the same atomic resolution as the
+camera — no duplicated logic.
+
+Next: Phase 8 — Dashboard & Rapportages (see `docs/ROADMAP.md`).

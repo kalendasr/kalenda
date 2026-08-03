@@ -45,6 +45,8 @@ model User {
   sessions     Session[]
   accounts     Account[]
   organization Organization?
+  checkIns     CheckIn[]
+  checkedInTickets Ticket[] @relation("TicketCheckedBy")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -266,6 +268,7 @@ model Event {
   content     EventContent[]
   ticketTypes TicketType[]
   orders      Order[]
+  checkIns    CheckIn[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -513,10 +516,66 @@ model Ticket {
   // Laatste keer dat de ticket per e-mail verstuurd is (BR-702/704).
   sentAt       DateTime?
   cancelledAt  DateTime?
+  // Check-in: wanneer en door wie ingecheckt (BR-801). Gedenormaliseerd voor
+  // snelle weergave; de volledige scangeschiedenis staat in CheckIn (BR-800).
+  checkedInAt DateTime?
+  checkedInBy String?
+  checkedBy   User?   @relation("TicketCheckedBy", fields: [checkedInBy], references: [id])
+
+  checkIns CheckIn[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([orderItemId])
+  @@index([ticketNumber])
   @@map("ticket")
+}
+
+// ---------------------------------------------------------------------------
+// Check-in / Scanner (DATABASE_DOMAIN.md §13, BUSINESS_RULES BR-800..BR-804)
+//
+// Fase 7: iedere scan wordt opgeslagen (BR-800), ook mislukte. Het resultaat
+// volgt de business rules:
+//   Valid            — eerste scan van een geldig ticket (BR-801)
+//   AlreadyCheckedIn — tweemaal scannen van een ingecheckt ticket (BR-802)
+//   Invalid          — geannuleerd ticket (BR-803)
+//   NotFound         — ticket bestaat niet of hoort niet bij dit event (BR-804)
+//
+// `ticketId` is optioneel: een NotFound-scan heeft geen ticket, maar het
+// gescande nummer wordt altijd bewaard voor de audit. Er is géén unieke
+// constraint op ticketId — dubbele scans zijn legitieme rijen.
+// ---------------------------------------------------------------------------
+
+enum CheckInResult {
+  Valid
+  AlreadyCheckedIn
+  Invalid
+  NotFound
+}
+
+model CheckIn {
+  id      String @id @default(uuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Optioneel: ontbreekt bij een NotFound-scan (BR-804).
+  ticketId String?
+  ticket   Ticket? @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+
+  // Altijd ingevuld: het gescande nummer, ook als het ticket niet bestaat.
+  ticketNumber String
+
+  scannedById String
+  scannedBy   User   @relation(fields: [scannedById], references: [id], onDelete: Cascade)
+
+  result   CheckInResult
+  scannedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId, scannedAt])
+  @@index([ticketId])
+  @@map("check_in")
 }
