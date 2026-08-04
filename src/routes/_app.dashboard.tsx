@@ -8,6 +8,14 @@ import {
 } from 'lucide-react'
 
 import { cn } from '#/lib/utils.ts'
+import { formatSrd } from '#/lib/money.ts'
+import { formatDateTimeNl } from '#/lib/datetime.ts'
+import {
+  ORDER_STATUS_LABELS,
+  effectiveOrderStatus,
+  orderStatusBadgeVariant,
+} from '#/lib/order-status.ts'
+import { getDashboardStats, listRecentOrders } from '#/server/dashboard.ts'
 import {
   Card,
   CardContent,
@@ -15,10 +23,21 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card.tsx'
+import { Badge } from '#/components/ui/badge.tsx'
+import { StatCard } from '#/components/app/stat-card.tsx'
 
 export const Route = createFileRoute('/_app/dashboard')({
+  loader: async () => {
+    const [stats, recentOrders] = await Promise.all([
+      getDashboardStats(),
+      listRecentOrders(),
+    ])
+    return { stats, recentOrders }
+  },
   component: Dashboard,
 })
+
+type RecentOrder = Awaited<ReturnType<typeof listRecentOrders>>[number]
 
 type SetupStep = {
   id: string
@@ -30,6 +49,7 @@ type SetupStep = {
 
 function Dashboard() {
   const { user, organization } = Route.useRouteContext()
+  const { stats, recentOrders } = Route.useLoaderData()
 
   const hasContact = Boolean(
     organization.email || organization.phone || organization.description,
@@ -67,6 +87,40 @@ function Dashboard() {
         </h1>
         <p className="text-muted-foreground">{organization.name}</p>
       </header>
+
+      <section className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <StatCard label="Nieuwe orders" value={stats.newOrders} />
+        <StatCard
+          label="Open betalingen"
+          value={stats.openPayments}
+          subtext={stats.openPayments > 0 ? 'Wacht op controle' : undefined}
+          tone="warning"
+        />
+        <StatCard
+          label="Open acties"
+          value={stats.openActions}
+          subtext={stats.openActions > 0 ? 'Vraagt aandacht' : undefined}
+          tone="danger"
+        />
+        <StatCard label="Omzet" value={formatSrd(stats.revenueCents)} />
+        <StatCard label="Tickets verkocht" value={stats.ticketsSold} />
+      </section>
+
+      {recentOrders.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recente orders</CardTitle>
+            <CardDescription>
+              De laatste bestellingen over al je evenementen.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col divide-y px-0">
+            {recentOrders.map((order) => (
+              <RecentOrderRow key={order.id} order={order} />
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {remaining.length > 0 ? (
         <Card>
@@ -118,8 +172,8 @@ function Dashboard() {
               Je organisatie is klaar
             </CardTitle>
             <CardDescription>
-              Je gegevens en betaalmethode staan ingesteld. Evenementen en
-              ticketverkoop komen in de volgende fase.
+              Je gegevens en betaalmethode staan ingesteld. Hierboven zie je een
+              overzicht van je evenementen.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -140,6 +194,36 @@ function Dashboard() {
         />
       </section>
     </div>
+  )
+}
+
+function RecentOrderRow({ order }: { order: RecentOrder }) {
+  const status = effectiveOrderStatus(order)
+
+  return (
+    <Link
+      to="/events/$eventId/orders"
+      params={{ eventId: order.event.id }}
+      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-6 py-3 transition-colors hover:bg-accent"
+    >
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-medium">
+            {order.customer.firstName} {order.customer.lastName}
+          </span>
+          <Badge variant={orderStatusBadgeVariant(status)}>
+            {ORDER_STATUS_LABELS[status]}
+          </Badge>
+        </div>
+        <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          <span>{order.event.title}</span>
+          <span>{formatDateTimeNl(order.createdAt)}</span>
+        </div>
+      </div>
+      <div className="font-semibold tabular-nums">
+        {formatSrd(order.totalCents)}
+      </div>
+    </Link>
   )
 }
 

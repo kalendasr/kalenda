@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { db } from '#/lib/db.server.ts'
 import { requireUser } from '#/lib/session.server.ts'
 import { requireOwnedEvent } from '#/lib/event-guard.server.ts'
+import { requireOwnedOrganization } from '#/lib/org-guard.server.ts'
 import { makeUniqueSlug } from '#/lib/slug.ts'
 import { surinameLocalToDate } from '#/lib/datetime.ts'
 import {
@@ -19,15 +20,6 @@ import { z } from 'zod'
  * Iedere mutatie loopt via `requireUser()` en werkt uitsluitend op events van de
  * organisatie van de ingelogde gebruiker (security §13).
  */
-
-/** Haalt de organisatie van de gebruiker op, of gooit een fout. */
-async function requireOwnedOrganization(userId: string) {
-  const organization = await db.organization.findFirst({
-    where: { ownerId: userId, deletedAt: null },
-  })
-  if (!organization) throw new Error('ORGANIZATION_NOT_FOUND')
-  return organization
-}
 
 const eventIdSchema = z.object({ eventId: z.uuid() })
 

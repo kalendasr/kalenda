@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 
 import { db } from '#/lib/db.server.ts'
 import { requireUser } from '#/lib/session.server.ts'
+import { requireOwnedOrganization } from '#/lib/org-guard.server.ts'
 import { makeUniqueSlug } from '#/lib/slug.ts'
 import {
   createOrganizationSchema,
@@ -60,19 +61,6 @@ export const createOrganization = createServerFn({ method: 'POST' })
       },
     })
   })
-
-/** Haalt de eigen organisatie op en garandeert eigenaarschap. */
-async function requireOwnedOrganization(userId: string) {
-  const organization = await db.organization.findFirst({
-    where: { ownerId: userId, deletedAt: null },
-  })
-
-  if (!organization) {
-    throw new Error('ORGANIZATION_NOT_FOUND')
-  }
-
-  return organization
-}
 
 export const updateOrganizationGeneral = createServerFn({ method: 'POST' })
   .validator(organizationGeneralSchema)

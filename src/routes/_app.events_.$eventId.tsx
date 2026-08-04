@@ -33,6 +33,7 @@ const TABS = [
   { to: '/events/$eventId/tickets', label: 'Tickets', exact: false },
   { to: '/events/$eventId/scanner', label: 'Scanner', exact: false },
   { to: '/events/$eventId/content', label: 'Inhoud', exact: false },
+  { to: '/events/$eventId/reports', label: 'Rapportages', exact: false },
   { to: '/events/$eventId/settings', label: 'Instellingen', exact: false },
 ] as const
 

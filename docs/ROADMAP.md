@@ -397,11 +397,11 @@ De applicatie klaar is voor productie.
 
 ## Dashboard
 
-- [ ] Open acties
-- [ ] Nieuwe orders
-- [ ] Open betalingen
-- [ ] Omzet
-- [ ] Check-ins
+- [x] Open acties
+- [x] Nieuwe orders
+- [x] Open betalingen
+- [x] Omzet
+- [x] Check-ins
 
 ---
 
