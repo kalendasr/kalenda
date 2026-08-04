@@ -4,6 +4,7 @@ import {
   contentItemSchema,
   createEventSchema,
   eventDetailsSchema,
+  eventIntroSchema,
   venueSchema,
 } from '#/lib/validation/event.ts'
 
@@ -39,6 +40,20 @@ describe('eventDetailsSchema', () => {
 
   it('staat een event zonder datums toe (concept)', () => {
     expect(eventDetailsSchema.safeParse(base).success).toBe(true)
+  })
+})
+
+describe('eventIntroSchema', () => {
+  it('staat een lege introductie toe (concept)', () => {
+    expect(eventIntroSchema.safeParse({}).success).toBe(true)
+  })
+
+  it('accepteert een korte en lange omschrijving', () => {
+    const result = eventIntroSchema.safeParse({
+      shortDescription: 'Een avond vol muziek.',
+      description: 'Dit is de **volledige** omschrijving met opmaak.',
+    })
+    expect(result.success).toBe(true)
   })
 })
 

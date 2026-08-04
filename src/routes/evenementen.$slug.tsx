@@ -13,6 +13,13 @@ import { getPublishedEventBySlug } from '#/server/public-events.ts'
 import { formatDateTimeNl } from '#/lib/datetime.ts'
 import { Badge } from '#/components/ui/badge.tsx'
 import { Card, CardContent } from '#/components/ui/card.tsx'
+import { Markdown } from '#/components/ui/markdown.tsx'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '#/components/ui/accordion.tsx'
 import { PublicHeader } from '#/components/public/public-header.tsx'
 import { TicketSelector } from '#/components/public/ticket-selector.tsx'
 
@@ -111,8 +118,8 @@ function PublicEventDetail() {
             </header>
 
             {event.description ? (
-              <section className="text-base leading-relaxed whitespace-pre-line">
-                {event.description}
+              <section className="text-base leading-relaxed">
+                <Markdown>{event.description}</Markdown>
               </section>
             ) : null}
 
@@ -121,6 +128,31 @@ function PublicEventDetail() {
                 (item) => item.type === section.type,
               )
               if (items.length === 0) return null
+
+              if (section.type === 'Faq') {
+                return (
+                  <section key={section.type} className="flex flex-col gap-3">
+                    <h2 className="text-xl font-semibold">{section.title}</h2>
+                    <Accordion
+                      type="single"
+                      collapsible
+                      className="rounded-xl border px-4"
+                    >
+                      {items.map((item) => (
+                        <AccordionItem key={item.id} value={item.id}>
+                          <AccordionTrigger>{item.title}</AccordionTrigger>
+                          <AccordionContent>
+                            <Markdown className="text-muted-foreground">
+                              {item.content}
+                            </Markdown>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  </section>
+                )
+              }
+
               return (
                 <section key={section.type} className="flex flex-col gap-3">
                   <h2 className="text-xl font-semibold">{section.title}</h2>
@@ -128,9 +160,9 @@ function PublicEventDetail() {
                     {items.map((item) => (
                       <li key={item.id} className="flex flex-col gap-1 p-4">
                         <p className="font-medium">{item.title}</p>
-                        <p className="text-sm whitespace-pre-line text-muted-foreground">
+                        <Markdown className="text-sm text-muted-foreground">
                           {item.content}
-                        </p>
+                        </Markdown>
                       </li>
                     ))}
                   </ul>

@@ -10,6 +10,7 @@ import {
   contentItemSchema,
   createEventSchema,
   eventDetailsSchema,
+  eventIntroSchema,
   venueSchema,
 } from '#/lib/validation/event.ts'
 import { z } from 'zod'
@@ -88,12 +89,26 @@ export const updateEventDetails = createServerFn({ method: 'POST' })
       where: { id: data.eventId },
       data: {
         title: data.title,
-        shortDescription: data.shortDescription ?? null,
-        description: data.description ?? null,
         categoryId: data.categoryId ?? null,
         startsAt: surinameLocalToDate(data.startsAt),
         endsAt: surinameLocalToDate(data.endsAt),
         timezone: data.timezone,
+      },
+    })
+  })
+
+/** Introductie (korte + lange omschrijving), beheerd vanuit de Inhoud-tab. */
+export const updateEventIntro = createServerFn({ method: 'POST' })
+  .validator(eventIntroSchema.and(z.object({ eventId: z.uuid() })))
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    await requireOwnedEvent(user.id, data.eventId)
+
+    return db.event.update({
+      where: { id: data.eventId },
+      data: {
+        shortDescription: data.shortDescription ?? null,
+        description: data.description ?? null,
       },
     })
   })

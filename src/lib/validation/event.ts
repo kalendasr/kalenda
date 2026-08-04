@@ -24,12 +24,13 @@ export const createEventSchema = z.object({
 /**
  * Algemene eventgegevens. Datum/tijd komen als `datetime-local`-strings uit het
  * formulier (bijv. "2026-09-01T20:00"); leeg = niet ingevuld.
+ *
+ * Omschrijving en coverfoto worden beheerd in de Inhoud-tab (zie
+ * `eventIntroSchema`) — één bron van waarheid per gegeven (CLAUDE.md §4).
  */
 export const eventDetailsSchema = z
   .object({
     title: z.string().trim().min(2, 'Vul een titel voor je evenement in.'),
-    shortDescription: optionalText,
-    description: optionalText,
     categoryId: optionalText,
     startsAt: optionalText,
     endsAt: optionalText,
@@ -44,6 +45,12 @@ export const eventDetailsSchema = z
       })
     }
   })
+
+/** Introductie van het evenement: korte en lange omschrijving (Inhoud-tab). */
+export const eventIntroSchema = z.object({
+  shortDescription: optionalText,
+  description: optionalText,
+})
 
 /** Locatie (Venue), inline bij het event bewerkt. */
 export const venueSchema = z.object({
@@ -62,5 +69,6 @@ export const contentItemSchema = z.object({
 
 export type CreateEventInput = z.infer<typeof createEventSchema>
 export type EventDetailsInput = z.infer<typeof eventDetailsSchema>
+export type EventIntroInput = z.infer<typeof eventIntroSchema>
 export type VenueInput = z.infer<typeof venueSchema>
 export type ContentItemInput = z.infer<typeof contentItemSchema>

@@ -1,18 +1,15 @@
-import * as React from 'react'
 import {
   createFileRoute,
   getRouteApi,
   useNavigate,
   useRouter,
 } from '@tanstack/react-router'
-import { ImageIcon, Upload } from 'lucide-react'
 
 import {
   deleteEvent,
   updateEventDetails,
   updateEventVenue,
 } from '#/server/event.ts'
-import { uploadEventCover } from '#/server/upload.ts'
 import { listCategories } from '#/server/categories.ts'
 import { eventDetailsSchema, venueSchema } from '#/lib/validation/event.ts'
 import { dateToSurinameLocal } from '#/lib/datetime.ts'
@@ -27,7 +24,6 @@ import {
 } from '#/components/ui/card.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import { Input } from '#/components/ui/input.tsx'
-import { Textarea } from '#/components/ui/textarea.tsx'
 import { FormField } from '#/components/ui/form-field.tsx'
 import { FormError } from '#/components/auth/form-error.tsx'
 import {
@@ -55,7 +51,6 @@ function EventSettings() {
     <div className="flex flex-col gap-6">
       <DetailsForm event={event} categories={categories} />
       <VenueForm event={event} />
-      <CoverUpload event={event} />
       <DangerZone event={event} />
     </div>
   )
@@ -77,8 +72,6 @@ function DetailsForm({
     schema: eventDetailsSchema,
     initialValues: {
       title: event.title,
-      shortDescription: event.shortDescription ?? '',
-      description: event.description ?? '',
       categoryId: event.categoryId ?? '',
       startsAt: dateToSurinameLocal(event.startsAt),
       endsAt: dateToSurinameLocal(event.endsAt),
@@ -99,7 +92,8 @@ function DetailsForm({
         <CardHeader>
           <CardTitle className="text-base">Algemeen</CardTitle>
           <CardDescription>
-            Titel en omschrijving van je evenement.
+            Titel en categorie van je evenement. De omschrijving en coverfoto
+            beheer je in de Inhoud-tab.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -115,40 +109,6 @@ function DetailsForm({
                 value={form.values.title}
                 onChange={(e) => form.setValue('title', e.target.value)}
                 onBlur={() => form.handleBlur('title')}
-              />
-            )}
-          </FormField>
-
-          <FormField
-            id="shortDescription"
-            label="Korte omschrijving"
-            hint="Eén zin die op de kaart en bovenaan de pagina verschijnt."
-            error={form.errorFor('shortDescription')}
-          >
-            {(aria) => (
-              <Input
-                {...aria}
-                value={form.values.shortDescription}
-                onChange={(e) =>
-                  form.setValue('shortDescription', e.target.value)
-                }
-                onBlur={() => form.handleBlur('shortDescription')}
-              />
-            )}
-          </FormField>
-
-          <FormField
-            id="description"
-            label="Omschrijving"
-            error={form.errorFor('description')}
-          >
-            {(aria) => (
-              <Textarea
-                {...aria}
-                rows={6}
-                value={form.values.description}
-                onChange={(e) => form.setValue('description', e.target.value)}
-                onBlur={() => form.handleBlur('description')}
               />
             )}
           </FormField>
@@ -339,81 +299,6 @@ function VenueForm({ event }: { event: EventData }) {
         </CardContent>
       </Card>
     </form>
-  )
-}
-
-function CoverUpload({ event }: { event: EventData }) {
-  const router = useRouter()
-  const inputRef = React.useRef<HTMLInputElement>(null)
-  const [uploading, setUploading] = React.useState(false)
-
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('eventId', event.id)
-
-    setUploading(true)
-    try {
-      await uploadEventCover({ data: formData })
-      await router.invalidate()
-      toast.success('De coverfoto is bijgewerkt.')
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Uploaden is niet gelukt.',
-      )
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Coverfoto</CardTitle>
-        <CardDescription>
-          Breed beeld bovenaan de eventpagina. PNG, JPG of WebP, max 5 MB.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="flex h-24 w-40 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted">
-          {event.coverImage ? (
-            <img
-              src={event.coverImage}
-              alt=""
-              className="size-full object-cover"
-            />
-          ) : (
-            <ImageIcon className="size-6 text-muted-foreground" />
-          )}
-        </div>
-        <div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            className="sr-only"
-            onChange={handleFile}
-          />
-          <Button
-            type="button"
-            variant="outline"
-            disabled={uploading}
-            onClick={() => inputRef.current?.click()}
-          >
-            <Upload />
-            {uploading
-              ? 'Bezig met uploaden…'
-              : event.coverImage
-                ? 'Vervangen'
-                : 'Afbeelding kiezen'}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
   )
 }
 

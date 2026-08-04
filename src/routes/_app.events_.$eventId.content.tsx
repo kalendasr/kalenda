@@ -1,15 +1,25 @@
 import * as React from 'react'
 import { createFileRoute, getRouteApi, useRouter } from '@tanstack/react-router'
-import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronUp,
+  ImageIcon,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+} from 'lucide-react'
 
 import {
   createContentItem,
   deleteContentItem,
   reorderContentItem,
   updateContentItem,
+  updateEventIntro,
 } from '#/server/event.ts'
+import { uploadEventCover } from '#/server/upload.ts'
 import type { EventContentTypeValue } from '#/lib/validation/event.ts'
-import { contentItemSchema } from '#/lib/validation/event.ts'
+import { contentItemSchema, eventIntroSchema } from '#/lib/validation/event.ts'
 import { useZodForm } from '#/lib/use-zod-form.ts'
 import { toast } from '#/components/ui/sonner.tsx'
 import {
@@ -21,7 +31,7 @@ import {
 } from '#/components/ui/card.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import { Input } from '#/components/ui/input.tsx'
-import { Textarea } from '#/components/ui/textarea.tsx'
+import { RichTextEditor } from '#/components/ui/rich-text-editor.tsx'
 import { FormField } from '#/components/ui/form-field.tsx'
 import { FormError } from '#/components/auth/form-error.tsx'
 import { ConfirmDialog } from '#/components/app/confirm-dialog.tsx'
@@ -79,11 +89,15 @@ const SECTIONS: Array<{
   },
 ]
 
+type EventData = ReturnType<typeof workspaceRoute.useLoaderData>['event']
+
 function EventContentTab() {
   const { event } = workspaceRoute.useLoaderData()
 
   return (
     <div className="flex flex-col gap-6">
+      <CoverUpload event={event} />
+      <IntroForm event={event} />
       {SECTIONS.map((section) => (
         <ContentSection
           key={section.type}
@@ -93,6 +107,155 @@ function EventContentTab() {
         />
       ))}
     </div>
+  )
+}
+
+function CoverUpload({ event }: { event: EventData }) {
+  const router = useRouter()
+  const inputRef = React.useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = React.useState(false)
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('eventId', event.id)
+
+    setUploading(true)
+    try {
+      await uploadEventCover({ data: formData })
+      await router.invalidate()
+      toast.success('De coverfoto is bijgewerkt.')
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Uploaden is niet gelukt.',
+      )
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Coverfoto</CardTitle>
+        <CardDescription>
+          Breed beeld bovenaan de eventpagina. PNG, JPG of WebP, max 5 MB.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex h-24 w-40 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted">
+          {event.coverImage ? (
+            <img
+              src={event.coverImage}
+              alt=""
+              className="size-full object-cover"
+            />
+          ) : (
+            <ImageIcon className="size-6 text-muted-foreground" />
+          )}
+        </div>
+        <div>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="sr-only"
+            onChange={handleFile}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            disabled={uploading}
+            onClick={() => inputRef.current?.click()}
+          >
+            <Upload />
+            {uploading
+              ? 'Bezig met uploaden…'
+              : event.coverImage
+                ? 'Vervangen'
+                : 'Afbeelding kiezen'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function IntroForm({ event }: { event: EventData }) {
+  const router = useRouter()
+
+  const form = useZodForm({
+    schema: eventIntroSchema,
+    initialValues: {
+      shortDescription: event.shortDescription ?? '',
+      description: event.description ?? '',
+    },
+    onSubmit: async (values) => {
+      await updateEventIntro({ data: { ...values, eventId: event.id } })
+      await router.invalidate()
+      toast.success('De introductie is opgeslagen.')
+    },
+  })
+
+  return (
+    <form onSubmit={form.handleSubmit}>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Introductie</CardTitle>
+          <CardDescription>
+            Wat bezoekers als eerste lezen op de eventpagina.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <FormError message={form.formError} />
+
+          <FormField
+            id="shortDescription"
+            label="Korte omschrijving"
+            hint="Eén zin die op de kaart en bovenaan de pagina verschijnt."
+            error={form.errorFor('shortDescription')}
+          >
+            {(aria) => (
+              <Input
+                {...aria}
+                value={form.values.shortDescription}
+                onChange={(e) =>
+                  form.setValue('shortDescription', e.target.value)
+                }
+                onBlur={() => form.handleBlur('shortDescription')}
+              />
+            )}
+          </FormField>
+
+          <FormField
+            id="description"
+            label="Omschrijving"
+            hint="Ondersteunt **vet**, *cursief*, links en lijsten."
+            error={form.errorFor('description')}
+          >
+            {(aria) => (
+              <RichTextEditor
+                {...aria}
+                rows={6}
+                value={form.values.description ?? ''}
+                onChange={(value) => form.setValue('description', value)}
+                onBlur={() => form.handleBlur('description')}
+              />
+            )}
+          </FormField>
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={form.isSubmitting}>
+              {form.isSubmitting ? 'Bezig met opslaan…' : 'Introductie opslaan'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </form>
   )
 }
 
@@ -295,14 +458,15 @@ function ContentItemDialog({
             id="itemContent"
             label="Inhoud"
             required
+            hint="Ondersteunt **vet**, *cursief*, links en lijsten."
             error={form.errorFor('content')}
           >
             {(aria) => (
-              <Textarea
+              <RichTextEditor
                 {...aria}
                 rows={4}
                 value={form.values.content}
-                onChange={(e) => form.setValue('content', e.target.value)}
+                onChange={(value) => form.setValue('content', value)}
                 onBlur={() => form.handleBlur('content')}
               />
             )}
