@@ -51,3 +51,78 @@ export function formatDateNl(date: Date | null | undefined): string {
     dateStyle: 'long',
   }).format(date)
 }
+
+/** Kalenderdatum ("2026-08-05") en weekdag (0 = zondag) van een moment, in Suriname-tijd. */
+export function surinameDateParts(date: Date) {
+  const shifted = new Date(date.getTime() - OFFSET_MS)
+  return {
+    dateKey: shifted.toISOString().slice(0, 10),
+    weekday: shifted.getUTCDay(),
+  }
+}
+
+/** Is `date` dezelfde kalenderdag als `now` in Suriname-tijd? */
+export function isSurinameToday(date: Date, now: Date = new Date()): boolean {
+  return surinameDateParts(date).dateKey === surinameDateParts(now).dateKey
+}
+
+/**
+ * Het eerstvolgende weekend (vrijdag 00:00 t/m zondag 23:59:59, Suriname-tijd)
+ * gerekend vanaf `now`. Valt `now` al in een weekend, dan is dat het lopende
+ * weekend.
+ */
+export function upcomingWeekendRange(now: Date = new Date()) {
+  const { weekday } = surinameDateParts(now)
+  // Vrijdag(5)..zondag(0) vallen al in het lopende weekend (terugrekenen naar
+  // de start ervan); maandag(1)..donderdag(4) rekenen vooruit naar vrijdag.
+  const offsetDays =
+    weekday === 0 ? -2 : weekday === 6 ? -1 : (5 - weekday + 7) % 7
+  const fridayStart = new Date(
+    now.getTime() - OFFSET_MS + offsetDays * 86_400_000,
+  )
+  fridayStart.setUTCHours(0, 0, 0, 0)
+  const sundayEnd = new Date(fridayStart.getTime() + 3 * 86_400_000 - 1)
+  return { fridayStart, sundayEnd }
+}
+
+/** Valt `date` in het eerstvolgende (of lopende) weekend, Suriname-tijd? */
+export function isSurinameWeekend(date: Date, now: Date = new Date()): boolean {
+  const { fridayStart, sundayEnd } = upcomingWeekendRange(now)
+  const shifted = new Date(date.getTime() - OFFSET_MS)
+  return shifted >= fridayStart && shifted <= sundayEnd
+}
+
+/** 0=zondag..6=zaterdag van `date` in Suriname-tijd, voor dagtabs (vr/za/zo). */
+export function surinameWeekday(date: Date): number {
+  return surinameDateParts(date).weekday
+}
+
+/** "47 uur 52 min" tot `expiresAt`, of "Verlopen" als dat moment al voorbij is. */
+export function formatRemaining(
+  expiresAt: Date,
+  now: Date = new Date(),
+): string {
+  const totalMinutes = Math.floor(
+    (expiresAt.getTime() - now.getTime()) / 60_000,
+  )
+  if (totalMinutes <= 0) return 'Verlopen'
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return `${hours} uur ${minutes} min`
+}
+
+/**
+ * Verstreken deel (0-100) van het venster `createdAt`..`expiresAt`, voor de
+ * voortgangsbalk op de orderstatuspagina. Geklemd, zodat een al verlopen
+ * order 100 geeft in plaats van > 100.
+ */
+export function elapsedPercentage(
+  createdAt: Date,
+  expiresAt: Date,
+  now: Date = new Date(),
+): number {
+  const total = expiresAt.getTime() - createdAt.getTime()
+  if (total <= 0) return 100
+  const elapsed = now.getTime() - createdAt.getTime()
+  return Math.min(100, Math.max(0, (elapsed / total) * 100))
+}

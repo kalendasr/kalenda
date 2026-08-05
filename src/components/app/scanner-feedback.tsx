@@ -47,7 +47,7 @@ export function ScannerFeedback({
         <div className="rounded-lg bg-black/10 px-4 py-3 text-left">
           <p className="font-medium">{ticket.holderName}</p>
           <p className="text-sm opacity-90">{ticket.ticketTypeName}</p>
-          <p className="mt-1 font-mono text-xs opacity-75">
+          <p className="font-eyebrow mt-1 text-xs opacity-75">
             {ticket.ticketNumber}
           </p>
         </div>

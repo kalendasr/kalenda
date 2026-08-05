@@ -5,6 +5,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   LogOut,
+  Plus,
   Ticket,
 } from 'lucide-react'
 
@@ -55,14 +56,14 @@ function NavLink({
     <Link
       to={item.to}
       onClick={onNavigate}
-      className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+      className="flex min-h-[42px] items-center gap-3 rounded-[11px] px-3 text-[14.5px] font-semibold text-[#48515F] transition-colors hover:bg-accent hover:text-accent-foreground"
       activeProps={{
-        className: cn('bg-accent text-accent-foreground'),
+        className: cn('bg-accent font-bold text-accent-foreground'),
         'aria-current': 'page',
       }}
       activeOptions={{ exact: item.to === '/dashboard' }}
     >
-      <Icon className="size-4" />
+      <Icon className="size-[17px]" />
       {item.label}
     </Link>
   )
@@ -117,9 +118,13 @@ function UserMenu({ user }: { user: ShellUser }) {
 
 function Wordmark() {
   return (
-    <span className="flex items-center gap-2 font-semibold">
-      <CalendarDays className="size-5 text-primary" aria-hidden="true" />
-      Kalenda
+    <span className="flex items-center gap-2.5">
+      <span className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px] bg-primary/10">
+        <CalendarDays className="size-[17px] text-primary" aria-hidden="true" />
+      </span>
+      <span className="text-[18px] font-extrabold tracking-[-0.02em]">
+        Kalenda
+      </span>
     </span>
   )
 }
@@ -134,21 +139,29 @@ export function AppShell({
   const [mobileOpen, setMobileOpen] = React.useState(false)
 
   return (
-    <div className="flex min-h-dvh flex-col md:flex-row">
+    <div className="app-shell flex min-h-dvh flex-col bg-background text-foreground md:flex-row">
       {/* Desktop-sidebar */}
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r bg-sidebar md:flex">
-        <div className="flex h-16 items-center px-6">
+      <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col border-r bg-sidebar md:flex">
+        <div className="flex items-center gap-2.5 px-[18px] pt-5 pb-3.5">
           <Wordmark />
         </div>
-        <nav
-          className="flex flex-1 flex-col gap-1 px-3 py-2"
-          aria-label="Hoofdmenu"
-        >
+        <nav className="flex flex-col gap-0.5 px-3 py-2" aria-label="Hoofdmenu">
           {NAV_ITEMS.map((item) => (
             <NavLink key={item.to} item={item} />
           ))}
         </nav>
-        <div className="border-t p-3">
+        <div className="flex-1" />
+        <div className="px-3 pb-3">
+          <Button
+            asChild
+            className="min-h-11 w-full rounded-xl text-[14.5px] font-bold"
+          >
+            <Link to="/events/new">
+              <Plus /> Nieuw evenement
+            </Link>
+          </Button>
+        </div>
+        <div className="border-t px-4 py-3.5">
           <UserMenu user={user} />
         </div>
       </aside>
@@ -192,7 +205,7 @@ export function AppShell({
       <div className="flex-1">
         <main
           id="main"
-          className="mx-auto w-full max-w-(--container-content) px-4 py-6 sm:px-6 sm:py-8"
+          className="mx-auto w-full max-w-[1320px] px-4 py-6 sm:px-9 sm:py-8 sm:pb-16"
         >
           {children}
         </main>

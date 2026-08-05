@@ -1,25 +1,17 @@
-import * as React from 'react'
-import {
-  Link,
-  createFileRoute,
-  getRouteApi,
-  useRouter,
-} from '@tanstack/react-router'
-import {
-  Archive,
-  CalendarDays,
-  CheckCircle2,
-  Circle,
-  ExternalLink,
-  MapPin,
-  Tag,
-  Undo2,
-} from 'lucide-react'
+import { Link, createFileRoute, getRouteApi } from '@tanstack/react-router'
+import { CheckCircle2, CircleAlert } from 'lucide-react'
 
-import { archiveEvent, publishEvent, unpublishEvent } from '#/server/event.ts'
+import { getEventReport } from '#/server/reports.ts'
+import { listEventOrders } from '#/server/orders.ts'
 import { eventPublishReadiness } from '#/lib/event-readiness.ts'
+import { formatSrd } from '#/lib/money.ts'
 import { formatDateTimeNl } from '#/lib/datetime.ts'
-import { toast } from '#/components/ui/sonner.tsx'
+import {
+  ORDER_STATUS_LABELS,
+  effectiveOrderStatus,
+  orderStatusBadgeVariant,
+} from '#/lib/order-status.ts'
+import { cn } from '#/lib/utils.ts'
 import {
   Card,
   CardContent,
@@ -28,271 +20,249 @@ import {
   CardTitle,
 } from '#/components/ui/card.tsx'
 import { Button } from '#/components/ui/button.tsx'
-import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert.tsx'
-import { ConfirmDialog } from '#/components/app/confirm-dialog.tsx'
+import { Badge } from '#/components/ui/badge.tsx'
+import { StatCard } from '#/components/app/stat-card.tsx'
 
 export const Route = createFileRoute('/_app/events_/$eventId/')({
+  loader: async ({ params }) => {
+    const [report, orders] = await Promise.all([
+      getEventReport({ data: { eventId: params.eventId } }),
+      listEventOrders({ data: { eventId: params.eventId } }),
+    ])
+    return { report, orders }
+  },
   component: EventOverview,
 })
 
 const workspaceRoute = getRouteApi('/_app/events_/$eventId')
 
 function EventOverview() {
-  const router = useRouter()
   const { event } = workspaceRoute.useLoaderData()
-  const [busy, setBusy] = React.useState(false)
+  const { report, orders } = Route.useLoaderData()
+
+  const sold = report.ticketTypes.reduce((sum, t) => sum + t.sold, 0)
+  const capacity = report.ticketTypes.reduce((sum, t) => sum + t.capacity, 0)
+  const openPayments = orders.filter(
+    (o) => effectiveOrderStatus(o) === 'AwaitingReview',
+  ).length
+  const scanned = report.checkIns.Valid
 
   const readiness = eventPublishReadiness(
     { ...event, ticketTypeCount: event.ticketTypes.length },
     event.organization.paymentSettings,
   )
+  const detailsDone = !readiness.missing.some((m) =>
+    ['title', 'description', 'startsAt', 'category', 'venue', 'cover'].includes(
+      m.key,
+    ),
+  )
 
-  async function run(action: () => Promise<unknown>, message: string) {
-    setBusy(true)
-    try {
-      await action()
-      await router.invalidate()
-      toast.success(message)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Er ging iets mis.')
-    } finally {
-      setBusy(false)
-    }
-  }
+  const checklist: Array<{
+    title: string
+    done: boolean
+    cta?: { label: string; to: string }
+  }> = [
+    {
+      title: 'Details en flyer compleet',
+      done: detailsDone,
+      cta: detailsDone
+        ? undefined
+        : { label: 'Naar details', to: '/events/$eventId/details' },
+    },
+    {
+      title: 'Ticketsoorten in verkoop',
+      done: event.ticketTypes.length > 0,
+      cta:
+        event.ticketTypes.length > 0
+          ? undefined
+          : { label: 'Naar tickets', to: '/events/$eventId/tickets' },
+    },
+    {
+      title:
+        openPayments > 0
+          ? `${openPayments} ${openPayments === 1 ? 'betaling' : 'betalingen'} nog niet gecontroleerd`
+          : 'Alle betalingen gecontroleerd',
+      done: openPayments === 0,
+      cta:
+        openPayments > 0
+          ? { label: 'Naar orders', to: '/events/$eventId/orders' }
+          : undefined,
+    },
+  ]
 
   return (
-    <div className="flex flex-col gap-4">
-      {event.status === 'Draft' ? (
+    <div className="flex flex-col gap-6">
+      <StatusBanner status={event.status} eventId={event.id} />
+
+      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard label="Omzet" value={formatSrd(report.revenueCents)} />
+        <StatCard
+          label="Verkocht"
+          value={capacity > 0 ? `${sold} / ${capacity}` : String(sold)}
+        />
+        <StatCard
+          label="Open betalingen"
+          value={openPayments}
+          subtext={openPayments > 0 ? 'Wacht op controle' : undefined}
+          tone="warning"
+        />
+        <StatCard
+          label="Gescand"
+          value={scanned}
+          subtext={scanned === 0 ? 'Scanner start op de avond zelf' : undefined}
+        />
+      </section>
+
+      <div className="grid items-start gap-5 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Publiceren</CardTitle>
+            <CardTitle className="text-base">Voor de deuren opengaan</CardTitle>
             <CardDescription>
-              {readiness.ready
-                ? 'Alles staat klaar. Publiceer je evenement om het op de website te tonen.'
-                : 'Vul deze onderdelen aan voordat je publiceert.'}
+              Wat er nog open staat voor dit evenement.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <ul className="flex flex-col gap-2">
-              {READINESS_ITEMS.map((item) => {
-                const missing = readiness.missing.some(
-                  (m) => m.key === item.key,
-                )
-                return (
-                  <li
-                    key={item.key}
-                    className="flex items-center gap-2 text-sm"
-                  >
-                    {missing ? (
-                      <Circle className="size-4 shrink-0 text-muted-foreground" />
-                    ) : (
-                      <CheckCircle2 className="size-4 shrink-0 text-success" />
-                    )}
-                    <span className={missing ? '' : 'text-muted-foreground'}>
-                      {item.label}
-                    </span>
-                    {missing && item.to ? (
-                      <Link
-                        to={item.to}
-                        params={{ eventId: event.id }}
-                        className="ml-auto text-xs font-medium text-primary hover:underline"
-                      >
-                        Aanvullen
-                      </Link>
-                    ) : null}
-                  </li>
-                )
-              })}
-            </ul>
-
-            <div>
-              <Button
-                disabled={!readiness.ready || busy}
-                onClick={() =>
-                  run(
-                    () => publishEvent({ data: { eventId: event.id } }),
-                    'Je evenement is gepubliceerd en staat nu op de website.',
-                  )
-                }
+          <CardContent className="flex flex-col divide-y px-0">
+            {checklist.map((item) => (
+              <div
+                key={item.title}
+                className="flex items-center gap-3 px-6 py-3"
               >
-                Publiceren
-              </Button>
-            </div>
+                {item.done ? (
+                  <CheckCircle2 className="size-5 shrink-0 text-success" />
+                ) : (
+                  <CircleAlert className="size-5 shrink-0 text-warning" />
+                )}
+                <span
+                  className={cn(
+                    'min-w-0 flex-1 text-sm font-medium',
+                    item.done && 'text-muted-foreground',
+                  )}
+                >
+                  {item.title}
+                </span>
+                {item.cta ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={item.cta.to} params={{ eventId: event.id }}>
+                      {item.cta.label}
+                    </Link>
+                  </Button>
+                ) : (
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    Klaar
+                  </span>
+                )}
+              </div>
+            ))}
           </CardContent>
         </Card>
-      ) : null}
 
-      {event.status === 'Published' ? (
-        <Alert variant="success">
-          <CheckCircle2 />
-          <AlertTitle>Gepubliceerd</AlertTitle>
-          <AlertDescription className="gap-2">
-            <span>Dit evenement is zichtbaar op de website.</span>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild variant="outline" size="sm">
-                <a
-                  href={`/evenementen/${event.slug}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <ExternalLink /> Bekijk publieke pagina
-                </a>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={busy}
-                onClick={() =>
-                  run(
-                    () => unpublishEvent({ data: { eventId: event.id } }),
-                    'Terug naar concept. Het evenement staat niet meer op de website.',
-                  )
-                }
-              >
-                <Undo2 /> Terug naar concept
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      ) : null}
-
-      {event.status === 'Archived' ? (
-        <Alert variant="warning">
-          <Archive />
-          <AlertTitle>Gearchiveerd</AlertTitle>
-          <AlertDescription className="gap-2">
-            <span>
-              Dit evenement is gearchiveerd en niet zichtbaar op de website.
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={busy}
-              onClick={() =>
-                run(
-                  () => unpublishEvent({ data: { eventId: event.id } }),
-                  'Het evenement staat weer op concept.',
-                )
-              }
-            >
-              <Undo2 /> Terug naar concept
-            </Button>
-          </AlertDescription>
-        </Alert>
-      ) : null}
-
-      <SummaryCard event={event} />
-
-      {event.status !== 'Archived' ? (
         <Card>
-          <CardHeader className="flex-row items-center justify-between gap-3">
-            <div>
-              <CardTitle className="text-base">Archiveren</CardTitle>
-              <CardDescription>
-                Haal het evenement van de website en zet het opzij.
-              </CardDescription>
-            </div>
-            <ConfirmDialog
-              title="Evenement archiveren?"
-              description="Het evenement wordt van de website gehaald. Je kunt het later terugzetten naar concept."
-              confirmLabel="Archiveren"
-              onConfirm={() =>
-                run(
-                  () => archiveEvent({ data: { eventId: event.id } }),
-                  'Het evenement is gearchiveerd.',
-                )
-              }
-              trigger={
-                <Button variant="outline" size="sm" disabled={busy}>
-                  <Archive /> Archiveren
-                </Button>
-              }
-            />
+          <CardHeader>
+            <CardTitle className="text-base">Laatste orders</CardTitle>
+            <CardDescription>{event.title}</CardDescription>
           </CardHeader>
+          <CardContent className="flex flex-col divide-y px-0">
+            {orders.length > 0 ? (
+              orders.slice(0, 5).map((order) => {
+                const status = effectiveOrderStatus(order)
+                return (
+                  <Link
+                    key={order.id}
+                    to="/events/$eventId/orders"
+                    params={{ eventId: event.id }}
+                    className="flex items-center gap-3 px-6 py-3 transition-colors hover:bg-accent"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold">
+                          {order.customer.firstName} {order.customer.lastName}
+                        </span>
+                        <Badge variant={orderStatusBadgeVariant(status)}>
+                          {ORDER_STATUS_LABELS[status]}
+                        </Badge>
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        {formatDateTimeNl(order.createdAt)}
+                      </span>
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">
+                      {formatSrd(order.totalCents)}
+                    </span>
+                  </Link>
+                )
+              })
+            ) : (
+              <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+                Nog geen bestellingen.
+              </p>
+            )}
+          </CardContent>
         </Card>
-      ) : null}
+      </div>
     </div>
   )
 }
 
-const READINESS_ITEMS: Array<{
-  key: string
-  label: string
-  to?: '/events/$eventId/settings' | '/events/$eventId/tickets'
-}> = [
-  { key: 'title', label: 'Titel', to: '/events/$eventId/settings' },
-  {
-    key: 'description',
-    label: 'Omschrijving',
-    to: '/events/$eventId/settings',
-  },
-  { key: 'startsAt', label: 'Datum en tijd', to: '/events/$eventId/settings' },
-  { key: 'category', label: 'Categorie', to: '/events/$eventId/settings' },
-  { key: 'venue', label: 'Locatie', to: '/events/$eventId/settings' },
-  { key: 'cover', label: 'Coverfoto', to: '/events/$eventId/settings' },
-  {
-    key: 'ticketType',
-    label: 'Minimaal één tickettype',
-    to: '/events/$eventId/tickets',
-  },
-  { key: 'payment', label: 'Actieve betaalmethode' },
-]
-
-function SummaryCard({
-  event,
+function StatusBanner({
+  status,
+  eventId,
 }: {
-  event: ReturnType<typeof workspaceRoute.useLoaderData>['event']
+  status: 'Draft' | 'Published' | 'Archived'
+  eventId: string
 }) {
-  const rows = [
-    {
-      icon: CalendarDays,
-      value: event.startsAt ? formatDateTimeNl(event.startsAt) : null,
-    },
-    { icon: MapPin, value: event.venue?.name ?? null },
-    { icon: Tag, value: event.category?.name ?? null },
-  ].filter((row) => row.value)
+  if (status === 'Published') {
+    return (
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/60 px-5 py-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+        <CheckCircle2 className="size-5 shrink-0 text-success" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">
+            Live op kalenda.sr
+          </span>
+          <span className="block text-sm text-muted-foreground">
+            Zichtbaar voor bezoekers.
+          </span>
+        </span>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/events/$eventId/settings" params={{ eventId }}>
+            Publicatie beheren
+          </Link>
+        </Button>
+      </div>
+    )
+  }
+
+  if (status === 'Archived') {
+    return (
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50/60 px-5 py-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+        <CircleAlert className="size-5 shrink-0 text-warning" />
+        <span className="min-w-0 flex-1 text-sm text-muted-foreground">
+          Dit evenement is gearchiveerd en niet zichtbaar op de website.
+        </span>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/events/$eventId/settings" params={{ eventId }}>
+            Publicatie beheren
+          </Link>
+        </Button>
+      </div>
+    )
+  }
 
   return (
-    <Card>
-      <CardContent className="flex gap-4 pt-6">
-        <div className="flex h-24 w-32 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
-          {event.coverImage ? (
-            <img
-              src={event.coverImage}
-              alt=""
-              className="size-full object-cover"
-            />
-          ) : (
-            <span className="text-xs text-muted-foreground">Geen cover</span>
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          {event.shortDescription ? (
-            <p className="text-sm text-muted-foreground">
-              {event.shortDescription}
-            </p>
-          ) : null}
-          <dl className="mt-2 flex flex-col gap-1.5">
-            {rows.map((row, index) => {
-              const Icon = row.icon
-              return (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 text-sm text-muted-foreground"
-                >
-                  <Icon className="size-4 shrink-0" />
-                  <span className="truncate text-foreground">{row.value}</span>
-                </div>
-              )
-            })}
-          </dl>
-          <Button asChild variant="link" className="mt-2 h-auto px-0">
-            <Link to="/events/$eventId/settings" params={{ eventId: event.id }}>
-              Gegevens bewerken
-            </Link>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-muted/40 px-5 py-4">
+      <CircleAlert className="size-5 shrink-0 text-muted-foreground" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold">
+          Nog niet gepubliceerd
+        </span>
+        <span className="block text-sm text-muted-foreground">
+          Dit evenement staat op concept en is niet zichtbaar op de website.
+        </span>
+      </span>
+      <Button size="sm" asChild>
+        <Link to="/events/$eventId/settings" params={{ eventId }}>
+          Publiceren
+        </Link>
+      </Button>
+    </div>
   )
 }

@@ -36,3 +36,24 @@ export function parsePriceToCents(input: string): number | null {
 export function centsToInput(cents: number): string {
   return nf.format(cents / 100)
 }
+
+/**
+ * Vaste weergavekoers voor de publieke storefront (SRD/EUR-toggle). Puur
+ * cosmetisch: er wordt nergens in EUR afgerekend of opgeslagen — checkout,
+ * orders en betalingen blijven altijd in SRD-centen (BR-600). Wijzig deze
+ * waarde handmatig als de indicatieve koers verouderd raakt.
+ */
+export const SRD_PER_EUR = 40
+
+/** 5000 → "€ 1,25". Uitsluitend voor weergave, nooit voor bedragen die worden opgeslagen. */
+export function formatEur(cents: number): string {
+  return `€ ${nf.format(cents / (100 * SRD_PER_EUR))}`
+}
+
+/** Formatteert centen (altijd in SRD opgeslagen) in de gekozen weergavevaluta. */
+export function formatMoney(
+  cents: number,
+  currency: 'SRD' | 'EUR' = 'SRD',
+): string {
+  return currency === 'EUR' ? formatEur(cents) : formatSrd(cents)
+}

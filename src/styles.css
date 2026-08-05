@@ -142,6 +142,74 @@
   --container-content: 1280px;
 }
 
+/*
+ * Kalenda-ontwerpsysteem (Claude Design-ontwerp): een cosmetische laag bovenop
+ * de gedeelde tokens hierboven. `.storefront` (publieke site) en `.app-shell`
+ * (ingelogde app) delen hetzelfde lettertype en dezelfde accentkleuren — beide
+ * zijn onderdeel van hetzelfde ontwerpsysteem, alleen de pagina-achtergrond
+ * verschilt. CSS custom properties worden per stamboom herevalueerd, dus
+ * alleen afstammelingen van deze klassen krijgen de override.
+ */
+@layer components {
+  .storefront,
+  .app-shell {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --primary: #1d4ed8;
+    --primary-foreground: #ffffff;
+    --foreground: #0b1220;
+    --card: #ffffff;
+    --card-foreground: #0b1220;
+    --popover: #ffffff;
+    --popover-foreground: #0b1220;
+    --border: #e9ecf2;
+    --input: #e9ecf2;
+    --muted: #f3f5f9;
+    --muted-foreground: #5a6472;
+    --accent: #f3f5f9;
+    --accent-foreground: #0b1220;
+    --warning: #fef3e2;
+    --warning-foreground: #94540a;
+    --ring: #1d4ed8;
+  }
+
+  .storefront .font-eyebrow,
+  .app-shell .font-eyebrow {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    letter-spacing: 0.06em;
+  }
+
+  .storefront {
+    --background: #ffffff;
+  }
+
+  /*
+   * De app-workspace (dashboard, evenement- en organisatie-beheer) staat op
+   * een lichte, koele canvas — kaarten blijven wit (--card) zodat ze zich
+   * daarvan afzetten. Success/warning/destructive zijn hier leesbare
+   * tekstkleuren (voor stat-notities en pil-badges via bg-x/10), niet de
+   * fellere solid-badge-tint die `.storefront` gebruikt voor urgentie.
+   */
+  .app-shell {
+    --background: #f7f9fc;
+    --success: #136b33;
+    --success-foreground: #ffffff;
+    --warning: #94540a;
+    --warning-foreground: #ffffff;
+    --destructive: #b4231f;
+    --destructive-foreground: #ffffff;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #0b1220;
+    --sidebar-primary: #1d4ed8;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f3f5f9;
+    --sidebar-accent-foreground: #0b1220;
+    --sidebar-border: #e9ecf2;
+    --sidebar-ring: #1d4ed8;
+    /* Radius-xl (kaarten) komt hiermee op 16px, zoals het ontwerp. */
+    --radius: 0.75rem;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

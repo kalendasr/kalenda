@@ -27,12 +27,16 @@ export function StatCard({
 }) {
   const content = (
     <>
-      <div className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      <div className="font-eyebrow text-[10.5px] font-medium tracking-[0.09em] text-muted-foreground uppercase">
         {label}
       </div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
+      <div className="mt-3 text-[26px] font-extrabold tracking-[-0.025em] tabular-nums">
+        {value}
+      </div>
       {subtext ? (
-        <div className={cn('mt-0.5 text-sm', TONE_CLASSES[tone])}>
+        <div
+          className={cn('mt-1.5 text-[13px] font-semibold', TONE_CLASSES[tone])}
+        >
           {subtext}
         </div>
       ) : null}
@@ -43,12 +47,16 @@ export function StatCard({
     return (
       <Link
         to={href}
-        className="flex flex-col rounded-xl border bg-card p-4 text-card-foreground transition-colors hover:bg-accent"
+        className="flex flex-col rounded-2xl border bg-card px-5 py-[18px] text-card-foreground transition-colors hover:bg-accent"
       >
         {content}
       </Link>
     )
   }
 
-  return <Card className="p-4 shadow-none">{content}</Card>
+  return (
+    <Card className="gap-0 rounded-2xl px-5 py-[18px] shadow-none">
+      {content}
+    </Card>
+  )
 }

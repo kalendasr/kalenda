@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute, getRouteApi, useRouter } from '@tanstack/react-router'
-import { CameraOff, History, ScanLine } from 'lucide-react'
+import { CameraOff, History, Link2, ScanLine, UserPlus } from 'lucide-react'
 
 import { listEventCheckIns, resolveScan } from '#/server/scanner.ts'
 import { formatDateTimeNl } from '#/lib/datetime.ts'
@@ -8,7 +8,12 @@ import { SCAN_RESULT_LABELS, scanResultBadgeClass } from '#/lib/scan-result.ts'
 import type { CheckInResult } from '#/lib/scan-result.ts'
 import { Badge } from '#/components/ui/badge.tsx'
 import { Button } from '#/components/ui/button.tsx'
-import { Card } from '#/components/ui/card.tsx'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '#/components/ui/card.tsx'
 import { toast } from '#/components/ui/sonner.tsx'
 import { ScannerCamera } from '#/components/app/scanner-camera.tsx'
 import { ScannerFeedback } from '#/components/app/scanner-feedback.tsx'
@@ -33,9 +38,11 @@ const workspaceRoute = getRouteApi('/_app/events_/$eventId')
 
 function EventScanner() {
   const { event } = workspaceRoute.useLoaderData()
+  const { user } = workspaceRoute.useRouteContext()
   const { history } = Route.useLoaderData()
   const router = useRouter()
 
+  const [scannerOpen, setScannerOpen] = useState(false)
   const [feedback, setFeedback] = useState<{
     result: CheckInResult
     ticket: ScanTicketView | null
@@ -43,6 +50,15 @@ function EventScanner() {
   const [cameraAvailable, setCameraAvailable] = useState(true)
   const [showCamera, setShowCamera] = useState(true)
   const [busy, setBusy] = useState(false)
+
+  async function shareScanLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      toast.success('Scannerlink gekopieerd naar het klembord.')
+    } catch {
+      toast.error('Kopiëren is niet gelukt.')
+    }
+  }
 
   async function handleScan(payload: string) {
     if (busy) return
@@ -73,31 +89,60 @@ function EventScanner() {
         <ScannerFeedback result={feedback.result} ticket={feedback.ticket} />
       ) : null}
 
-      <div className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold tracking-tight">Scanner</h2>
-        <p className="text-sm text-muted-foreground">
-          Scan de QR-code bij de ingang om bezoekers in te checken.
-        </p>
+      <div className="grid items-start gap-5 lg:grid-cols-2">
+        {/* Deurbeheer-hero */}
+        <section className="rounded-2xl bg-foreground p-6 text-background">
+          <div className="font-eyebrow text-[10px] font-medium tracking-[0.11em] text-background/60 uppercase">
+            Deurbeheer
+          </div>
+          <h2 className="mt-3 text-xl font-semibold tracking-tight">
+            Scan tickets bij de ingang
+          </h2>
+          <p className="mt-2 max-w-[44ch] text-sm leading-relaxed text-background/70">
+            Open de scanner op je telefoon of geef je deurteam een scanlink.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Button
+              className="bg-background text-foreground hover:bg-background/90"
+              onClick={() => setScannerOpen((open) => !open)}
+            >
+              <ScanLine /> {scannerOpen ? 'Scanner sluiten' : 'Scanner openen'}
+            </Button>
+            <Button
+              variant="outline"
+              className="border-background/30 bg-transparent text-background hover:bg-background/10 hover:text-background"
+              onClick={shareScanLink}
+            >
+              <Link2 /> Scanlink delen
+            </Button>
+          </div>
+        </section>
+
+        <div className="flex flex-col gap-5">
+          <div className="grid grid-cols-2 gap-3">
+            <StatTile label="Ingecheckt" value={stats.Valid} tone="success" />
+            <StatTile
+              label="Dubbele scans"
+              value={stats.AlreadyCheckedIn}
+              tone="warning"
+            />
+            <StatTile
+              label="Ongeldig"
+              value={stats.Invalid}
+              tone="destructive"
+            />
+            <StatTile
+              label="Niet gevonden"
+              value={stats.NotFound}
+              tone="destructive"
+            />
+          </div>
+
+          <DoorTeamCard ownerName={user.name} />
+        </div>
       </div>
 
-      {/* Snelle stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatTile label="Ingecheckt" value={stats.Valid} tone="success" />
-        <StatTile
-          label="Dubbele scans"
-          value={stats.AlreadyCheckedIn}
-          tone="warning"
-        />
-        <StatTile label="Ongeldig" value={stats.Invalid} tone="destructive" />
-        <StatTile
-          label="Niet gevonden"
-          value={stats.NotFound}
-          tone="destructive"
-        />
-      </div>
-
-      {/* Camera of handmatige invoer */}
-      {showCamera && cameraAvailable ? (
+      {!scannerOpen ? null : showCamera && cameraAvailable ? (
         <div className="flex flex-col gap-3">
           <ScannerCamera
             onScan={handleScan}
@@ -157,6 +202,48 @@ function EventScanner() {
   )
 }
 
+function DoorTeamCard({ ownerName }: { ownerName: string }) {
+  const initials =
+    ownerName
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? '')
+      .join('') || '?'
+
+  return (
+    <Card className="gap-0 py-0">
+      <CardHeader className="flex-row items-center justify-between gap-3 px-5 pt-5 pb-3">
+        <CardTitle className="text-base">Deurteam</CardTitle>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            toast.info('Teamleden uitnodigen volgt in een vervolgronde.')
+          }
+        >
+          <UserPlus /> Uitnodigen
+        </Button>
+      </CardHeader>
+      <CardContent className="border-t px-5 py-4">
+        <div className="flex items-center gap-3">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+            {initials}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">{ownerName}</span>
+            <span className="block text-xs text-muted-foreground">
+              Eigenaar · mag scannen
+            </span>
+          </span>
+          <span className="text-xs font-semibold text-success">Actief</span>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 function StatTile({
   label,
   value,
@@ -205,7 +292,7 @@ function HistoryCard({ row }: { row: HistoryRow }) {
           <span className="text-muted-foreground">Onbekend nummer</span>
         )}
       </span>
-      <span className="font-mono text-xs text-muted-foreground">
+      <span className="font-eyebrow text-xs text-muted-foreground">
         {row.ticketNumber}
       </span>
       <span className="text-xs text-muted-foreground">

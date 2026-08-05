@@ -55,8 +55,8 @@ describe('labels & badges', () => {
   })
 
   it('gebruikt groen voor Verified en rood voor Rejected', () => {
-    expect(paymentStateBadgeVariant('Verified')).toBe('secondary')
-    expect(paymentStateBadgeVariant('Rejected')).toBe('destructive')
-    expect(paymentStateBadgeVariant('Waiting')).toBe('outline')
+    expect(paymentStateBadgeVariant('Verified')).toBe('soft-success')
+    expect(paymentStateBadgeVariant('Rejected')).toBe('soft-destructive')
+    expect(paymentStateBadgeVariant('Waiting')).toBe('soft-muted')
   })
 })

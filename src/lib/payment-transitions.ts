@@ -84,8 +84,9 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 /** Badgevariant per betalingstoestand — één bron voor alle badges. */
 export function paymentStateBadgeVariant(
   state: PaymentState,
-): 'secondary' | 'outline' | 'destructive' {
-  if (state === 'Verified') return 'secondary'
-  if (state === 'Rejected' || state === 'Cancelled') return 'destructive'
-  return 'outline'
+): 'soft-success' | 'soft-warning' | 'soft-destructive' | 'soft-muted' {
+  if (state === 'Verified') return 'soft-success'
+  if (state === 'Submitted') return 'soft-warning'
+  if (state === 'Rejected' || state === 'Cancelled') return 'soft-destructive'
+  return 'soft-muted'
 }

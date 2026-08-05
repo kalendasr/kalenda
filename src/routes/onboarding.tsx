@@ -23,11 +23,26 @@ import { FormField } from '#/components/ui/form-field.tsx'
 import { FormError } from '#/components/auth/form-error.tsx'
 
 /**
- * Onboarding: de eerste organisatie aanmaken. Staat los van de app-shell —
- * een gefocust scherm met één taak (DESIGN_SYSTEM.md §2). Ingelogde gebruikers
- * die al een organisatie hebben, gaan direct naar het dashboard.
+ * Onboarding: de eerste organisatie aanmaken. Geen sidebar/navigatie — een
+ * gefocust scherm met één taak (DESIGN_SYSTEM.md §2), wel in hetzelfde
+ * ontwerpsysteem als de app (`.app-shell`). Ingelogde gebruikers die al een
+ * organisatie hebben, gaan direct naar het dashboard.
  */
 export const Route = createFileRoute('/onboarding')({
+  head: () => ({
+    links: [
+      { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+      {
+        rel: 'preconnect',
+        href: 'https://fonts.gstatic.com',
+        crossOrigin: 'anonymous',
+      },
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap',
+      },
+    ],
+  }),
   beforeLoad: async () => {
     const { user, organization } = await loadAppContext()
     if (!user) throw redirect({ to: '/login' })
@@ -54,17 +69,26 @@ function Onboarding() {
   return (
     <main
       id="main"
-      className="flex min-h-dvh flex-col items-center justify-center px-6 py-12"
+      className="app-shell flex min-h-dvh flex-col items-center justify-center bg-background px-6 py-12 text-foreground"
     >
       <div className="w-full max-w-md">
-        <div className="mb-8 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
-          <CalendarDays aria-hidden="true" className="size-4" />
-          Kalenda
+        <div className="mb-8 flex items-center justify-center gap-2.5">
+          <span className="flex size-[30px] shrink-0 items-center justify-center rounded-[9px] bg-primary/10">
+            <CalendarDays
+              className="size-[17px] text-primary"
+              aria-hidden="true"
+            />
+          </span>
+          <span className="text-[18px] font-extrabold tracking-[-0.02em]">
+            Kalenda
+          </span>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Maak je organisatie aan</CardTitle>
+            <CardTitle className="text-[20px]">
+              Maak je organisatie aan
+            </CardTitle>
             <CardDescription>
               Je organisatie is de eigenaar van je evenementen en tickets. Je
               kunt de overige gegevens later aanvullen.

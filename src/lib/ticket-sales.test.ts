@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   availableQuantity,
+  eventAvailability,
   isOnSale,
   ticketSaleStatus,
 } from '#/lib/ticket-sales.ts'
@@ -81,5 +82,60 @@ describe('availableQuantity', () => {
 describe('ticketSaleStatus met reserveringen', () => {
   it('is uitverkocht wanneer alles gereserveerd is', () => {
     expect(ticketSaleStatus(type({ quantity: 5 }), now, 5)).toBe('sold-out')
+  })
+})
+
+describe('eventAvailability', () => {
+  it('geeft null als vanaf-prijs zonder tickettypes', () => {
+    const result = eventAvailability([])
+    expect(result.priceFromCents).toBeNull()
+    expect(result.isFree).toBe(false)
+    expect(result.almostSoldOut).toBe(false)
+    expect(result.soldOut).toBe(false)
+  })
+
+  it('neemt de laagste prijs als vanaf-prijs', () => {
+    const result = eventAvailability([
+      { priceCents: 500, quantity: 10, reserved: 0 },
+      { priceCents: 200, quantity: 10, reserved: 0 },
+    ])
+    expect(result.priceFromCents).toBe(200)
+    expect(result.isFree).toBe(false)
+  })
+
+  it('is bijna uitverkocht op precies de drempel (10 resterend)', () => {
+    const result = eventAvailability([
+      { priceCents: 100, quantity: 20, reserved: 10 },
+    ])
+    expect(result.remaining).toBe(10)
+    expect(result.almostSoldOut).toBe(true)
+    expect(result.soldOut).toBe(false)
+  })
+
+  it('is niet meer bijna uitverkocht net boven de drempel (11 resterend)', () => {
+    const result = eventAvailability([
+      { priceCents: 100, quantity: 20, reserved: 9 },
+    ])
+    expect(result.remaining).toBe(11)
+    expect(result.almostSoldOut).toBe(false)
+  })
+
+  it('is uitverkocht bij 0 resterend, niet "bijna"', () => {
+    const result = eventAvailability([
+      { priceCents: 100, quantity: 5, reserved: 5 },
+    ])
+    expect(result.remaining).toBe(0)
+    expect(result.soldOut).toBe(true)
+    expect(result.almostSoldOut).toBe(false)
+  })
+
+  it('telt over meerdere tickettypes op', () => {
+    const result = eventAvailability([
+      { priceCents: 100, quantity: 5, reserved: 5 },
+      { priceCents: 200, quantity: 5, reserved: 0 },
+    ])
+    expect(result.capacity).toBe(10)
+    expect(result.remaining).toBe(5)
+    expect(result.soldOut).toBe(false)
   })
 })

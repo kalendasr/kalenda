@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { useMemo, useState } from 'react'
+import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { Check, Inbox, Send, X } from 'lucide-react'
 
 import { listEventOrders } from '#/server/orders.ts'
@@ -20,9 +20,11 @@ import {
   PAYMENT_STATE_LABELS,
   paymentStateBadgeVariant,
 } from '#/lib/payment-transitions.ts'
+import { cn } from '#/lib/utils.ts'
 import { Badge } from '#/components/ui/badge.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import { Card } from '#/components/ui/card.tsx'
+import { StatCard } from '#/components/app/stat-card.tsx'
 import {
   Dialog,
   DialogContent,
@@ -43,9 +45,55 @@ export const Route = createFileRoute('/_app/events_/$eventId/orders')({
 type OrdersResult = Awaited<ReturnType<typeof listEventOrders>>
 type OrderRow = OrdersResult[number]
 
+const ORDER_FILTERS: Array<{ label: string; statuses: Array<string> | null }> =
+  [
+    { label: 'Alle', statuses: null },
+    { label: 'Wacht op controle', statuses: ['AwaitingReview'] },
+    { label: 'Afgerond', statuses: ['Completed', 'Paid'] },
+    { label: 'Verlopen', statuses: ['Expired'] },
+  ]
+
 function EventOrders() {
   const { orders } = Route.useLoaderData()
+  const { eventId } = Route.useParams()
   const router = useRouter()
+  const [filter, setFilter] = useState('Alle')
+
+  const stats = useMemo(() => {
+    let doneCount = 0
+    let doneSum = 0
+    let reviewCount = 0
+    let reviewSum = 0
+    let expiredCount = 0
+    for (const order of orders) {
+      const status = effectiveOrderStatus(order)
+      if (status === 'Completed' || status === 'Paid') {
+        doneCount++
+        doneSum += order.totalCents
+      } else if (status === 'AwaitingReview') {
+        reviewCount++
+        reviewSum += order.totalCents
+      } else if (status === 'Expired') {
+        expiredCount++
+      }
+    }
+    return {
+      doneCount,
+      doneSum,
+      reviewCount,
+      reviewSum,
+      expiredCount,
+      avg: doneCount > 0 ? Math.round(doneSum / doneCount) : 0,
+    }
+  }, [orders])
+
+  const visible = useMemo(() => {
+    const active = ORDER_FILTERS.find((f) => f.label === filter)
+    if (!active?.statuses) return orders
+    return orders.filter((o) =>
+      active.statuses!.includes(effectiveOrderStatus(o)),
+    )
+  }, [orders, filter])
 
   async function runAction(
     fn: () => Promise<{ ok: boolean }>,
@@ -80,35 +128,96 @@ function EventOrders() {
   }
 
   return (
-    <ul className="flex flex-col gap-3">
-      {orders.map((order) => (
-        <OrderCard
-          key={order.id}
-          order={order}
-          onApprove={() =>
-            runAction(
-              () => approvePayment({ data: { orderId: order.id } }),
-              'Betaling bevestigd.',
-            )
+    <div className="flex flex-col gap-4">
+      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          label="Afgerond"
+          value={stats.doneCount}
+          subtext={formatSrd(stats.doneSum)}
+          tone="success"
+        />
+        <StatCard
+          label="Wacht op controle"
+          value={stats.reviewCount}
+          subtext={
+            stats.reviewCount > 0 ? formatSrd(stats.reviewSum) : undefined
           }
-          onReject={(notes) =>
-            runAction(
-              () =>
-                rejectPayment({
-                  data: { orderId: order.id, notes },
-                }),
-              'Betaling afgekeurd.',
-            )
-          }
-          onResend={() =>
-            runAction(
-              () => resendOrderTickets({ data: { orderId: order.id } }),
-              'Tickets zijn opnieuw verstuurd.',
-            )
+          tone="warning"
+        />
+        <StatCard
+          label="Verlopen"
+          value={stats.expiredCount}
+          subtext={
+            stats.expiredCount > 0 ? 'Automatisch vrijgegeven' : undefined
           }
         />
-      ))}
-    </ul>
+        <StatCard label="Gem. besteedbedrag" value={formatSrd(stats.avg)} />
+      </section>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex gap-1 rounded-xl bg-muted p-1">
+          {ORDER_FILTERS.map((f) => (
+            <button
+              key={f.label}
+              type="button"
+              onClick={() => setFilter(f.label)}
+              aria-pressed={filter === f.label}
+              className={cn(
+                'rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors',
+                filter === f.label
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="ms-auto">
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/events/$eventId/reports" params={{ eventId }}>
+              Exporteren
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      {visible.length === 0 ? (
+        <p className="rounded-xl border border-dashed py-10 text-center text-sm text-muted-foreground">
+          Geen orders in deze categorie.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {visible.map((order) => (
+            <OrderCard
+              key={order.id}
+              order={order}
+              onApprove={() =>
+                runAction(
+                  () => approvePayment({ data: { orderId: order.id } }),
+                  'Betaling bevestigd.',
+                )
+              }
+              onReject={(notes) =>
+                runAction(
+                  () =>
+                    rejectPayment({
+                      data: { orderId: order.id, notes },
+                    }),
+                  'Betaling afgekeurd.',
+                )
+              }
+              onResend={() =>
+                runAction(
+                  () => resendOrderTickets({ data: { orderId: order.id } }),
+                  'Tickets zijn opnieuw verstuurd.',
+                )
+              }
+            />
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
@@ -163,7 +272,7 @@ function OrderCard({
           ) : null}
         </div>
         <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          <span className="font-mono">{order.orderNumber}</span>
+          <span className="font-eyebrow">{order.orderNumber}</span>
           <span>
             {tickets} {tickets === 1 ? 'ticket' : 'tickets'}
           </span>

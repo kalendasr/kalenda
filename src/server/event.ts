@@ -38,6 +38,58 @@ export const listMyEvents = createServerFn({ method: 'GET' }).handler(
   },
 )
 
+/**
+ * Alle events van de eigen organisatie, verrijkt met verkoopcijfers per event
+ * (capaciteit, verkocht, omzet). Alleen gerealiseerde verkoop (Paid/Completed)
+ * telt mee — dezelfde regel als de rapportages. Read-only aggregatie voor de
+ * evenementenlijst en het dashboard.
+ */
+export const listMyEventsSummary = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const user = await requireUser()
+    const organization = await requireOwnedOrganization(user.id)
+
+    const events = await db.event.findMany({
+      where: { organizationId: organization.id, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        category: true,
+        venue: true,
+        ticketTypes: {
+          where: { deletedAt: null },
+          select: {
+            quantity: true,
+            orderItems: {
+              where: {
+                order: {
+                  deletedAt: null,
+                  orderStatus: { in: ['Paid', 'Completed'] },
+                },
+              },
+              select: { quantity: true, unitPriceCents: true },
+            },
+          },
+        },
+      },
+    })
+
+    return events.map((event) => {
+      let capacity = 0
+      let sold = 0
+      let revenueCents = 0
+      for (const type of event.ticketTypes) {
+        capacity += type.quantity
+        for (const item of type.orderItems) {
+          sold += item.quantity
+          revenueCents += item.quantity * item.unitPriceCents
+        }
+      }
+      const { ticketTypes, ...rest } = event
+      return { ...rest, capacity, sold, revenueCents }
+    })
+  },
+)
+
 /** Eén eigen event, met content, categorie en venue. */
 export const getMyEvent = createServerFn({ method: 'GET' })
   .validator(eventIdSchema)

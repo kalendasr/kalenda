@@ -71,14 +71,14 @@ export const SCAN_RESULT_SCREEN_CLASSES: Record<CheckInResult, string> = {
 
 /**
  * Badgekleur per resultaat — één bron van waarheid voor de scangeschiedenis.
- * Gebruikt de bestaande shadcn Badge-varianten plus aangepaste succes/waarschuwing.
+ * Pastel wash (dezelfde taal als de overige statuspillen in de app), in
+ * tegenstelling tot de volle, solid kleur van de fullscreen-terugkoppeling
+ * hierboven — dat is een ander UI-doel (korte flash vs. rustige lijst).
  */
 export function scanResultBadgeClass(result: CheckInResult): string {
-  if (result === 'Valid')
-    return 'border-transparent bg-success text-success-foreground'
-  if (result === 'AlreadyCheckedIn')
-    return 'border-transparent bg-warning text-warning-foreground'
-  return 'border-transparent bg-destructive text-white'
+  if (result === 'Valid') return 'bg-success/10 text-success'
+  if (result === 'AlreadyCheckedIn') return 'bg-warning/10 text-warning'
+  return 'bg-destructive/10 text-destructive'
 }
 
 /** Is dit een resultaat dat de bezoeker toegang geeft? */

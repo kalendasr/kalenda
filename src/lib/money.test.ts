@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { centsToInput, formatSrd, parsePriceToCents } from '#/lib/money.ts'
+import {
+  centsToInput,
+  formatMoney,
+  formatSrd,
+  formatEur,
+  parsePriceToCents,
+} from '#/lib/money.ts'
 
 describe('formatSrd', () => {
   it('formatteert centen als SRD met twee decimalen', () => {
@@ -36,5 +42,20 @@ describe('centsToInput', () => {
   it('is de tegenhanger voor het prijsinvoerveld', () => {
     expect(centsToInput(5000)).toBe('50,00')
     expect(parsePriceToCents(centsToInput(12345))).toBe(12345)
+  })
+})
+
+describe('formatEur', () => {
+  it('formatteert centen (SRD) als indicatief EUR-bedrag', () => {
+    expect(formatEur(4000)).toBe('€ 1,00')
+    expect(formatEur(0)).toBe('€ 0,00')
+  })
+})
+
+describe('formatMoney', () => {
+  it('kiest de opgegeven weergavevaluta, standaard SRD', () => {
+    expect(formatMoney(5000)).toBe(formatSrd(5000))
+    expect(formatMoney(5000, 'SRD')).toBe(formatSrd(5000))
+    expect(formatMoney(5000, 'EUR')).toBe(formatEur(5000))
   })
 })

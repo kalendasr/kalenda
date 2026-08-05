@@ -22,22 +22,18 @@ export function EventStatusBadge({
   now?: Date
 }) {
   if (status === 'Draft') {
-    return <Badge variant="outline">Concept</Badge>
+    return <Badge variant="soft-muted">Concept</Badge>
   }
   if (status === 'Archived') {
-    return <Badge variant="secondary">Gearchiveerd</Badge>
+    return <Badge variant="soft-muted">Gearchiveerd</Badge>
   }
 
   // Published: fase afleiden uit de datums.
   if (endsAt && now > endsAt) {
-    return <Badge variant="secondary">Afgelopen</Badge>
+    return <Badge variant="soft-muted">Afgelopen</Badge>
   }
   if (startsAt && now >= startsAt) {
-    return (
-      <Badge className="border-transparent bg-success text-success-foreground">
-        Live
-      </Badge>
-    )
+    return <Badge variant="soft-success">Live</Badge>
   }
-  return <Badge>Gepubliceerd</Badge>
+  return <Badge variant="soft-info">Gepubliceerd</Badge>
 }

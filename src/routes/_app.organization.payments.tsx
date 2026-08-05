@@ -1,4 +1,5 @@
 import { createFileRoute, getRouteApi, useRouter } from '@tanstack/react-router'
+import { CreditCard, Lock } from 'lucide-react'
 
 import { updatePaymentSettings } from '#/server/organization.ts'
 import { paymentApps, paymentSettingsSchema } from '#/lib/validation/payment.ts'
@@ -12,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card.tsx'
+import { Badge } from '#/components/ui/badge.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import { Input } from '#/components/ui/input.tsx'
 import { Textarea } from '#/components/ui/textarea.tsx'
@@ -258,11 +260,73 @@ function OrganizationPayments() {
         ) : null}
       </Card>
 
+      {/* Kaartbetaling — V2, komt beschikbaar na verificatie van je organisatie */}
+      <Card className="border-dashed">
+        <CardHeader className="flex-row items-start justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="flex size-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <CreditCard className="size-4" />
+            </span>
+            <div>
+              <CardTitle className="text-base">Kaartbetaling</CardTitle>
+              <CardDescription>
+                Beschikbaar na verificatie van je organisatie.
+              </CardDescription>
+            </div>
+          </div>
+          <Badge variant="soft-muted" className="gap-1">
+            <Lock className="size-3" /> Vergrendeld
+          </Badge>
+        </CardHeader>
+      </Card>
+
       <div className="flex justify-end">
         <Button type="submit" disabled={form.isSubmitting}>
           {form.isSubmitting ? 'Bezig met opslaan…' : 'Wijzigingen opslaan'}
         </Button>
       </div>
+
+      <UitbetalingenCard />
     </form>
+  )
+}
+
+/**
+ * Uitbetalingen. Het platform ontvangt zelf nooit geld (CLAUDE.md §5) — dit
+ * blok is bewust front-end-only en toont geen echte rekeninggegevens totdat
+ * uitbetalingen daadwerkelijk gebouwd worden in een vervolgronde.
+ */
+function UitbetalingenCard() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Uitbetalingen</CardTitle>
+        <CardDescription>Waar je opbrengst naartoe gaat.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col divide-y">
+        <div className="flex flex-wrap items-center gap-4 py-3 first:pt-0">
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium">Uitbetaalrekening</span>
+            <span className="block text-sm text-muted-foreground">
+              Nog niet gekoppeld.
+            </span>
+          </span>
+          <span className="font-eyebrow text-xs text-muted-foreground">—</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-4 py-3">
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium">
+              Volgende uitbetaling
+            </span>
+            <span className="block text-sm text-muted-foreground">
+              Start zodra je organisatie is geverifieerd.
+            </span>
+          </span>
+          <span className="font-eyebrow text-xs text-muted-foreground">
+            In afwachting
+          </span>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

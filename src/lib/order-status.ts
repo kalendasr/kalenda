@@ -59,8 +59,9 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 /** Badgevariant per status — één bron van waarheid voor alle statusbadges. */
 export function orderStatusBadgeVariant(
   status: OrderStatus,
-): 'secondary' | 'outline' | 'destructive' {
-  if (status === 'Paid' || status === 'Completed') return 'secondary'
-  if (status === 'Cancelled' || status === 'Expired') return 'destructive'
-  return 'outline'
+): 'soft-success' | 'soft-warning' | 'soft-destructive' | 'soft-muted' {
+  if (status === 'Paid' || status === 'Completed') return 'soft-success'
+  if (status === 'AwaitingReview') return 'soft-warning'
+  if (status === 'Cancelled' || status === 'Expired') return 'soft-destructive'
+  return 'soft-muted'
 }
