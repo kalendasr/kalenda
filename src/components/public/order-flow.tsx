@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import {
+  Bell,
   Building2,
   CalendarDays,
   Check,
@@ -18,6 +19,9 @@ import {
 import { createOrder } from '#/server/checkout.ts'
 import type { getCheckoutData, getOrderByNumber } from '#/server/checkout.ts'
 import { submitProofOfPayment } from '#/server/payments.ts'
+import { saveCustomerPushSubscription } from '#/server/notifications.ts'
+import type { SavePushSubscriptionFn } from '#/hooks/use-push-subscription.ts'
+import { usePushSubscription } from '#/hooks/use-push-subscription.ts'
 import { checkoutSchema } from '#/lib/validation/checkout.ts'
 import { useZodForm } from '#/lib/use-zod-form.ts'
 import { formatSrd } from '#/lib/money.ts'
@@ -697,6 +701,7 @@ function WaitingScreen({
       </div>
 
       <OrderSummaryCard order={order} />
+      <PushOptInCard orderNumber={order.orderNumber} />
 
       <p className="mt-4 text-center text-[12px] text-muted-foreground">
         Bewaar deze pagina — je hebt geen account nodig om je bestelling te
@@ -978,6 +983,68 @@ function BankProofUpload({
   )
 }
 
+/**
+ * Uitnodiging om pushmeldingen aan te zetten voor déze bestelling (klant,
+ * publiek/loginloos — vandaar de gebonden `saveCustomerPushSubscription` met
+ * het ordernummer als sleutel, net als het indienen van een betaalbewijs).
+ * Verschijnt zowel tijdens het wachten (voor de "tickets klaar"-melding) als
+ * na betaling (voor de "ingecheckt"-melding aan de deur). Blijft onzichtbaar
+ * in toestanden waarin de klant toch niets kan doen (geblokkeerd, niet
+ * ondersteund, nog aan het laden) — geen technische uitleg die hier niet
+ * relevant is.
+ */
+function PushOptInCard({ orderNumber }: { orderNumber: string }) {
+  const saveFn: SavePushSubscriptionFn = React.useCallback(
+    (input) =>
+      saveCustomerPushSubscription({
+        data: { ...input.data, orderNumber },
+      }),
+    [orderNumber],
+  )
+  const { state, subscribe } = usePushSubscription(saveFn)
+
+  if (state === 'checking' || state === 'unsupported' || state === 'denied') {
+    return null
+  }
+
+  return (
+    <div className={cn('mt-4 flex items-center gap-3 px-5 py-4', CARD)}>
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+        <Bell className="size-4" aria-hidden="true" />
+      </span>
+      <div className="min-w-0 flex-1">
+        {state === 'subscribed' ? (
+          <p className="text-[13.5px] font-medium">
+            Je krijgt een melding op dit apparaat.
+          </p>
+        ) : state === 'ios-needs-install' ? (
+          <>
+            <p className="text-[13.5px] font-medium">Meldingen op je iPhone</p>
+            <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+              Tik op <strong>Deel</strong> → <strong>Zet op beginscherm</strong>{' '}
+              en open de link daarna vanaf je beginscherm.
+            </p>
+          </>
+        ) : (
+          <p className="text-[13.5px] font-medium">
+            Zet meldingen aan voor deze bestelling
+          </p>
+        )}
+      </div>
+      {state === 'prompt' && (
+        <Button size="sm" variant="outline" onClick={subscribe}>
+          Aanzetten
+        </Button>
+      )}
+      {state === 'busy' && (
+        <span className="shrink-0 text-[12.5px] text-muted-foreground">
+          Bezig…
+        </span>
+      )}
+    </div>
+  )
+}
+
 function OrderSummaryCard({ order }: { order: OrderDetail }) {
   return (
     <div className={cn('mt-4 overflow-hidden', CARD)}>
@@ -1099,6 +1166,7 @@ function PaidScreen({ order }: { order: OrderDetail }) {
       </div>
 
       <OrderSummaryCard order={order} />
+      <PushOptInCard orderNumber={order.orderNumber} />
     </div>
   )
 }

@@ -9,8 +9,14 @@ import {
   checkoutItemSchema,
 } from '#/lib/validation/checkout.ts'
 import { generateOrderNumber } from '#/lib/order-number.ts'
-import { availableQuantity, isOnSale } from '#/lib/ticket-sales.ts'
+import {
+  ALMOST_SOLD_OUT_THRESHOLD,
+  availableQuantity,
+  isOnSale,
+} from '#/lib/ticket-sales.ts'
+import { lowStockKey, soldOutKey } from '#/lib/notifications/claim-key.ts'
 import { reservedByTicketType } from '#/server/reservations.server.ts'
+import { claimNotification, notify } from '#/server/notifications.server.ts'
 import { sendOrderConfirmationEmail } from '#/lib/emails.server.ts'
 
 /**
@@ -222,12 +228,18 @@ export const createOrder = createServerFn({ method: 'POST' })
       return number
     })
 
-    // Bevestigingsmail na commit; een mailfout mag de order niet ongedaan maken.
+    // Bevestigingsmail + pushmeldingen na commit; een fout hier mag de order
+    // niet ongedaan maken (zelfde reden als de e-mail: geen HTTP-round-trips
+    // binnen de transactie met rij-locks open, CLAUDE.md §5).
     try {
       const url = `${getServerEnv().BETTER_AUTH_URL}/bestelling/${orderNumber}`
       const order = await db.order.findUnique({
         where: { orderNumber },
-        include: { event: true, customer: true },
+        include: {
+          event: { include: { organization: { select: { ownerId: true } } } },
+          customer: true,
+          items: { include: { ticketType: true } },
+        },
       })
       if (order) {
         await sendOrderConfirmationEmail({
@@ -237,6 +249,45 @@ export const createOrder = createServerFn({ method: 'POST' })
           totalCents: order.totalCents,
           url,
         })
+
+        await notify(
+          'order.created',
+          { kind: 'user', userId: order.event.organization.ownerId },
+          {
+            eventId: order.eventId,
+            eventTitle: order.event.title,
+            orderNumber,
+            totalCents: order.totalCents,
+          },
+        )
+
+        // Bijna-uitverkocht / uitverkocht: per gekocht tickettype eenmalig
+        // melden zodra de drempel gepasseerd is (dedup via NotificationLog).
+        const reserved = await reservedByTicketType(
+          order.items.map((item) => item.ticketTypeId),
+        )
+        for (const item of order.items) {
+          const remaining = availableQuantity(
+            item.ticketType,
+            reserved[item.ticketTypeId] ?? 0,
+          )
+          if (remaining > ALMOST_SOLD_OUT_THRESHOLD) continue
+          const key =
+            remaining === 0
+              ? soldOutKey(item.ticketTypeId)
+              : lowStockKey(item.ticketTypeId)
+          if (await claimNotification('tickets.low_stock', key)) {
+            await notify(
+              'tickets.low_stock',
+              { kind: 'user', userId: order.event.organization.ownerId },
+              {
+                eventId: order.eventId,
+                ticketTypeName: item.ticketType.name,
+                remaining,
+              },
+            )
+          }
+        }
       }
     } catch {
       // Stil: de order staat; de klant heeft ook de orderlink op het scherm.

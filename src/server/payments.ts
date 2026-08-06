@@ -13,6 +13,7 @@ import {
 import { nextState } from '#/lib/payment-transitions.ts'
 import { generateTicketNumber } from '#/lib/ticket-number.ts'
 import { sendTicketEmailForOrder } from '#/server/tickets.server.ts'
+import { notify } from '#/server/notifications.server.ts'
 
 /**
  * Betalingen voor de organisator (Fase 5 + Fase 6).
@@ -38,6 +39,7 @@ export const approvePayment = createServerFn({ method: 'POST' })
       include: {
         payment: true,
         items: { select: { id: true, quantity: true } },
+        event: { select: { title: true } },
       },
     })
     if (!order) throw new Error('ORDER_NOT_FOUND')
@@ -87,13 +89,23 @@ export const approvePayment = createServerFn({ method: 'POST' })
       ),
     ])
 
-    // Ticketmail met PDF na commit; een mailfout mag de uitgifte niet ongedaan
-    // maken (zelfde patroon als de checkout-bevestiging).
+    // Ticketmail met PDF + pushmelding na commit; een fout hier mag de
+    // uitgifte niet ongedaan maken (zelfde patroon als de checkout-bevestiging).
     try {
       await sendTicketEmailForOrder(order.id)
     } catch {
       // Stil: de tickets staan; de klant kan ze ook op de orderpagina zien.
     }
+    // notify() gooit nooit (zie notifications.server.ts) — geen try/catch nodig.
+    await notify(
+      'tickets.issued',
+      { kind: 'customer', customerId: order.customerId },
+      {
+        orderNumber: order.orderNumber,
+        eventTitle: order.event.title,
+        ticketCount: ticketCreates.length,
+      },
+    )
 
     return { ok: true }
   })
@@ -173,7 +185,13 @@ export const submitProofOfPayment = createServerFn({ method: 'POST' })
     // Publieke lookup op bestelnummer (zoals getOrderByNumber, maar binnen tx).
     const order = await db.order.findUnique({
       where: { orderNumber: data.orderNumber },
-      include: { payment: true },
+      include: {
+        payment: true,
+        customer: { select: { firstName: true, lastName: true } },
+        event: {
+          select: { organization: { select: { ownerId: true } } },
+        },
+      },
     })
     if (!order) throw new Error('ORDER_NOT_FOUND')
     if (order.paymentMethod !== 'BankTransfer') {
@@ -213,6 +231,18 @@ export const submitProofOfPayment = createServerFn({ method: 'POST' })
         data: { orderStatus: 'AwaitingReview', paymentStatus: 'Pending' },
       }),
     ])
+
+    // notify() gooit nooit (zie notifications.server.ts) — geen try/catch nodig.
+    await notify(
+      'payment.submitted',
+      { kind: 'user', userId: order.event.organization.ownerId },
+      {
+        eventId: order.eventId,
+        orderNumber: order.orderNumber,
+        customerName:
+          `${order.customer.firstName} ${order.customer.lastName}`.trim(),
+      },
+    )
 
     return { ok: true }
   })

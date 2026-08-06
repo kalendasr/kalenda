@@ -47,6 +47,8 @@ model User {
   organization Organization?
   checkIns     CheckIn[]
   checkedInTickets Ticket[] @relation("TicketCheckedBy")
+  pushSubscriptions   PushSubscription[]
+  notificationPreferences NotificationPreference[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -356,6 +358,7 @@ model Customer {
   phone     String
 
   orders Order[]
+  pushSubscriptions PushSubscription[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -578,4 +581,85 @@ model CheckIn {
   @@index([eventId, scannedAt])
   @@index([ticketId])
   @@map("check_in")
+}
+
+// ---------------------------------------------------------------------------
+// Pushmeldingen (Fase 8). Zie DATABASE_DOMAIN.md §14.
+//
+// Eén PushSubscription = één browser-installatie. Hoort óf bij een organisator
+// (userId) óf bij een gastklant (customerId), nooit bij beide en nooit bij geen
+// van beide. Prisma kan die "precies één"-regel niet uitdrukken; de migratie
+// voegt daarom een CHECK-constraint toe.
+//
+// LET OP — bewuste afwijking van de huisregels: dit model heeft GEEN deletedAt
+// en gebruikt HARDE delete. Een browser die opnieuw abonneert hergebruikt
+// dezelfde `endpoint`; een soft-deleted rij zou botsen met de unique-constraint
+// en het opnieuw aanzetten stukmaken. Een dood abonnement heeft geen audit-waarde.
+// ---------------------------------------------------------------------------
+model PushSubscription {
+  id String @id @default(uuid())
+
+  // De push-service-URL; dit ís de identiteit van dit apparaat.
+  endpoint String @unique
+  // Publieke sleutel + auth-secret van de client, nodig voor de encryptie.
+  p256dh String
+  auth   String
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Gastklant zonder account. Het ordernummer op de orderpagina is de sleutel
+  // waarmee de klant zich abonneert — hetzelfde vertrouwensmodel als het
+  // uploaden van een betaalbewijs.
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  userAgent    String?
+  lastSeenAt   DateTime @default(now())
+  // Aantal opeenvolgende tijdelijke verzendfouten; boven een drempel opruimen.
+  failureCount Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([customerId])
+  @@map("push_subscription")
+}
+
+// Per-type voorkeur van een organisator. De AFWEZIGHEID van een rij betekent
+// "gebruik de standaard uit de registry" — er wordt pas een rij geschreven als
+// de organisator een schakelaar omzet. Zo kost een nieuw notificatietype geen
+// migratie en kan één upsert nooit een andere wijziging overschrijven.
+model NotificationPreference {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Registry-sleutel, bijv. "order.created".
+  type    String
+  enabled Boolean
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@map("notification_preference")
+}
+
+// Claim-tabel, GEEN bezorglog: één rij = "dit bericht is (of wordt nu)
+// verstuurd". De unique-constraint ís de vergrendeling — de verliezer van een
+// gelijktijdige insert krijgt P2002 en slaat over. Zo wordt een herinnering
+// nooit twee keer verstuurd en een bijna-uitverkocht-melding maar één keer.
+model NotificationLog {
+  id String @id @default(uuid())
+
+  type      String
+  // Deterministische doel-sleutel, bijv. "event:<uuid>" of "order:<uuid>".
+  targetKey String
+  sentAt    DateTime @default(now())
+
+  @@unique([type, targetKey])
+  @@map("notification_log")
 }

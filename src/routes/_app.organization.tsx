@@ -36,6 +36,11 @@ const TAB_GROUPS: Array<TabGroup> = [
   {
     label: 'Beheer',
     tabs: [
+      {
+        to: '/organization/notifications',
+        label: 'Meldingen',
+        exact: false,
+      },
       { to: '/organization/settings', label: 'Instellingen', exact: false },
     ],
   },

@@ -18,8 +18,18 @@ export const Route = createRootRoute({
         name: 'description',
         content: 'Evenementen en tickets voor Suriname.',
       },
+      // PWA: kleur van de systeembalk + iOS-standalone-gedrag. iOS-pushmeldingen
+      // werken alleen wanneer de site vanaf het beginscherm is geopend.
+      { name: 'theme-color', content: '#3b4fd4' },
+      { name: 'apple-mobile-web-app-capable', content: 'yes' },
+      { name: 'apple-mobile-web-app-title', content: 'Kalenda' },
     ],
-    links: [{ rel: 'stylesheet', href: appCss }],
+    links: [
+      { rel: 'stylesheet', href: appCss },
+      { rel: 'manifest', href: '/manifest.webmanifest' },
+      { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon-180.png' },
+      { rel: 'icon', href: '/icons/icon-192.png', type: 'image/png' },
+    ],
   }),
   shellComponent: RootDocument,
 })

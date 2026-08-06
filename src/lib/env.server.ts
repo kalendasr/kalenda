@@ -56,13 +56,28 @@ const mailEnvSchema = z.object({
   MAIL_AFZENDER_EMAIL: z.email(),
 })
 
+const pushEnvSchema = z.object({
+  VAPID_PUBLIC_KEY: z.string().min(1),
+  VAPID_PRIVATE_KEY: z.string().min(1),
+  // De pushdienst wil een contactadres kunnen bereiken; altijd een mailto:.
+  VAPID_SUBJECT: z.string().startsWith('mailto:'),
+})
+
+const cronEnvSchema = z.object({
+  CRON_SECRET: z.string().min(32),
+})
+
 export type ServerEnv = z.infer<typeof coreEnvSchema>
 export type StorageEnv = z.infer<typeof storageEnvSchema>
 export type MailEnv = z.infer<typeof mailEnvSchema>
+export type PushEnv = z.infer<typeof pushEnvSchema>
+export type CronEnv = z.infer<typeof cronEnvSchema>
 
 let cachedServerEnv: ServerEnv | undefined
 let cachedStorageEnv: StorageEnv | undefined
 let cachedMailEnv: MailEnv | undefined
+let cachedPushEnv: PushEnv | undefined
+let cachedCronEnv: CronEnv | undefined
 
 export function getServerEnv(): ServerEnv {
   cachedServerEnv ??= parse(coreEnvSchema, 'de applicatie')
@@ -79,4 +94,16 @@ export function getStorageEnv(): StorageEnv {
 export function getMailEnv(): MailEnv {
   cachedMailEnv ??= parse(mailEnvSchema, 'e-mail (Resend)')
   return cachedMailEnv
+}
+
+/** Web Push (VAPID). Valideert pas wanneer er daadwerkelijk gepusht wordt. */
+export function getPushEnv(): PushEnv {
+  cachedPushEnv ??= parse(pushEnvSchema, 'pushmeldingen (Web Push)')
+  return cachedPushEnv
+}
+
+/** Cron-secret. Valideert pas wanneer de geplande route wordt aangeroepen. */
+export function getCronEnv(): CronEnv {
+  cachedCronEnv ??= parse(cronEnvSchema, 'geplande taken (cron)')
+  return cachedCronEnv
 }

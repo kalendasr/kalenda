@@ -7,6 +7,7 @@ import { requireOwnedEvent } from '#/lib/event-guard.server.ts'
 import { resolveScanResult } from '#/lib/scan-result.ts'
 import { parseTicketNumberFromQr } from '#/lib/ticket-qr.ts'
 import type { CheckInResult } from '#/lib/scan-result.ts'
+import { notify } from '#/server/notifications.server.ts'
 
 /**
  * Scanner / check-in voor de organisator (Fase 7, BUSINESS_RULES BR-800..804).
@@ -48,7 +49,7 @@ export const resolveScan = createServerFn({ method: 'POST' })
   .validator(resolveScanSchema)
   .handler(async ({ data }): Promise<ResolveScanResponse> => {
     const user = await requireUser()
-    await requireOwnedEvent(user.id, data.eventId)
+    const event = await requireOwnedEvent(user.id, data.eventId)
 
     const ticketNumber = parseTicketNumberFromQr(data.payload)
     // Onleesbare payload → behandelen als een niet-gevonden scan (BR-804).
@@ -61,10 +62,16 @@ export const resolveScan = createServerFn({ method: 'POST' })
           result: 'NotFound',
         },
       })
+      // notify() gooit nooit — geen try/catch nodig.
+      await notify(
+        'scan.unusual',
+        { kind: 'user', userId: user.id },
+        { eventId: event.id, result: 'NotFound' },
+      )
       return { result: 'NotFound', ticket: null }
     }
 
-    return db.$transaction(async (tx) => {
+    const outcome = await db.$transaction(async (tx) => {
       // Lookup, begrensd op dit event (via orderItem.order.eventId), zodat een
       // ticket van een ander evenement nooit wordt ingecheckt.
       const ticket = await tx.ticket.findFirst({
@@ -78,6 +85,8 @@ export const resolveScan = createServerFn({ method: 'POST' })
               ticketType: { select: { name: true } },
               order: {
                 select: {
+                  orderNumber: true,
+                  customerId: true,
                   customer: {
                     select: { firstName: true, lastName: true },
                   },
@@ -142,8 +151,31 @@ export const resolveScan = createServerFn({ method: 'POST' })
         checkedInAt: result === 'Valid' ? new Date() : ticket.checkedInAt,
       }
 
-      return { result, ticket: view }
+      return {
+        result,
+        ticket: view,
+        orderNumber: ticket.orderItem.order.orderNumber,
+        customerId: ticket.orderItem.order.customerId,
+      }
     })
+
+    // Pushmelding na commit; nooit binnen de transactie (CLAUDE.md §5).
+    // notify() gooit nooit — geen try/catch nodig.
+    if (outcome.result === 'Valid') {
+      await notify(
+        'checkin.confirmed',
+        { kind: 'customer', customerId: outcome.customerId },
+        { orderNumber: outcome.orderNumber, eventTitle: event.title },
+      )
+    } else {
+      await notify(
+        'scan.unusual',
+        { kind: 'user', userId: user.id },
+        { eventId: event.id, result: outcome.result },
+      )
+    }
+
+    return { result: outcome.result, ticket: outcome.ticket }
   })
 
 const listCheckInsSchema = z.object({ eventId: z.uuid() })

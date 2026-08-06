@@ -28,6 +28,7 @@ import { Route as AppEventsNewRouteImport } from './routes/_app.events.new'
 import { Route as AppEventsEventIdRouteImport } from './routes/_app.events_.$eventId'
 import { Route as AppOrganizationIndexRouteImport } from './routes/_app.organization.index'
 import { Route as AppOrganizationDetailsRouteImport } from './routes/_app.organization.details'
+import { Route as AppOrganizationNotificationsRouteImport } from './routes/_app.organization.notifications'
 import { Route as AppOrganizationPaymentsRouteImport } from './routes/_app.organization.payments'
 import { Route as AppOrganizationSettingsRouteImport } from './routes/_app.organization.settings'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -133,6 +134,12 @@ const AppOrganizationDetailsRoute = AppOrganizationDetailsRouteImport.update({
   path: '/details',
   getParentRoute: () => AppOrganizationRoute,
 } as any)
+const AppOrganizationNotificationsRoute =
+  AppOrganizationNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AppOrganizationRoute,
+  } as any)
 const AppOrganizationPaymentsRoute = AppOrganizationPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
@@ -207,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/events/new': typeof AppEventsNewRoute
   '/events/$eventId': typeof AppEventsEventIdRouteWithChildren
   '/organization/details': typeof AppOrganizationDetailsRoute
+  '/organization/notifications': typeof AppOrganizationNotificationsRoute
   '/organization/payments': typeof AppOrganizationPaymentsRoute
   '/organization/settings': typeof AppOrganizationSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -235,6 +243,7 @@ export interface FileRoutesByTo {
   '/evenementen': typeof EvenementenIndexRoute
   '/events/new': typeof AppEventsNewRoute
   '/organization/details': typeof AppOrganizationDetailsRoute
+  '/organization/notifications': typeof AppOrganizationNotificationsRoute
   '/organization/payments': typeof AppOrganizationPaymentsRoute
   '/organization/settings': typeof AppOrganizationSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -268,6 +277,7 @@ export interface FileRoutesById {
   '/_app/events/new': typeof AppEventsNewRoute
   '/_app/events_/$eventId': typeof AppEventsEventIdRouteWithChildren
   '/_app/organization/details': typeof AppOrganizationDetailsRoute
+  '/_app/organization/notifications': typeof AppOrganizationNotificationsRoute
   '/_app/organization/payments': typeof AppOrganizationPaymentsRoute
   '/_app/organization/settings': typeof AppOrganizationSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/events/new'
     | '/events/$eventId'
     | '/organization/details'
+    | '/organization/notifications'
     | '/organization/payments'
     | '/organization/settings'
     | '/api/auth/$'
@@ -328,6 +339,7 @@ export interface FileRouteTypes {
     | '/evenementen'
     | '/events/new'
     | '/organization/details'
+    | '/organization/notifications'
     | '/organization/payments'
     | '/organization/settings'
     | '/api/auth/$'
@@ -360,6 +372,7 @@ export interface FileRouteTypes {
     | '/_app/events/new'
     | '/_app/events_/$eventId'
     | '/_app/organization/details'
+    | '/_app/organization/notifications'
     | '/_app/organization/payments'
     | '/_app/organization/settings'
     | '/api/auth/$'
@@ -523,6 +536,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationDetailsRouteImport
       parentRoute: typeof AppOrganizationRoute
     }
+    '/_app/organization/notifications': {
+      id: '/_app/organization/notifications'
+      path: '/notifications'
+      fullPath: '/organization/notifications'
+      preLoaderRoute: typeof AppOrganizationNotificationsRouteImport
+      parentRoute: typeof AppOrganizationRoute
+    }
     '/_app/organization/payments': {
       id: '/_app/organization/payments'
       path: '/payments'
@@ -605,6 +625,7 @@ declare module '@tanstack/react-router' {
 
 interface AppOrganizationRouteChildren {
   AppOrganizationDetailsRoute: typeof AppOrganizationDetailsRoute
+  AppOrganizationNotificationsRoute: typeof AppOrganizationNotificationsRoute
   AppOrganizationPaymentsRoute: typeof AppOrganizationPaymentsRoute
   AppOrganizationSettingsRoute: typeof AppOrganizationSettingsRoute
   AppOrganizationIndexRoute: typeof AppOrganizationIndexRoute
@@ -612,6 +633,7 @@ interface AppOrganizationRouteChildren {
 
 const AppOrganizationRouteChildren: AppOrganizationRouteChildren = {
   AppOrganizationDetailsRoute: AppOrganizationDetailsRoute,
+  AppOrganizationNotificationsRoute: AppOrganizationNotificationsRoute,
   AppOrganizationPaymentsRoute: AppOrganizationPaymentsRoute,
   AppOrganizationSettingsRoute: AppOrganizationSettingsRoute,
   AppOrganizationIndexRoute: AppOrganizationIndexRoute,
