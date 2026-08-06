@@ -1,25 +1,27 @@
 import { useMemo, useState } from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
-import { Check, Inbox, Send, X } from 'lucide-react'
+import { Inbox } from 'lucide-react'
 
 import { listEventOrders } from '#/server/orders.ts'
 import {
   approvePayment,
   getProofSignedUrl,
   rejectPayment,
+  sendPaymentRequest,
 } from '#/server/payments.ts'
-import { resendOrderTickets } from '#/server/tickets.ts'
+import {
+  resendOrderTickets,
+  shareTicketsViaWhatsApp,
+} from '#/server/tickets.ts'
 import { formatSrd } from '#/lib/money.ts'
 import { formatDateTimeNl } from '#/lib/datetime.ts'
+import { effectiveOrderStatus } from '#/lib/order-status.ts'
 import {
-  ORDER_STATUS_LABELS,
-  effectiveOrderStatus,
-  orderStatusBadgeVariant,
-} from '#/lib/order-status.ts'
-import {
-  PAYMENT_STATE_LABELS,
-  paymentStateBadgeVariant,
-} from '#/lib/payment-transitions.ts'
+  deriveOrderStage,
+  ORDER_STAGE_LABELS,
+  orderStageBadgeVariant,
+} from '#/lib/order-stage.ts'
+import type { OrderStage } from '#/lib/order-stage.ts'
 import { cn } from '#/lib/utils.ts'
 import { Badge } from '#/components/ui/badge.tsx'
 import { Button } from '#/components/ui/button.tsx'
@@ -33,6 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog.tsx'
+import { OrderDetailDialog } from '#/components/app/order-detail-dialog.tsx'
 import { toast } from '#/components/ui/sonner.tsx'
 
 export const Route = createFileRoute('/_app/events_/$eventId/orders')({
@@ -45,43 +48,61 @@ export const Route = createFileRoute('/_app/events_/$eventId/orders')({
 type OrdersResult = Awaited<ReturnType<typeof listEventOrders>>
 type OrderRow = OrdersResult[number]
 
-const ORDER_FILTERS: Array<{ label: string; statuses: Array<string> | null }> =
-  [
-    { label: 'Alle', statuses: null },
-    { label: 'Wacht op controle', statuses: ['AwaitingReview'] },
-    { label: 'Afgerond', statuses: ['Completed', 'Paid'] },
-    { label: 'Verlopen', statuses: ['Expired'] },
-  ]
+const ORDER_FILTERS: Array<{
+  label: string
+  stages: Array<OrderStage> | null
+}> = [
+  { label: 'Alle', stages: null },
+  {
+    label: 'Actie nodig',
+    stages: ['NewOrder', 'ProofSubmitted', 'TicketsPending'],
+  },
+  { label: 'Afgerond', stages: ['Done'] },
+  { label: 'Verlopen', stages: ['Expired', 'Cancelled'] },
+]
+
+function stageOf(order: OrderRow): OrderStage {
+  const tickets = order.items.flatMap((i) => i.tickets)
+  return deriveOrderStage({
+    orderStatus: order.orderStatus,
+    expiresAt: order.expiresAt,
+    paymentMethod: order.paymentMethod,
+    payment: order.payment,
+    ticketsSent: tickets.length > 0 && tickets.every((t) => Boolean(t.sentAt)),
+  })
+}
 
 function EventOrders() {
   const { orders } = Route.useLoaderData()
   const { eventId } = Route.useParams()
   const router = useRouter()
   const [filter, setFilter] = useState('Alle')
+  const [openOrderId, setOpenOrderId] = useState<string | null>(null)
 
   const stats = useMemo(() => {
     let doneCount = 0
     let doneSum = 0
-    let reviewCount = 0
-    let reviewSum = 0
+    let actionCount = 0
     let expiredCount = 0
     for (const order of orders) {
-      const status = effectiveOrderStatus(order)
-      if (status === 'Completed' || status === 'Paid') {
+      const stage = stageOf(order)
+      if (stage === 'Done') {
         doneCount++
         doneSum += order.totalCents
-      } else if (status === 'AwaitingReview') {
-        reviewCount++
-        reviewSum += order.totalCents
-      } else if (status === 'Expired') {
+      } else if (
+        stage === 'NewOrder' ||
+        stage === 'ProofSubmitted' ||
+        stage === 'TicketsPending'
+      ) {
+        actionCount++
+      } else if (stage === 'Expired') {
         expiredCount++
       }
     }
     return {
       doneCount,
       doneSum,
-      reviewCount,
-      reviewSum,
+      actionCount,
       expiredCount,
       avg: doneCount > 0 ? Math.round(doneSum / doneCount) : 0,
     }
@@ -89,18 +110,30 @@ function EventOrders() {
 
   const visible = useMemo(() => {
     const active = ORDER_FILTERS.find((f) => f.label === filter)
-    if (!active?.statuses) return orders
-    return orders.filter((o) =>
-      active.statuses!.includes(effectiveOrderStatus(o)),
-    )
+    if (!active?.stages) return orders
+    return orders.filter((o) => active.stages!.includes(stageOf(o)))
   }, [orders, filter])
 
+  const openOrder = orders.find((o) => o.id === openOrderId) ?? null
+
   async function runAction(
-    fn: () => Promise<{ ok: boolean }>,
+    fn: () => Promise<{ whatsappUrl?: string | null } | unknown>,
     success: string,
   ) {
     try {
-      await fn()
+      const result = await fn()
+      if (
+        result &&
+        typeof result === 'object' &&
+        'whatsappUrl' in result &&
+        (result as { whatsappUrl?: string | null }).whatsappUrl
+      ) {
+        window.open(
+          (result as { whatsappUrl: string }).whatsappUrl,
+          '_blank',
+          'noopener',
+        )
+      }
       await router.invalidate()
       toast.success(success)
     } catch (error) {
@@ -137,12 +170,9 @@ function EventOrders() {
           tone="success"
         />
         <StatCard
-          label="Wacht op controle"
-          value={stats.reviewCount}
-          subtext={
-            stats.reviewCount > 0 ? formatSrd(stats.reviewSum) : undefined
-          }
-          tone="warning"
+          label="Actie nodig"
+          value={stats.actionCount}
+          tone={stats.actionCount > 0 ? 'warning' : undefined}
         />
         <StatCard
           label="Verlopen"
@@ -192,79 +222,128 @@ function EventOrders() {
             <OrderCard
               key={order.id}
               order={order}
+              onOpen={() => setOpenOrderId(order.id)}
               onApprove={() =>
                 runAction(
                   () => approvePayment({ data: { orderId: order.id } }),
                   'Betaling bevestigd.',
                 )
               }
-              onReject={(notes) =>
+              onSendPaymentRequest={() =>
                 runAction(
-                  () =>
-                    rejectPayment({
-                      data: { orderId: order.id, notes },
-                    }),
-                  'Betaling afgekeurd.',
+                  () => sendPaymentRequest({ data: { orderId: order.id } }),
+                  'Betaalverzoek verstuurd.',
                 )
               }
               onResend={() =>
                 runAction(
                   () => resendOrderTickets({ data: { orderId: order.id } }),
-                  'Tickets zijn opnieuw verstuurd.',
+                  'Tickets zijn verstuurd.',
                 )
               }
             />
           ))}
         </ul>
       )}
+
+      {openOrder ? (
+        <OrderDetailDialog
+          order={openOrder}
+          open={Boolean(openOrder)}
+          onOpenChange={(next) => {
+            if (!next) setOpenOrderId(null)
+          }}
+          onApprove={() =>
+            runAction(
+              () => approvePayment({ data: { orderId: openOrder.id } }),
+              'Betaling bevestigd — tickets zijn onderweg.',
+            )
+          }
+          onReject={(notes) =>
+            runAction(
+              () => rejectPayment({ data: { orderId: openOrder.id, notes } }),
+              'Betaling afgekeurd. De klant is op de hoogte gesteld.',
+            )
+          }
+          onSendPaymentRequest={() =>
+            runAction(
+              () => sendPaymentRequest({ data: { orderId: openOrder.id } }),
+              'Betaalverzoek verstuurd.',
+            )
+          }
+          onResendEmail={() =>
+            runAction(
+              () => resendOrderTickets({ data: { orderId: openOrder.id } }),
+              'Tickets zijn gemaild.',
+            )
+          }
+          onShareWhatsApp={() =>
+            runAction(
+              () =>
+                shareTicketsViaWhatsApp({ data: { orderId: openOrder.id } }),
+              'WhatsApp geopend met de ticketlink.',
+            )
+          }
+          onViewProof={async () => {
+            try {
+              const result = await getProofSignedUrl({
+                data: { orderId: openOrder.id },
+              })
+              if (result?.url) {
+                window.open(result.url, '_blank', 'noopener')
+              } else {
+                toast.error('Er is geen betaalbewijs gevonden.')
+              }
+            } catch (error) {
+              toast.error(
+                error instanceof Error
+                  ? error.message
+                  : 'Bewijs ophalen is mislukt.',
+              )
+            }
+          }}
+        />
+      ) : null}
     </div>
   )
 }
 
 function OrderCard({
   order,
+  onOpen,
   onApprove,
-  onReject,
+  onSendPaymentRequest,
   onResend,
 }: {
   order: OrderRow
+  onOpen: () => void
   onApprove: () => Promise<void>
-  onReject: (notes?: string) => Promise<void>
+  onSendPaymentRequest: () => Promise<void>
   onResend: () => Promise<void>
 }) {
   const status = effectiveOrderStatus(order)
+  const stage = stageOf(order)
   const tickets = order.items.reduce((sum, i) => sum + i.quantity, 0)
   const issuedTickets = order.items.reduce(
     (sum, i) => sum + i.tickets.length,
     0,
   )
-  const pay = order.payment
   const isWhatsApp = order.paymentMethod === 'WhatsApp'
-  const showActions =
-    pay &&
-    (pay.state === 'Waiting' || pay.state === 'Submitted') &&
-    status !== 'Expired' &&
-    status !== 'Cancelled'
-  const canResend = issuedTickets > 0 && status !== 'Expired'
 
   return (
     <li className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border bg-card p-4 shadow-sm">
-      <div className="min-w-0 flex-1">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="min-w-0 flex-1 text-left"
+      >
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium">
             {order.customer.firstName} {order.customer.lastName}
           </span>
-          <Badge variant={orderStatusBadgeVariant(status)}>
-            {ORDER_STATUS_LABELS[status]}
+          <Badge variant={orderStageBadgeVariant(stage)}>
+            {ORDER_STAGE_LABELS[stage]}
           </Badge>
-          {pay ? (
-            <Badge variant={paymentStateBadgeVariant(pay.state)}>
-              {PAYMENT_STATE_LABELS[pay.state]}
-            </Badge>
-          ) : null}
-          {pay?.notes ? (
-            <span className="text-xs text-muted-foreground">· {pay.notes}</span>
-          ) : null}
           {issuedTickets > 0 ? (
             <span className="text-xs text-muted-foreground">
               · {issuedTickets} ticket{issuedTickets === 1 ? '' : 's'}
@@ -283,7 +362,7 @@ function OrderCard({
           </span>
           <span>{formatDateTimeNl(order.createdAt)}</span>
         </div>
-      </div>
+      </button>
 
       <div className="flex flex-col items-end gap-2">
         <div className="text-right">
@@ -298,23 +377,27 @@ function OrderCard({
           </a>
         </div>
 
-        {showActions ? (
-          <div className="flex items-center gap-2">
-            {!isWhatsApp && pay.state === 'Submitted' && pay.proofKey ? (
-              <ProofPreviewButton orderId={order.id} />
-            ) : null}
-            <Button size="sm" onClick={onApprove}>
-              <Check />
-              {isWhatsApp ? 'Bevestig betaling' : 'Goedkeuren'}
-            </Button>
-            <RejectButton onReject={onReject} />
-          </div>
+        {stage === 'NewOrder' && status !== 'Expired' ? (
+          <Button size="sm" onClick={onSendPaymentRequest}>
+            Betaalverzoek versturen
+          </Button>
         ) : null}
 
-        {canResend ? (
+        {(stage === 'PaymentRequested' || stage === 'AwaitingTransfer') &&
+        status !== 'Expired' ? (
+          <ApproveDialog order={order} onApprove={onApprove} />
+        ) : null}
+
+        {stage === 'ProofSubmitted' ? (
+          <Button size="sm" variant="outline" onClick={onOpen}>
+            Bewijs controleren
+          </Button>
+        ) : null}
+
+        {(stage === 'TicketsPending' || stage === 'Done') &&
+        status !== 'Expired' ? (
           <Button size="sm" variant="outline" onClick={onResend}>
-            <Send />
-            Verstuur tickets
+            {stage === 'Done' ? 'Opnieuw versturen' : 'Verstuur tickets'}
           </Button>
         ) : null}
       </div>
@@ -322,72 +405,21 @@ function OrderCard({
   )
 }
 
-function ProofPreviewButton({ orderId }: { orderId: string }) {
-  const [open, setOpen] = useState(false)
-  const [url, setUrl] = useState<string | null>(null)
-
-  async function openProof() {
-    try {
-      const result = await getProofSignedUrl({
-        data: { orderId },
-      })
-      if (result?.url) {
-        setUrl(result.url)
-        setOpen(true)
-      } else {
-        toast.error('Er is geen betaalbewijs gevonden.')
-      }
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Bewijs ophalen is mislukt.',
-      )
-    }
-  }
-
-  return (
-    <>
-      <Button size="sm" variant="outline" onClick={openProof}>
-        Bewijs bekijken
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Betaalbewijs</DialogTitle>
-            <DialogDescription>
-              Controleer dit bewijs voordat je de betaling goedkeurt.
-            </DialogDescription>
-          </DialogHeader>
-          {url ? (
-            <img
-              src={url}
-              alt="Betaalbewijs van de klant"
-              className="max-h-[60vh] w-full rounded-lg object-contain"
-            />
-          ) : null}
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setOpen(false)}>
-              Sluiten
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  )
-}
-
-function RejectButton({
-  onReject,
+function ApproveDialog({
+  order,
+  onApprove,
 }: {
-  onReject: (notes?: string) => Promise<void>
+  order: OrderRow
+  onApprove: () => Promise<void>
 }) {
   const [open, setOpen] = useState(false)
-  const [notes, setNotes] = useState('')
   const [busy, setBusy] = useState(false)
+  const tickets = order.items.reduce((sum, i) => sum + i.quantity, 0)
 
-  async function submit() {
+  async function confirm() {
     setBusy(true)
     try {
-      await onReject(notes.trim() || undefined)
+      await onApprove()
       setOpen(false)
     } finally {
       setBusy(false)
@@ -396,31 +428,25 @@ function RejectButton({
 
   return (
     <>
-      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
-        <X />
-        Afkeuren
+      <Button size="sm" onClick={() => setOpen(true)}>
+        Bevestig betaling
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Betaling afkeuren</DialogTitle>
+            <DialogTitle>Betaling bevestigen</DialogTitle>
             <DialogDescription>
-              De klant kan daarna opnieuw een betaalbewijs indienen. Voeg zo
-              nodig een reden toe.
+              Bevestig dat je {formatSrd(order.totalCents)} hebt ontvangen. We
+              maken daarna {tickets} tickets aan en mailen ze naar{' '}
+              {order.customer.email}.
             </DialogDescription>
           </DialogHeader>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Bijv. bedrag klopt niet"
-            className="min-h-20 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          />
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setOpen(false)}>
+            <Button variant="outline" onClick={() => setOpen(false)}>
               Annuleren
             </Button>
-            <Button variant="destructive" disabled={busy} onClick={submit}>
-              Betaling afkeuren
+            <Button disabled={busy} onClick={confirm}>
+              {busy ? 'Bezig…' : 'Ja, bevestig betaling'}
             </Button>
           </DialogFooter>
         </DialogContent>

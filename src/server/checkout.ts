@@ -307,12 +307,22 @@ export const getOrderByNumber = createServerFn({ method: 'GET' })
           include: {
             ticketType: { select: { name: true } },
             tickets: {
-              select: { id: true, ticketNumber: true, status: true },
+              select: {
+                id: true,
+                ticketNumber: true,
+                status: true,
+                sentAt: true,
+              },
             },
           },
         },
         payment: {
-          select: { state: true, reference: true, notes: true },
+          select: {
+            state: true,
+            reference: true,
+            notes: true,
+            requestedAt: true,
+          },
         },
         event: {
           select: {

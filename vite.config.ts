@@ -15,4 +15,12 @@ import tailwindcss from '@tailwindcss/vite'
  */
 export default defineConfig({
   plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
+  server: {
+    // Vite's dev-server valideert de Host-header uit veiligheid. Achter de
+    // Caddy reverse proxy op de test-omgeving (kalenda.mijnonline.shop) komt
+    // die header door als het domein, niet als localhost — zonder deze regel
+    // blokkeert Vite elk verzoek met "Blocked request. This host is not
+    // allowed." `npm run dev` (lokaal, zonder proxy) blijft ongemoeid.
+    allowedHosts: ['kalenda.mijnonline.shop'],
+  },
 })

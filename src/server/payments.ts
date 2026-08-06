@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
+import { z } from 'zod'
 
 import { db } from '#/lib/db.server.ts'
 import { requireUser } from '#/lib/session.server.ts'
@@ -12,21 +13,99 @@ import {
 } from '#/lib/validation/payment.ts'
 import { nextState } from '#/lib/payment-transitions.ts'
 import { generateTicketNumber } from '#/lib/ticket-number.ts'
+import { buildPaymentRequestMessage } from '#/lib/payment-request-message.ts'
+import { waLink } from '#/lib/whatsapp.ts'
+import { getServerEnv } from '#/lib/env.server.ts'
+import { sendPaymentRejectedEmail } from '#/lib/emails.server.ts'
 import { sendTicketEmailForOrder } from '#/server/tickets.server.ts'
 import { notify } from '#/server/notifications.server.ts'
 
 /**
- * Betalingen voor de organisator (Fase 5 + Fase 6).
+ * Betalingen voor de organisator (Fase 5 + Fase 6 + Fase 9).
  *
- * Owner-geguarde mutaties (`approve`/`reject`/`getProofSignedUrl`) lopen via
- * `requireOwnedEvent`; het indienen van een betaalbewijs is publiek
- * (zelfbediening door de klant, BR-603). Het platform verwerkt geen geld
- * (BR-600) — het bevestigt alleen de workflow.
+ * Owner-geguarde mutaties (`sendPaymentRequest`/`approve`/`reject`/
+ * `getProofSignedUrl`) lopen via `requireOwnedEvent`; het indienen van een
+ * betaalbewijs is publiek (zelfbediening door de klant, BR-603). Het platform
+ * verwerkt geen geld (BR-600) — het bevestigt alleen de workflow.
  *
- * Bij goedkeuren (Fase 6) worden direct de tickets aangemaakt en per e-mail
- * verstuurd zodra de betaling is geverifieerd (BR-604). De order wordt daarna
- * `Completed`.
+ * Bij goedkeuren (Fase 6) worden direct de tickets aangemaakt zodra de
+ * betaling is geverifieerd (BR-604) en gaat de order naar `Paid`. Pas zodra de
+ * tickets daadwerkelijk zijn verstuurd, wordt de order `Completed`
+ * (`tickets.server.ts`) — zo betekent "Afgerond" ook echt "tickets geleverd",
+ * en blijft een mislukte ticketmail zichtbaar in plaats van verborgen.
  */
+
+/** Organisator verstuurt het betaalverzoek via WhatsApp (BR-602). */
+export const sendPaymentRequest = createServerFn({ method: 'POST' })
+  .validator(z.object({ orderId: z.uuid() }))
+  .handler(async ({ data }): Promise<{ whatsappUrl: string | null }> => {
+    const user = await requireUser()
+
+    const order = await db.order.findUnique({
+      where: { id: data.orderId },
+      include: {
+        payment: true,
+        customer: { select: { firstName: true, phone: true } },
+        event: {
+          select: {
+            title: true,
+            organization: {
+              select: { phone: true, paymentSettings: true },
+            },
+          },
+        },
+      },
+    })
+    if (!order) throw new Error('ORDER_NOT_FOUND')
+
+    await requireOwnedEvent(user.id, order.eventId)
+
+    if (order.paymentMethod !== 'WhatsApp') {
+      throw new Error(
+        'Een betaalverzoek is alleen nodig bij WhatsApp-betaling.',
+      )
+    }
+    const now = new Date()
+    if (order.expiresAt < now) {
+      throw new Error('De betaaltermijn van deze bestelling is verstreken.')
+    }
+    if (!order.payment) throw new Error('PAYMENT_NOT_FOUND')
+    if (!nextState(order.payment.state, 'request')) {
+      throw new Error('Er is al een betaalverzoek verstuurd.')
+    }
+
+    await db.payment.update({
+      where: { id: order.payment.id },
+      data: { state: 'Requested', requestedAt: now, requestedBy: user.id },
+    })
+
+    // Klant krijgt een push zodra het verzoek onderweg is (geen try/catch
+    // nodig: notify() gooit nooit).
+    await notify(
+      'payment.requested',
+      { kind: 'customer', customerId: order.customerId },
+      { orderNumber: order.orderNumber, eventTitle: order.event.title },
+    )
+
+    const orderUrl = `${getServerEnv().BETTER_AUTH_URL}/bestelling/${order.orderNumber}`
+    const message = buildPaymentRequestMessage({
+      customerFirstName: order.customer.firstName,
+      eventTitle: order.event.title,
+      orderNumber: order.orderNumber,
+      totalCents: order.totalCents,
+      paymentApp: order.paymentApp,
+      orderUrl,
+      expiresAt: order.expiresAt,
+    })
+    // Organisator stuurt zelf het bericht in het geopende gesprek; het
+    // platform verwerkt geen geld en heeft geen WhatsApp Business API (BR-600).
+    const phone =
+      order.event.organization.paymentSettings?.whatsappPhone ??
+      order.event.organization.phone
+    const whatsappUrl = waLink(phone, message)
+
+    return { whatsappUrl }
+  })
 
 /** Zet een order + bijbehorende Payment in de Betaald-toestand (BR-602/603/604). */
 export const approvePayment = createServerFn({ method: 'POST' })
@@ -73,11 +152,13 @@ export const approvePayment = createServerFn({ method: 'POST' })
         where: { id: order.payment.id },
         data: { state: 'Verified', verifiedBy: user.id, verifiedAt: now },
       }),
-      // Zodra tickets bestaan is de order afgerond (Completed).
+      // De order is nu betaald (BR-505); pas als de ticketmail daadwerkelijk
+      // verstuurd is (tickets.server.ts) wordt hij Completed. Zo blijft
+      // zichtbaar wanneer de betaling wél binnen is maar de levering nog niet.
       db.order.update({
         where: { id: order.id },
         data: {
-          orderStatus: 'Completed',
+          orderStatus: 'Paid',
           paymentStatus: 'Verified',
           notes: order.notes,
         },
@@ -91,10 +172,13 @@ export const approvePayment = createServerFn({ method: 'POST' })
 
     // Ticketmail met PDF + pushmelding na commit; een fout hier mag de
     // uitgifte niet ongedaan maken (zelfde patroon als de checkout-bevestiging).
+    // Bij succes zet dit de order pas op Completed (tickets.server.ts).
     try {
-      await sendTicketEmailForOrder(order.id)
+      await sendTicketEmailForOrder(order.id, 'Email')
     } catch {
-      // Stil: de tickets staan; de klant kan ze ook op de orderpagina zien.
+      // Stil: de tickets staan (Paid); de organisator ziet "nog niet
+      // verstuurd" en kan het opnieuw proberen. De klant kan ze ook op de
+      // orderpagina zien.
     }
     // notify() gooit nooit (zie notifications.server.ts) — geen try/catch nodig.
     await notify(
@@ -118,7 +202,11 @@ export const rejectPayment = createServerFn({ method: 'POST' })
 
     const order = await db.order.findUnique({
       where: { id: data.orderId },
-      include: { payment: true },
+      include: {
+        payment: true,
+        customer: { select: { email: true } },
+        event: { select: { title: true } },
+      },
     })
     if (!order) throw new Error('ORDER_NOT_FOUND')
 
@@ -148,6 +236,26 @@ export const rejectPayment = createServerFn({ method: 'POST' })
         data: { orderStatus: 'AwaitingReview', paymentStatus: 'Rejected' },
       }),
     ])
+
+    // Klant krijgt automatisch een melding (BR-606/903) — voorheen ontbrak dit
+    // volledig en zag de klant een afkeuring pas bij een toevallig bezoek.
+    const orderUrl = `${getServerEnv().BETTER_AUTH_URL}/bestelling/${order.orderNumber}`
+    try {
+      await sendPaymentRejectedEmail({
+        to: order.customer.email,
+        orderNumber: order.orderNumber,
+        eventTitle: order.event.title,
+        reason: data.notes ?? null,
+        url: orderUrl,
+      })
+    } catch {
+      // Stil: de afkeuring staat; de klant ziet hem ook op de orderpagina.
+    }
+    await notify(
+      'payment.rejected',
+      { kind: 'customer', customerId: order.customerId },
+      { orderNumber: order.orderNumber, eventTitle: order.event.title },
+    )
 
     return { ok: true }
   })

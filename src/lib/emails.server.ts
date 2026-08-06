@@ -100,3 +100,44 @@ export async function sendOrderConfirmationEmail({
 
   await sendMail({ to, subject, html, text })
 }
+
+/** Klant: het ingediende betaalbewijs is afgekeurd (BR-606/903). */
+export async function sendPaymentRejectedEmail({
+  to,
+  orderNumber,
+  eventTitle,
+  reason,
+  url,
+}: {
+  to: string
+  orderNumber: string
+  eventTitle: string
+  reason: string | null
+  url: string
+}): Promise<void> {
+  const subject = `Je betaalbewijs is afgekeurd — ${eventTitle}`
+  const reasonBlock = reason
+    ? `<p style="margin:0 0 16px;font-size:14px;line-height:1.6;">
+         Reden: <strong>${reason}</strong>
+       </p>`
+    : ''
+  const html = layout(
+    'Je betaalbewijs is afgekeurd',
+    `<p style="margin:0 0 16px;font-size:14px;line-height:1.6;">
+       De organisator van <strong>${eventTitle}</strong> kon je betaalbewijs
+       voor bestelling <strong>${orderNumber}</strong> niet goedkeuren.
+     </p>
+     ${reasonBlock}
+     <p style="margin:0 0 24px;font-size:14px;line-height:1.6;">
+       Geen probleem — je kunt direct een nieuw bewijs indienen via de knop
+       hieronder.
+     </p>
+     <p style="margin:0 0 24px;">
+       <a href="${url}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-size:14px;font-weight:600;">Nieuw bewijs indienen</a>
+     </p>`,
+  )
+
+  const text = `Je betaalbewijs is afgekeurd\n\nDe organisator van ${eventTitle} kon je betaalbewijs voor bestelling ${orderNumber} niet goedkeuren.${reason ? `\nReden: ${reason}` : ''}\n\nJe kunt direct een nieuw bewijs indienen via:\n${url}`
+
+  await sendMail({ to, subject, html, text })
+}

@@ -1,0 +1,27 @@
+# Caddy-siteblok voor de TEST-omgeving van kalenda.
+#
+# Plaatsing op de VPS: /etc/caddy/sites/kalenda.caddy
+# De hoofd-Caddyfile (/etc/caddy/Caddyfile) leest die map in met:
+#     import /etc/caddy/sites/*.caddy
+#
+# VEREIST: DNS-A-record  kalenda.mijnonline.shop -> 162.35.176.40
+#
+# Zelfde opzet als test-tickets.mijnonline.shop (ticketsysteem): pushmeldingen
+# (Web Push) werken alleen in een secure context, dus lokaal over http lukt
+# testen op een telefoon niet. De app draait NIET onder PM2: start hem met
+# `npm run dev:test` in /home/amresh/kalenda. Staat hij niet aan, dan geeft
+# Caddy een 502 — bewust, dit hoeft geen 24/7-omgeving te zijn.
+
+kalenda.mijnonline.shop {
+	encode zstd gzip
+
+	# Wachtwoordbeveiliging: zonder dit staat een omgeving met testdata publiek
+	# op internet. `basicauth`, niet `basic_auth` — deze server draait Caddy
+	# 2.6.2, en die spelling bestaat pas vanaf 2.8.
+	basicauth {
+		amresh $2a$14$.WLLL6D2Py6QZxiw5WWLveb0TMQqQ4xMxL8LKma0YKpl7rXAWhel2
+	}
+
+	# Poort 3500 staat niet open in de firewall; al het verkeer loopt via Caddy.
+	reverse_proxy localhost:3500
+}

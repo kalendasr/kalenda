@@ -15,6 +15,7 @@ import type { PaymentMethod, PaymentState } from '#/generated/prisma/client.ts'
  * overgangen onmogelijk zijn (bv. Verified → Submitted).
  */
 export type PaymentAction =
+  | 'request' // organisator verstuurt het betaalverzoek (WhatsApp, BR-602)
   | 'submit' // klant dient (bank)bewijs in (BR-603/605)
   | 'approve' // organisator keurt goed / bevestigt (BR-602/603)
   | 'reject' // organisator keurt af (BR-603/607)
@@ -25,7 +26,10 @@ export const ALLOWED_ACTIONS: Record<
   PaymentState,
   ReadonlySet<PaymentAction>
 > = {
-  Waiting: new Set(['submit', 'approve', 'reject', 'cancel']),
+  Waiting: new Set(['request', 'submit', 'approve', 'reject', 'cancel']),
+  // Alleen de WhatsApp-flow komt hier: het verzoek staat uit, de klant heeft
+  // nog niet betaald. Bank-flow springt Waiting → Submitted, nooit hierlangs.
+  Requested: new Set(['approve', 'reject', 'cancel']),
   Submitted: new Set(['approve', 'reject']),
   Verified: new Set(),
   Rejected: new Set(['submit', 'cancel']),
@@ -38,11 +42,13 @@ export const NEXT_STATE: Record<
   Partial<Record<PaymentAction, PaymentState>>
 > = {
   Waiting: {
+    request: 'Requested',
     submit: 'Submitted',
     approve: 'Verified',
     reject: 'Rejected',
     cancel: 'Cancelled',
   },
+  Requested: { approve: 'Verified', reject: 'Rejected', cancel: 'Cancelled' },
   Submitted: { approve: 'Verified', reject: 'Rejected' },
   Verified: {},
   Rejected: { submit: 'Submitted', cancel: 'Cancelled' },
@@ -70,6 +76,7 @@ export function canTransition(
 
 export const PAYMENT_STATE_LABELS: Record<PaymentState, string> = {
   Waiting: 'Wacht op betaling',
+  Requested: 'Betaalverzoek verstuurd',
   Submitted: 'Bewijs ontvangen',
   Verified: 'Betaald',
   Rejected: 'Afgekeurd',

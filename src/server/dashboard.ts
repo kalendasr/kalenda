@@ -114,6 +114,8 @@ export const listRecentOrders = createServerFn({ method: 'GET' }).handler(
       include: {
         customer: { select: { firstName: true, lastName: true } },
         event: { select: { id: true, title: true } },
+        payment: { select: { state: true } },
+        items: { select: { tickets: { select: { sentAt: true } } } },
       },
     })
   },

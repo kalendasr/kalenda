@@ -35,6 +35,14 @@ const SAMPLES: NotificationData = {
     eventTitle: 'Owru Yari Fest',
     ticketCount: 2,
   },
+  'payment.requested': {
+    orderNumber: 'KAL-1234',
+    eventTitle: 'Owru Yari Fest',
+  },
+  'payment.rejected': {
+    orderNumber: 'KAL-1234',
+    eventTitle: 'Owru Yari Fest',
+  },
   'event.reminder.customer': {
     orderNumber: 'KAL-1234',
     eventTitle: 'Owru Yari Fest',

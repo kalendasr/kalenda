@@ -13,20 +13,31 @@ export type OrderFlowScreen = 'wacht' | 'betaald' | 'verlopen'
 export const TIMELINE_STEP_COUNT = 4
 
 export function deriveOrderFlowStep(
-  order: { orderStatus: OrderStatus; expiresAt: Date },
+  order: {
+    orderStatus: OrderStatus
+    expiresAt: Date
+    /** Is het WhatsApp-betaalverzoek al verstuurd (BR-602)? Ontbreekt bij bankoverschrijving. */
+    paymentRequestedAt?: Date | null
+  },
   now: Date = new Date(),
-): { screen: OrderFlowScreen; activeStep: number; status: OrderStatus } {
+): {
+  screen: OrderFlowScreen
+  activeStep: number
+  status: OrderStatus
+  paymentRequestedAt: Date | null
+} {
   const status = effectiveOrderStatus(order, now)
+  const paymentRequestedAt = order.paymentRequestedAt ?? null
 
   if (status === 'Expired' || status === 'Cancelled') {
-    return { screen: 'verlopen', activeStep: 0, status }
+    return { screen: 'verlopen', activeStep: 0, status, paymentRequestedAt }
   }
   if (status === 'Paid' || status === 'Completed') {
-    return { screen: 'betaald', activeStep: 3, status }
+    return { screen: 'betaald', activeStep: 3, status, paymentRequestedAt }
   }
   if (status === 'AwaitingReview') {
-    return { screen: 'wacht', activeStep: 2, status }
+    return { screen: 'wacht', activeStep: 2, status, paymentRequestedAt }
   }
   // PendingPayment
-  return { screen: 'wacht', activeStep: 1, status }
+  return { screen: 'wacht', activeStep: 1, status, paymentRequestedAt }
 }

@@ -18,6 +18,16 @@ describe('nextState', () => {
     expect(nextState('Waiting', 'approve')).toBe('Verified')
   })
 
+  it('laat het betaalverzoek versturen toe: Waiting → Requested', () => {
+    expect(nextState('Waiting', 'request')).toBe('Requested')
+  })
+
+  it('laat Requested → Verified/Rejected toe, maar niet opnieuw request', () => {
+    expect(nextState('Requested', 'approve')).toBe('Verified')
+    expect(nextState('Requested', 'reject')).toBe('Rejected')
+    expect(nextState('Requested', 'request')).toBeNull()
+  })
+
   it('strookt afkeuring: Waiting/Submitted → Rejected', () => {
     expect(nextState('Waiting', 'reject')).toBe('Rejected')
     expect(nextState('Submitted', 'reject')).toBe('Rejected')

@@ -48,6 +48,23 @@ function relativeSeen(date: Date): string {
   })
 }
 
+/**
+ * `relativeSeen` leest `Date.now()`, dus het resultaat verschilt tussen de
+ * server-render en de client-hydratie (netwerklatency, of een grotere sprong
+ * bij kloksynchronisatie) — dat geeft een hydration mismatch. Door de eerste
+ * render altijd leeg te laten en pas ná mount te vullen, is de server- en
+ * client-output bij hydratie identiek.
+ */
+function RelativeSeen({ date }: { date: Date }) {
+  const [label, setLabel] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLabel(relativeSeen(date))
+  }, [date])
+
+  return <>{label ? `Actief ${label}` : 'Actief'}</>
+}
+
 function OrganizationNotifications() {
   const { devices, preferences } = Route.useLoaderData()
   const router = useRouter()
@@ -241,7 +258,7 @@ function OrganizationNotifications() {
                     )}
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    Actief {relativeSeen(device.lastSeenAt)}
+                    <RelativeSeen date={device.lastSeenAt} />
                   </span>
                 </div>
                 <ConfirmDialog

@@ -32,6 +32,7 @@ import {
 } from '#/lib/datetime.ts'
 import { deriveOrderFlowStep } from '#/lib/order-flow-step.ts'
 import type { OrderStatus } from '#/lib/order-status.ts'
+import { waLink } from '#/lib/whatsapp.ts'
 import { cn } from '#/lib/utils.ts'
 import { TicketQr } from '#/components/public/ticket-qr.tsx'
 import { Button } from '#/components/ui/button.tsx'
@@ -432,7 +433,11 @@ function ExistingOrderView({
   const [herinneringVerstuurd, setHerinneringVerstuurd] = React.useState(false)
   const [gekopieerd, setGekopieerd] = React.useState(false)
 
-  const { screen, activeStep, status } = deriveOrderFlowStep(order, now)
+  const { screen, activeStep, status, paymentRequestedAt } =
+    deriveOrderFlowStep(
+      { ...order, paymentRequestedAt: order.payment?.requestedAt ?? null },
+      now,
+    )
 
   React.useEffect(() => {
     if (!initialJustCreated) return
@@ -492,6 +497,7 @@ function ExistingOrderView({
       order={order}
       activeStep={activeStep}
       justCreated={justCreated}
+      paymentRequestedAt={paymentRequestedAt}
       now={now}
       herinneringVerstuurd={herinneringVerstuurd}
       onHerinnering={() => setHerinneringVerstuurd(true)}
@@ -516,7 +522,15 @@ function waitingCopy(
   justCreated: boolean,
   method: 'WhatsApp' | 'BankTransfer',
   activeStep: number,
+  paymentRequestedAt: Date | null,
 ) {
+  if (method === 'WhatsApp' && paymentRequestedAt) {
+    return {
+      titel: 'Je betaalverzoek staat klaar',
+      subtekst: `Verstuurd op ${formatDateTimeNl(paymentRequestedAt)}. Zodra je betaalt, bevestigt de organisator het.`,
+      chip: 'Betaalverzoek verstuurd',
+    }
+  }
   if (justCreated) {
     return {
       titel: 'Je aanvraag staat klaar',
@@ -539,7 +553,7 @@ function waitingCopy(
     titel: 'We wachten op je betaling',
     subtekst:
       method === 'WhatsApp'
-        ? 'Zodra je betaalt, controleert de organisator het verzoek.'
+        ? 'De organisator stuurt je zo een betaalverzoek via WhatsApp.'
         : 'Zodra je overmaakt, controleert de organisator de bijschrijving.',
     chip: 'Betaling nog niet ontvangen',
   }
@@ -549,6 +563,7 @@ function WaitingScreen({
   order,
   activeStep,
   justCreated,
+  paymentRequestedAt,
   now,
   herinneringVerstuurd,
   onHerinnering,
@@ -558,6 +573,7 @@ function WaitingScreen({
   order: OrderDetail
   activeStep: number
   justCreated: boolean
+  paymentRequestedAt: Date | null
   now: Date
   herinneringVerstuurd: boolean
   onHerinnering: () => void
@@ -566,7 +582,12 @@ function WaitingScreen({
 }) {
   const org = order.event.organization
   const bank = org.paymentSettings
-  const copy = waitingCopy(justCreated, order.paymentMethod, activeStep)
+  const copy = waitingCopy(
+    justCreated,
+    order.paymentMethod,
+    activeStep,
+    paymentRequestedAt,
+  )
   const steps = timelineSteps(order.paymentMethod)
   const progress = elapsedPercentage(order.createdAt, order.expiresAt, now)
 
@@ -685,7 +706,7 @@ function WaitingScreen({
           {order.paymentMethod === 'WhatsApp' ? (
             <WhatsAppBlock
               order={order}
-              phone={org.phone}
+              phone={org.paymentSettings?.whatsappPhone ?? org.phone}
               herinneringVerstuurd={herinneringVerstuurd}
               onHerinnering={onHerinnering}
             />
@@ -722,14 +743,12 @@ function WhatsAppBlock({
   herinneringVerstuurd: boolean
   onHerinnering: () => void
 }) {
-  const digits = phone ? phone.replace(/\D/g, '') : null
-  const waLink = (text: string) =>
-    digits ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}` : null
-
   const openLink = waLink(
+    phone,
     `Hoi, ik heb een aanvraag geplaatst voor ${order.event.title} (kenmerk ${order.orderNumber}).`,
   )
   const herinneringLink = waLink(
+    phone,
     `Hoi, een korte herinnering over mijn betaalverzoek voor ${order.event.title} (kenmerk ${order.orderNumber}).`,
   )
 
@@ -1101,8 +1120,14 @@ function PaidScreen({ order }: { order: OrderDetail }) {
       id: ticket.id,
       ticketNumber: ticket.ticketNumber,
       ticketTypeName: item.ticketType.name,
+      sentAt: ticket.sentAt,
     })),
   )
+  const lastSentAt = allTickets.reduce<Date | null>((latest, ticket) => {
+    if (!ticket.sentAt) return latest
+    if (!latest || ticket.sentAt > latest) return ticket.sentAt
+    return latest
+  }, null)
 
   return (
     <div className="mx-auto w-full max-w-xl">
@@ -1160,7 +1185,8 @@ function PaidScreen({ order }: { order: OrderDetail }) {
 
           <p className="mt-4 text-center text-[12.5px] text-muted-foreground">
             Toon je QR-code bij de ingang. Je tickets zijn ook naar{' '}
-            {order.customer.email} gestuurd.
+            {order.customer.email} gemaild
+            {lastSentAt ? ` op ${formatDateTimeNl(lastSentAt)}` : ''}.
           </p>
         </div>
       </div>

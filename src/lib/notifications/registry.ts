@@ -16,6 +16,8 @@ import { checkinConfirmed } from '#/lib/notifications/definitions/checkin-confir
 import { eventChanged } from '#/lib/notifications/definitions/event-changed.ts'
 import { eventReminderCustomer } from '#/lib/notifications/definitions/event-reminder-customer.ts'
 import { orderCreated } from '#/lib/notifications/definitions/order-created.ts'
+import { paymentRejected } from '#/lib/notifications/definitions/payment-rejected.ts'
+import { paymentRequested } from '#/lib/notifications/definitions/payment-requested.ts'
 import { paymentSubmitted } from '#/lib/notifications/definitions/payment-submitted.ts'
 import { scanUnusual } from '#/lib/notifications/definitions/scan-unusual.ts'
 import { ticketsIssued } from '#/lib/notifications/definitions/tickets-issued.ts'
@@ -30,6 +32,8 @@ export const NOTIFICATIONS = {
   'scan.unusual': scanUnusual,
   // Voor de klant.
   'tickets.issued': ticketsIssued,
+  'payment.requested': paymentRequested,
+  'payment.rejected': paymentRejected,
   'event.reminder.customer': eventReminderCustomer,
   'event.changed': eventChanged,
   'checkin.confirmed': checkinConfirmed,

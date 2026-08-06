@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
+    "dev:test": "node --env-file=.env.test node_modules/vite/bin/vite.js dev --port 3500",
     "build": "vite build",
     "preview": "vite preview --port 3000",
     "generate-routes": "tsr generate",

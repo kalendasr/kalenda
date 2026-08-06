@@ -5,10 +5,11 @@ import { ArrowRight, FileSpreadsheet } from 'lucide-react'
 import { formatSrd } from '#/lib/money.ts'
 import { formatDateTimeShortNl } from '#/lib/datetime.ts'
 import {
-  ORDER_STATUS_LABELS,
-  effectiveOrderStatus,
-  orderStatusBadgeVariant,
-} from '#/lib/order-status.ts'
+  deriveOrderStage,
+  ORDER_STAGE_LABELS,
+  orderStageBadgeVariant,
+} from '#/lib/order-stage.ts'
+import { effectiveOrderStatus } from '#/lib/order-status.ts'
 import { getDashboardStats, listRecentOrders } from '#/server/dashboard.ts'
 import { listMyEventsSummary } from '#/server/event.ts'
 import {
@@ -267,7 +268,14 @@ function Dashboard() {
 }
 
 function RecentOrderRow({ order }: { order: RecentOrder }) {
-  const status = effectiveOrderStatus(order)
+  const tickets = order.items.flatMap((i) => i.tickets)
+  const stage = deriveOrderStage({
+    orderStatus: order.orderStatus,
+    expiresAt: order.expiresAt,
+    paymentMethod: order.paymentMethod,
+    payment: order.payment,
+    ticketsSent: tickets.length > 0 && tickets.every((t) => Boolean(t.sentAt)),
+  })
 
   return (
     <Link
@@ -286,8 +294,8 @@ function RecentOrderRow({ order }: { order: RecentOrder }) {
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
-        <Badge variant={orderStatusBadgeVariant(status)}>
-          {ORDER_STATUS_LABELS[status]}
+        <Badge variant={orderStageBadgeVariant(stage)}>
+          {ORDER_STAGE_LABELS[stage]}
         </Badge>
         <span className="font-semibold tabular-nums">
           {formatSrd(order.totalCents)}

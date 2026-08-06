@@ -29,10 +29,10 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 model User {
-  id            String    @id @default(uuid())
+  id            String  @id @default(uuid())
   name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
+  email         String  @unique
+  emailVerified Boolean @default(false)
   image         String?
 
   // Domeinvelden (DATABASE_DOMAIN.md §4).
@@ -42,12 +42,12 @@ model User {
   locale    String  @default("nl")
   timezone  String  @default("America/Paramaribo")
 
-  sessions     Session[]
-  accounts     Account[]
-  organization Organization?
-  checkIns     CheckIn[]
-  checkedInTickets Ticket[] @relation("TicketCheckedBy")
-  pushSubscriptions   PushSubscription[]
+  sessions                Session[]
+  accounts                Account[]
+  organization            Organization?
+  checkIns                CheckIn[]
+  checkedInTickets        Ticket[]                 @relation("TicketCheckedBy")
+  pushSubscriptions       PushSubscription[]
   notificationPreferences NotificationPreference[]
 
   createdAt DateTime  @default(now())
@@ -140,7 +140,7 @@ model Organization {
   // Adres
   address String?
   city    String?
-  country String @default("Suriname")
+  country String  @default("Suriname")
 
   isVerified Boolean @default(false)
 
@@ -351,13 +351,13 @@ model TicketType {
 // ---------------------------------------------------------------------------
 
 model Customer {
-  id        String  @id @default(uuid())
+  id        String @id @default(uuid())
   firstName String
   lastName  String
   email     String
   phone     String
 
-  orders Order[]
+  orders            Order[]
   pushSubscriptions PushSubscription[]
 
   createdAt DateTime  @default(now())
@@ -395,10 +395,21 @@ enum PaymentStatus {
 // werkelijke betaaladministratie.
 enum PaymentState {
   Waiting
+  // WhatsApp-flow: organisator heeft het betaalverzoek verstuurd, wacht op
+  // de klant (Fase 9, BR-602). Bank-flow gaat hier nooit doorheen.
+  Requested
   Submitted
   Verified
   Rejected
   Cancelled
+}
+
+// Kanaal waarlangs een ticket daadwerkelijk is afgeleverd (Fase 9). Bij
+// WhatsApp-levering verstuurt het platform zelf niets — het opent het gesprek
+// met de organisator en registreert alleen dat de link is gedeeld.
+enum TicketDeliveryChannel {
+  Email
+  WhatsApp
 }
 
 model Order {
@@ -425,7 +436,7 @@ model Order {
   notes     String?
   expiresAt DateTime
 
-  items OrderItem[]
+  items   OrderItem[]
   payment Payment?
 
   createdAt DateTime  @default(now())
@@ -473,10 +484,15 @@ model Payment {
   orderId String @unique
   order   Order  @relation(fields: [orderId], references: [id])
 
-  method   PaymentMethod
-  state    PaymentState @default(Waiting)
+  method    PaymentMethod
+  state     PaymentState  @default(Waiting)
   reference String?
   proofKey  String?
+
+  // WhatsApp-flow: wanneer en door wie het betaalverzoek is verstuurd
+  // (Fase 9, BR-602). Ontbreekt in de bank-flow.
+  requestedAt DateTime?
+  requestedBy String?
 
   verifiedBy String?
   verifiedAt DateTime?
@@ -508,22 +524,23 @@ enum TicketStatus {
 }
 
 model Ticket {
-  id           String       @id @default(uuid())
-  orderItemId  String
-  orderItem    OrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  orderItemId String
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
 
   // Uniek, botvrij nummer (UUID) dat in de QR-code staat (BR-700/701).
-  ticketNumber String       @unique
-  status       TicketStatus @default(Issued)
-  issuedAt     DateTime     @default(now())
-  // Laatste keer dat de ticket per e-mail verstuurd is (BR-702/704).
+  ticketNumber String                 @unique
+  status       TicketStatus           @default(Issued)
+  issuedAt     DateTime               @default(now())
+  // Laatste keer dat de ticket verstuurd is, en via welk kanaal (BR-702/704).
   sentAt       DateTime?
+  sentVia      TicketDeliveryChannel?
   cancelledAt  DateTime?
   // Check-in: wanneer en door wie ingecheckt (BR-801). Gedenormaliseerd voor
   // snelle weergave; de volledige scangeschiedenis staat in CheckIn (BR-800).
-  checkedInAt DateTime?
-  checkedInBy String?
-  checkedBy   User?   @relation("TicketCheckedBy", fields: [checkedInBy], references: [id])
+  checkedInAt  DateTime?
+  checkedInBy  String?
+  checkedBy    User?                  @relation("TicketCheckedBy", fields: [checkedInBy], references: [id])
 
   checkIns CheckIn[]
 
@@ -572,8 +589,8 @@ model CheckIn {
   scannedById String
   scannedBy   User   @relation(fields: [scannedById], references: [id], onDelete: Cascade)
 
-  result   CheckInResult
-  scannedAt DateTime @default(now())
+  result    CheckInResult
+  scannedAt DateTime      @default(now())
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -602,8 +619,8 @@ model PushSubscription {
   // De push-service-URL; dit ís de identiteit van dit apparaat.
   endpoint String @unique
   // Publieke sleutel + auth-secret van de client, nodig voor de encryptie.
-  p256dh String
-  auth   String
+  p256dh   String
+  auth     String
 
   userId String?
   user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)

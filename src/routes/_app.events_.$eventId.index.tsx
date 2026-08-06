@@ -7,10 +7,11 @@ import { eventPublishReadiness } from '#/lib/event-readiness.ts'
 import { formatSrd } from '#/lib/money.ts'
 import { formatDateTimeNl } from '#/lib/datetime.ts'
 import {
-  ORDER_STATUS_LABELS,
-  effectiveOrderStatus,
-  orderStatusBadgeVariant,
-} from '#/lib/order-status.ts'
+  deriveOrderStage,
+  ORDER_STAGE_LABELS,
+  orderStageBadgeVariant,
+} from '#/lib/order-stage.ts'
+import { effectiveOrderStatus } from '#/lib/order-status.ts'
 import { cn } from '#/lib/utils.ts'
 import {
   Card,
@@ -164,7 +165,16 @@ function EventOverview() {
           <CardContent className="flex flex-col divide-y px-0">
             {orders.length > 0 ? (
               orders.slice(0, 5).map((order) => {
-                const status = effectiveOrderStatus(order)
+                const tickets = order.items.flatMap((i) => i.tickets)
+                const stage = deriveOrderStage({
+                  orderStatus: order.orderStatus,
+                  expiresAt: order.expiresAt,
+                  paymentMethod: order.paymentMethod,
+                  payment: order.payment,
+                  ticketsSent:
+                    tickets.length > 0 &&
+                    tickets.every((t) => Boolean(t.sentAt)),
+                })
                 return (
                   <Link
                     key={order.id}
@@ -177,8 +187,8 @@ function EventOverview() {
                         <span className="text-sm font-semibold">
                           {order.customer.firstName} {order.customer.lastName}
                         </span>
-                        <Badge variant={orderStatusBadgeVariant(status)}>
-                          {ORDER_STATUS_LABELS[status]}
+                        <Badge variant={orderStageBadgeVariant(stage)}>
+                          {ORDER_STAGE_LABELS[stage]}
                         </Badge>
                       </span>
                       <span className="mt-0.5 block text-xs text-muted-foreground">

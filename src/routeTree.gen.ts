@@ -23,6 +23,7 @@ import { Route as AuthResetPasswordRouteImport } from './routes/_auth.reset-pass
 import { Route as BestellingOrderNumberRouteImport } from './routes/bestelling.$orderNumber'
 import { Route as EvenementenIndexRouteImport } from './routes/evenementen.index'
 import { Route as EvenementenSlugRouteImport } from './routes/evenementen.$slug'
+import { Route as TicketTicketNumberRouteImport } from './routes/ticket.$ticketNumber'
 import { Route as AppEventsIndexRouteImport } from './routes/_app.events.index'
 import { Route as AppEventsNewRouteImport } from './routes/_app.events.new'
 import { Route as AppEventsEventIdRouteImport } from './routes/_app.events_.$eventId'
@@ -107,6 +108,11 @@ const EvenementenIndexRoute = EvenementenIndexRouteImport.update({
 const EvenementenSlugRoute = EvenementenSlugRouteImport.update({
   id: '/evenementen/$slug',
   path: '/evenementen/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TicketTicketNumberRoute = TicketTicketNumberRouteImport.update({
+  id: '/ticket/$ticketNumber',
+  path: '/ticket/$ticketNumber',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppEventsIndexRoute = AppEventsIndexRouteImport.update({
@@ -210,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof AuthResetPasswordRoute
   '/bestelling/$orderNumber': typeof BestellingOrderNumberRoute
   '/evenementen/$slug': typeof EvenementenSlugRoute
+  '/ticket/$ticketNumber': typeof TicketTicketNumberRoute
   '/evenementen/': typeof EvenementenIndexRoute
   '/events/new': typeof AppEventsNewRoute
   '/events/$eventId': typeof AppEventsEventIdRouteWithChildren
@@ -240,6 +247,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof AuthResetPasswordRoute
   '/bestelling/$orderNumber': typeof BestellingOrderNumberRoute
   '/evenementen/$slug': typeof EvenementenSlugRoute
+  '/ticket/$ticketNumber': typeof TicketTicketNumberRoute
   '/evenementen': typeof EvenementenIndexRoute
   '/events/new': typeof AppEventsNewRoute
   '/organization/details': typeof AppOrganizationDetailsRoute
@@ -273,6 +281,7 @@ export interface FileRoutesById {
   '/_auth/reset-password': typeof AuthResetPasswordRoute
   '/bestelling/$orderNumber': typeof BestellingOrderNumberRoute
   '/evenementen/$slug': typeof EvenementenSlugRoute
+  '/ticket/$ticketNumber': typeof TicketTicketNumberRoute
   '/evenementen/': typeof EvenementenIndexRoute
   '/_app/events/new': typeof AppEventsNewRoute
   '/_app/events_/$eventId': typeof AppEventsEventIdRouteWithChildren
@@ -306,6 +315,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/bestelling/$orderNumber'
     | '/evenementen/$slug'
+    | '/ticket/$ticketNumber'
     | '/evenementen/'
     | '/events/new'
     | '/events/$eventId'
@@ -336,6 +346,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/bestelling/$orderNumber'
     | '/evenementen/$slug'
+    | '/ticket/$ticketNumber'
     | '/evenementen'
     | '/events/new'
     | '/organization/details'
@@ -368,6 +379,7 @@ export interface FileRouteTypes {
     | '/_auth/reset-password'
     | '/bestelling/$orderNumber'
     | '/evenementen/$slug'
+    | '/ticket/$ticketNumber'
     | '/evenementen/'
     | '/_app/events/new'
     | '/_app/events_/$eventId'
@@ -396,6 +408,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   BestellingOrderNumberRoute: typeof BestellingOrderNumberRoute
   EvenementenSlugRoute: typeof EvenementenSlugRoute
+  TicketTicketNumberRoute: typeof TicketTicketNumberRoute
   EvenementenIndexRoute: typeof EvenementenIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   EvenementenSlugAfrekenenRoute: typeof EvenementenSlugAfrekenenRoute
@@ -499,6 +512,13 @@ declare module '@tanstack/react-router' {
       path: '/evenementen/$slug'
       fullPath: '/evenementen/$slug'
       preLoaderRoute: typeof EvenementenSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ticket/$ticketNumber': {
+      id: '/ticket/$ticketNumber'
+      path: '/ticket/$ticketNumber'
+      fullPath: '/ticket/$ticketNumber'
+      preLoaderRoute: typeof TicketTicketNumberRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/events/': {
@@ -708,6 +728,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   BestellingOrderNumberRoute: BestellingOrderNumberRoute,
   EvenementenSlugRoute: EvenementenSlugRoute,
+  TicketTicketNumberRoute: TicketTicketNumberRoute,
   EvenementenIndexRoute: EvenementenIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   EvenementenSlugAfrekenenRoute: EvenementenSlugAfrekenenRoute,
