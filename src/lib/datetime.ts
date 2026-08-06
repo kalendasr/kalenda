@@ -43,6 +43,22 @@ export function formatDateTimeNl(date: Date | null | undefined): string {
   }).format(date)
 }
 
+/** Compacte weergave, bijv. "5 aug 13:31", voor ruimtekrappe lijsten. */
+export function formatDateTimeShortNl(date: Date | null | undefined): string {
+  if (!date) return ''
+  const datePart = new Intl.DateTimeFormat('nl-NL', {
+    timeZone: 'America/Paramaribo',
+    day: 'numeric',
+    month: 'short',
+  }).format(date)
+  const timePart = new Intl.DateTimeFormat('nl-NL', {
+    timeZone: 'America/Paramaribo',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+  return `${datePart.replace('.', '')} ${timePart}`
+}
+
 /** Alleen de datum, bijv. "1 september 2026". */
 export function formatDateNl(date: Date | null | undefined): string {
   if (!date) return ''

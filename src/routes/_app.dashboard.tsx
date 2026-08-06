@@ -3,7 +3,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { ArrowRight, FileSpreadsheet } from 'lucide-react'
 
 import { formatSrd } from '#/lib/money.ts'
-import { formatDateTimeNl } from '#/lib/datetime.ts'
+import { formatDateTimeShortNl } from '#/lib/datetime.ts'
 import {
   ORDER_STATUS_LABELS,
   effectiveOrderStatus,
@@ -273,24 +273,25 @@ function RecentOrderRow({ order }: { order: RecentOrder }) {
     <Link
       to="/events/$eventId/orders"
       params={{ eventId: order.event.id }}
-      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-6 py-3 transition-colors hover:bg-accent"
+      className="flex items-center justify-between gap-4 px-6 py-3 transition-colors hover:bg-accent"
     >
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium">
-            {order.customer.firstName} {order.customer.lastName}
-          </span>
-          <Badge variant={orderStatusBadgeVariant(status)}>
-            {ORDER_STATUS_LABELS[status]}
-          </Badge>
-        </div>
-        <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          <span>{order.event.title}</span>
-          <span>{formatDateTimeNl(order.createdAt)}</span>
-        </div>
+        <span className="font-semibold">
+          {order.customer.firstName} {order.customer.lastName}
+        </span>
+        <p className="mt-0.5 truncate text-sm text-muted-foreground">
+          {order.event.title}
+          <span className="mx-1.5 opacity-40">·</span>
+          {formatDateTimeShortNl(order.createdAt)}
+        </p>
       </div>
-      <div className="font-semibold tabular-nums">
-        {formatSrd(order.totalCents)}
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <Badge variant={orderStatusBadgeVariant(status)}>
+          {ORDER_STATUS_LABELS[status]}
+        </Badge>
+        <span className="font-semibold tabular-nums">
+          {formatSrd(order.totalCents)}
+        </span>
       </div>
     </Link>
   )
