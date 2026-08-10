@@ -7,7 +7,6 @@ import {
 import { CalendarDays } from 'lucide-react'
 
 import { createOrganization } from '#/server/organization.ts'
-import { loadAppContext } from '#/server/app-context.ts'
 import { createOrganizationSchema } from '#/lib/validation/organization.ts'
 import { useZodForm } from '#/lib/use-zod-form.ts'
 import {
@@ -23,12 +22,12 @@ import { FormField } from '#/components/ui/form-field.tsx'
 import { FormError } from '#/components/auth/form-error.tsx'
 
 /**
- * Onboarding: de eerste organisatie aanmaken. Geen sidebar/navigatie — een
- * gefocust scherm met één taak (DESIGN_SYSTEM.md §2), wel in hetzelfde
- * ontwerpsysteem als de app (`.app-shell`). Ingelogde gebruikers die al een
- * organisatie hebben, gaan direct naar het dashboard.
+ * Laatste stap om organisator te worden: de eerste organisatie aanmaken. Geen
+ * sidebar/navigatie — een gefocust scherm met één taak (DESIGN_SYSTEM.md §2),
+ * wel in hetzelfde ontwerpsysteem als de app (`.app-shell`). Ingelogde
+ * gebruikers die al een organisatie hebben, gaan direct naar het dashboard.
  */
-export const Route = createFileRoute('/onboarding')({
+export const Route = createFileRoute('/organisator/starten')({
   head: () => ({
     links: [
       { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -43,15 +42,20 @@ export const Route = createFileRoute('/onboarding')({
       },
     ],
   }),
-  beforeLoad: async () => {
-    const { user, organization } = await loadAppContext()
-    if (!user) throw redirect({ to: '/login' })
+  beforeLoad: async ({ context }) => {
+    const { user, organization } = context
+    if (!user) {
+      throw redirect({
+        to: '/login',
+        search: { redirect: '/organisator/starten' },
+      })
+    }
     if (organization) throw redirect({ to: '/dashboard' })
   },
-  component: Onboarding,
+  component: OrganisatorStarten,
 })
 
-function Onboarding() {
+function OrganisatorStarten() {
   const navigate = useNavigate()
   const router = useRouter()
 
@@ -90,8 +94,8 @@ function Onboarding() {
               Maak je organisatie aan
             </CardTitle>
             <CardDescription>
-              Je organisatie is de eigenaar van je evenementen en tickets. Je
-              kunt de overige gegevens later aanvullen.
+              Nog één stap. Je organisatie is de eigenaar van je evenementen en
+              tickets — je kunt de overige gegevens later aanvullen.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -124,6 +128,16 @@ function Onboarding() {
             </form>
           </CardContent>
         </Card>
+
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => navigate({ to: '/evenementen' })}
+            className="font-medium text-primary hover:underline"
+          >
+            Ik wil alleen tickets kopen
+          </button>
+        </p>
       </div>
     </main>
   )

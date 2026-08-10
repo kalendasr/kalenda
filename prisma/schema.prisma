@@ -45,6 +45,7 @@ model User {
   sessions                Session[]
   accounts                Account[]
   organization            Organization?
+  orders                  Order[]
   checkIns                CheckIn[]
   checkedInTickets        Ticket[]                 @relation("TicketCheckedBy")
   pushSubscriptions       PushSubscription[]
@@ -420,6 +421,10 @@ model Order {
   customerId String
   customer   Customer @relation(fields: [customerId], references: [id])
 
+  // Koppeling naar de ingelogde koper (null voor historische gastbestellingen).
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
   orderNumber String @unique
 
   paymentMethod PaymentMethod
@@ -445,6 +450,7 @@ model Order {
 
   @@index([eventId])
   @@index([customerId])
+  @@index([userId])
   @@index([orderNumber])
   @@map("order")
 }

@@ -54,7 +54,7 @@ function ResetPassword() {
       toast.success(
         'Je wachtwoord is gewijzigd. Log in met je nieuwe wachtwoord.',
       )
-      await navigate({ to: '/login' })
+      await navigate({ to: '/login', search: { redirect: undefined } })
     },
   })
 

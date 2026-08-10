@@ -1,8 +1,11 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useLoaderData } from '@tanstack/react-router'
 
 import { signIn } from '#/lib/auth-client.ts'
 import { loginSchema } from '#/lib/validation/auth.ts'
 import { useZodForm } from '#/lib/use-zod-form.ts'
+import { safeRedirect } from '#/lib/safe-redirect.ts'
+import { postAuthDestination } from '#/lib/post-auth-destination.ts'
+import { loadAppContext } from '#/server/app-context.ts'
 import {
   Card,
   CardContent,
@@ -14,11 +17,20 @@ import { Button } from '#/components/ui/button.tsx'
 import { Input } from '#/components/ui/input.tsx'
 import { FormField } from '#/components/ui/form-field.tsx'
 import { FormError } from '#/components/auth/form-error.tsx'
+import { GoogleSignInButton } from '#/components/auth/google-signin-button.tsx'
 
-export const Route = createFileRoute('/_auth/login')({ component: Login })
+export const Route = createFileRoute('/_auth/login')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
+  }),
+  component: Login,
+})
 
 function Login() {
-  const navigate = useNavigate()
+  const { googleEnabled } = useLoaderData({ from: '/_auth' })
+  const { redirect: redirectTo } = Route.useSearch()
+  const safeRedirectTo = safeRedirect(redirectTo)
+  const isCheckoutRedirect = safeRedirectTo?.includes('/afrekenen') ?? false
 
   const form = useZodForm({
     schema: loginSchema,
@@ -35,7 +47,11 @@ function Login() {
         )
       }
 
-      await navigate({ to: '/dashboard' })
+      const { organization } = await loadAppContext()
+      window.location.href = postAuthDestination({
+        redirectTo: safeRedirectTo,
+        hasOrganization: Boolean(organization),
+      })
     },
   })
 
@@ -43,10 +59,32 @@ function Login() {
     <Card>
       <CardHeader>
         <CardTitle className="text-xl">Welkom terug</CardTitle>
-        <CardDescription>Log in om je organisatie te beheren.</CardDescription>
+        <CardDescription>
+          {isCheckoutRedirect
+            ? 'Log in om je bestelling af te ronden.'
+            : 'Log in om verder te gaan.'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="flex flex-col gap-4" onSubmit={form.handleSubmit}>
+        <div className="flex flex-col gap-4">
+          <GoogleSignInButton
+            enabled={googleEnabled}
+            callbackURL={postAuthDestination({
+              redirectTo: safeRedirectTo,
+              hasOrganization: false,
+            })}
+          />
+
+          {googleEnabled && (
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />
+              of
+              <div className="h-px flex-1 bg-border" />
+            </div>
+          )}
+        </div>
+
+        <form className="mt-4 flex flex-col gap-4" onSubmit={form.handleSubmit}>
           <FormError message={form.formError} />
 
           <FormField
@@ -104,6 +142,7 @@ function Login() {
         Nog geen account?{' '}
         <Link
           to="/register"
+          search={{ redirect: redirectTo }}
           className="font-medium text-primary hover:underline"
         >
           Account aanmaken

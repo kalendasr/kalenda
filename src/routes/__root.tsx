@@ -3,9 +3,14 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import appCss from '#/styles.css?url'
+import { loadAppContext } from '#/server/app-context.ts'
 import { Toaster } from '#/components/ui/sonner.tsx'
 
 export const Route = createRootRoute({
+  beforeLoad: async () => {
+    const { user, organization } = await loadAppContext()
+    return { user, organization }
+  },
   head: () => ({
     meta: [
       { charSet: 'utf-8' },

@@ -22,6 +22,9 @@ export type SessionUser = {
   name: string
   email: string
   image: string | null
+  firstName: string
+  lastName: string
+  phone: string | null
 }
 
 /**
@@ -29,12 +32,26 @@ export type SessionUser = {
  * zodat aanroepers nooit per ongeluk zonder gebruiker verder werken.
  * (Security: gebruikers zien uitsluitend hun eigen gegevens — BR §13.)
  */
-export async function requireUser() {
+export async function requireUser(): Promise<SessionUser> {
   const session = await getSession()
 
   if (!session?.user) {
     throw new Error('UNAUTHENTICATED')
   }
 
-  return session.user
+  const { id, name, email, image } = session.user
+  const u = session.user as typeof session.user & {
+    firstName: string
+    lastName: string
+    phone?: string | null
+  }
+  return {
+    id,
+    name,
+    email,
+    image: image ?? null,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    phone: u.phone ?? null,
+  }
 }

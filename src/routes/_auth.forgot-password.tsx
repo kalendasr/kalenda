@@ -54,7 +54,9 @@ function ForgotPassword() {
         </CardHeader>
         <CardContent>
           <Button asChild variant="outline" className="w-full">
-            <Link to="/login">Terug naar inloggen</Link>
+            <Link to="/login" search={{ redirect: undefined }}>
+              Terug naar inloggen
+            </Link>
           </Button>
         </CardContent>
       </Card>
@@ -99,7 +101,11 @@ function ForgotPassword() {
       </CardContent>
 
       <div className="px-6 text-center text-sm text-muted-foreground">
-        <Link to="/login" className="font-medium text-primary hover:underline">
+        <Link
+          to="/login"
+          search={{ redirect: undefined }}
+          className="font-medium text-primary hover:underline"
+        >
           Terug naar inloggen
         </Link>
       </div>

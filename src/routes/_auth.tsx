@@ -1,12 +1,16 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { CalendarDays } from 'lucide-react'
 
-import { fetchSessionUser } from '#/server/session.ts'
+import { fetchAuthProviders } from '#/server/session.ts'
+import { safeRedirect } from '#/lib/safe-redirect.ts'
+import { postAuthDestination } from '#/lib/post-auth-destination.ts'
 
 /**
  * Layout voor de authenticatieschermen (registreren, inloggen, wachtwoord).
  * Een rustige, gecentreerde kaart (DESIGN_SYSTEM.md §2 "Calm Interface").
- * Al ingelogde gebruikers worden doorgestuurd naar het dashboard.
+ * Al ingelogde gebruikers worden doorgestuurd naar waar ze horen — de
+ * `redirect`-param wint (bijv. terug naar de afrekenpagina), anders het
+ * dashboard voor organisatoren of de storefront voor kopers.
  */
 export const Route = createFileRoute('/_auth')({
   head: () => ({
@@ -23,12 +27,21 @@ export const Route = createFileRoute('/_auth')({
       },
     ],
   }),
-  beforeLoad: async () => {
-    const user = await fetchSessionUser()
-    if (user) {
-      throw redirect({ to: '/dashboard' })
+  beforeLoad: async ({ context, location }) => {
+    if (context.user) {
+      const search = location.search as { redirect?: unknown }
+      const redirectTo = safeRedirect(
+        typeof search.redirect === 'string' ? search.redirect : undefined,
+      )
+      throw redirect({
+        href: postAuthDestination({
+          redirectTo,
+          hasOrganization: Boolean(context.organization),
+        }),
+      })
     }
   },
+  loader: () => fetchAuthProviders(),
   component: AuthLayout,
 })
 

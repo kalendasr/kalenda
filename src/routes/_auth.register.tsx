@@ -1,8 +1,10 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useLoaderData } from '@tanstack/react-router'
 
 import { signUp } from '#/lib/auth-client.ts'
 import { registerSchema } from '#/lib/validation/auth.ts'
 import { useZodForm } from '#/lib/use-zod-form.ts'
+import { safeRedirect } from '#/lib/safe-redirect.ts'
+import { postAuthDestination } from '#/lib/post-auth-destination.ts'
 import {
   Card,
   CardContent,
@@ -14,11 +16,20 @@ import { Button } from '#/components/ui/button.tsx'
 import { Input } from '#/components/ui/input.tsx'
 import { FormField } from '#/components/ui/form-field.tsx'
 import { FormError } from '#/components/auth/form-error.tsx'
+import { GoogleSignInButton } from '#/components/auth/google-signin-button.tsx'
 
-export const Route = createFileRoute('/_auth/register')({ component: Register })
+export const Route = createFileRoute('/_auth/register')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: typeof search.redirect === 'string' ? search.redirect : undefined,
+  }),
+  component: Register,
+})
 
 function Register() {
-  const navigate = useNavigate()
+  const { googleEnabled } = useLoaderData({ from: '/_auth' })
+  const { redirect: redirectTo } = Route.useSearch()
+  const safeRedirectTo = safeRedirect(redirectTo)
+  const isCheckoutRedirect = safeRedirectTo?.includes('/afrekenen') ?? false
 
   const form = useZodForm({
     schema: registerSchema,
@@ -46,7 +57,11 @@ function Register() {
         )
       }
 
-      await navigate({ to: '/dashboard' })
+      // Een nieuw account heeft nooit al een organisatie.
+      window.location.href = postAuthDestination({
+        redirectTo: safeRedirectTo,
+        hasOrganization: false,
+      })
     },
   })
 
@@ -55,11 +70,31 @@ function Register() {
       <CardHeader>
         <CardTitle className="text-xl">Maak je account aan</CardTitle>
         <CardDescription>
-          Begin met het beheren van je evenementen en tickets.
+          {isCheckoutRedirect
+            ? 'Maak een account aan om je bestelling af te ronden.'
+            : 'Eén account voor het kopen van tickets én het organiseren van evenementen.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="flex flex-col gap-4" onSubmit={form.handleSubmit}>
+        <div className="flex flex-col gap-4">
+          <GoogleSignInButton
+            enabled={googleEnabled}
+            callbackURL={postAuthDestination({
+              redirectTo: safeRedirectTo,
+              hasOrganization: false,
+            })}
+          />
+
+          {googleEnabled && (
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />
+              of
+              <div className="h-px flex-1 bg-border" />
+            </div>
+          )}
+        </div>
+
+        <form className="mt-4 flex flex-col gap-4" onSubmit={form.handleSubmit}>
           <FormError message={form.formError} />
 
           <div className="grid grid-cols-2 gap-3">
@@ -161,7 +196,11 @@ function Register() {
 
       <div className="px-6 text-center text-sm text-muted-foreground">
         Heb je al een account?{' '}
-        <Link to="/login" className="font-medium text-primary hover:underline">
+        <Link
+          to="/login"
+          search={{ redirect: redirectTo }}
+          className="font-medium text-primary hover:underline"
+        >
           Inloggen
         </Link>
       </div>

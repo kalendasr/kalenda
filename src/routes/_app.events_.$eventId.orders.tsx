@@ -9,10 +9,13 @@ import {
   rejectPayment,
   sendPaymentRequest,
 } from '#/server/payments.ts'
+import type { ApprovePaymentResult } from '#/server/payments.ts'
 import {
+  markTicketsSharedViaWhatsApp,
   resendOrderTickets,
   shareTicketsViaWhatsApp,
 } from '#/server/tickets.ts'
+import { sendCustomerMessagePush } from '#/server/notifications.ts'
 import { formatSrd } from '#/lib/money.ts'
 import { formatDateTimeNl } from '#/lib/datetime.ts'
 import { effectiveOrderStatus } from '#/lib/order-status.ts'
@@ -36,6 +39,7 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog.tsx'
 import { OrderDetailDialog } from '#/components/app/order-detail-dialog.tsx'
+import { PaymentConfirmedDialog } from '#/components/app/payment-confirmed-dialog.tsx'
 import { toast } from '#/components/ui/sonner.tsx'
 
 export const Route = createFileRoute('/_app/events_/$eventId/orders')({
@@ -78,6 +82,7 @@ function EventOrders() {
   const router = useRouter()
   const [filter, setFilter] = useState('Alle')
   const [openOrderId, setOpenOrderId] = useState<string | null>(null)
+  const [confirmed, setConfirmed] = useState<ApprovePaymentResult | null>(null)
 
   const stats = useMemo(() => {
     let doneCount = 0
@@ -136,6 +141,24 @@ function EventOrders() {
       }
       await router.invalidate()
       toast.success(success)
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Actie is niet gelukt.',
+      )
+    }
+  }
+
+  // Aparte handler naast `runAction`: het resultaat van `approvePayment` is nu
+  // rijk (tickets/mail/push/WhatsApp-link) en wordt getoond in
+  // `PaymentConfirmedDialog` in plaats van een toast — `runAction` zou de
+  // whatsappUrl bovendien meteen openen, wat hier ongewenst is (de
+  // organisator klikt zelf op de knop in de popup).
+  async function approveAndConfirm(orderId: string) {
+    try {
+      const result = await approvePayment({ data: { orderId } })
+      setOpenOrderId(null)
+      setConfirmed(result)
+      await router.invalidate()
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Actie is niet gelukt.',
@@ -223,12 +246,7 @@ function EventOrders() {
               key={order.id}
               order={order}
               onOpen={() => setOpenOrderId(order.id)}
-              onApprove={() =>
-                runAction(
-                  () => approvePayment({ data: { orderId: order.id } }),
-                  'Betaling bevestigd.',
-                )
-              }
+              onApprove={() => approveAndConfirm(order.id)}
               onSendPaymentRequest={() =>
                 runAction(
                   () => sendPaymentRequest({ data: { orderId: order.id } }),
@@ -253,12 +271,7 @@ function EventOrders() {
           onOpenChange={(next) => {
             if (!next) setOpenOrderId(null)
           }}
-          onApprove={() =>
-            runAction(
-              () => approvePayment({ data: { orderId: openOrder.id } }),
-              'Betaling bevestigd — tickets zijn onderweg.',
-            )
-          }
+          onApprove={() => approveAndConfirm(openOrder.id)}
           onReject={(notes) =>
             runAction(
               () => rejectPayment({ data: { orderId: openOrder.id, notes } }),
@@ -301,6 +314,48 @@ function EventOrders() {
                   : 'Bewijs ophalen is mislukt.',
               )
             }
+          }}
+          onSendPush={(title, body) =>
+            sendCustomerMessagePush({
+              data: { orderId: openOrder.id, title, body },
+            }).then((r) => r.delivered)
+          }
+        />
+      ) : null}
+
+      {confirmed ? (
+        <PaymentConfirmedDialog
+          result={confirmed}
+          open={Boolean(confirmed)}
+          onOpenChange={(next) => {
+            if (!next) setConfirmed(null)
+          }}
+          onResendEmail={async () => {
+            try {
+              await resendOrderTickets({ data: { orderId: confirmed.orderId } })
+              toast.success('Tickets zijn gemaild.')
+              await router.invalidate()
+            } catch (error) {
+              toast.error(
+                error instanceof Error ? error.message : 'Mailen is mislukt.',
+              )
+            }
+          }}
+          onSendPush={(title, body) =>
+            sendCustomerMessagePush({
+              data: { orderId: confirmed.orderId, title, body },
+            }).then((r) => r.delivered)
+          }
+          onWhatsAppOpened={() => {
+            markTicketsSharedViaWhatsApp({
+              data: { orderId: confirmed.orderId },
+            })
+              .then(() => router.invalidate())
+              .catch(() => {
+                // Stil: de organisator heeft het gesprek al geopend; het
+                // leveringskanaal bijwerken is best-effort en niet zichtbaar
+                // in deze popup.
+              })
           }}
         />
       ) : null}

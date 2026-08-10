@@ -40,6 +40,10 @@ const coreEnvSchema = z.object({
   // Better Auth
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.url(),
+
+  // Google-login (optioneel; e-mail/wachtwoord blijft werken zonder dit).
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
 })
 
 const storageEnvSchema = z.object({

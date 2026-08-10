@@ -103,6 +103,19 @@ describe('deriveOrderStage — verlopen en geannuleerd', () => {
     ).toBe('Expired')
   })
 
+  it('laat ProofSubmitted niet verlopen na de oorspronkelijke betaaltermijn', () => {
+    expect(
+      deriveOrderStage(
+        base({
+          orderStatus: 'AwaitingReview',
+          expiresAt: past,
+          payment: { state: 'Submitted' },
+        }),
+        now,
+      ),
+    ).toBe('ProofSubmitted')
+  })
+
   it('herkent een geannuleerde order', () => {
     expect(deriveOrderStage(base({ orderStatus: 'Cancelled' }), now)).toBe(
       'Cancelled',

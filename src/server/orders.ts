@@ -52,3 +52,29 @@ export const listEventOrders = createServerFn({ method: 'GET' })
       },
     })
   })
+
+// --- Kopersectie: bestellingen van de ingelogde koper (eigen "Orders"-domein,
+// hierboven owner-geguard voor organisatoren). ---
+
+/** Bestellingen van de ingelogde koper, voor "Mijn tickets". */
+export const listMyOrders = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const user = await requireUser()
+
+    return db.order.findMany({
+      where: { userId: user.id, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        event: {
+          select: { title: true, slug: true, startsAt: true, venue: true },
+        },
+        items: {
+          select: {
+            quantity: true,
+            ticketType: { select: { name: true } },
+          },
+        },
+      },
+    })
+  },
+)

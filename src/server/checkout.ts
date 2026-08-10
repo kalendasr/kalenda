@@ -5,7 +5,7 @@ import { db } from '#/lib/db.server.ts'
 import { Prisma } from '#/generated/prisma/client.ts'
 import { getServerEnv } from '#/lib/env.server.ts'
 import {
-  checkoutSchema,
+  checkoutClientSchema,
   checkoutItemSchema,
 } from '#/lib/validation/checkout.ts'
 import { generateOrderNumber } from '#/lib/order-number.ts'
@@ -18,11 +18,13 @@ import { lowStockKey, soldOutKey } from '#/lib/notifications/claim-key.ts'
 import { reservedByTicketType } from '#/server/reservations.server.ts'
 import { claimNotification, notify } from '#/server/notifications.server.ts'
 import { sendOrderConfirmationEmail } from '#/lib/emails.server.ts'
+import { requireUser } from '#/lib/session.server.ts'
 
 /**
- * Publieke checkout (geen auth). Bezoekers plaatsen een gastbestelling
- * (BR-400/403). Een order reserveert direct capaciteit binnen een transactie
- * met rij-locks, zodat er niet overboekt kan worden.
+ * Checkout — vereist een ingelogde gebruiker. Identiteit (naam/e-mail) komt
+ * uit de sessie; de client stuurt alleen phone, betaalmethode en tickets mee.
+ * Een order reserveert direct capaciteit binnen een transactie met rij-locks,
+ * zodat er niet overboekt kan worden.
  */
 
 const ORDER_TTL_MS = 48 * 60 * 60 * 1000 // 48 uur (BR-506)
@@ -88,8 +90,11 @@ export const getCheckoutData = createServerFn({ method: 'GET' })
   })
 
 export const createOrder = createServerFn({ method: 'POST' })
-  .validator(checkoutSchema.and(z.object({ slug: z.string().min(1) })))
+  .validator(checkoutClientSchema.and(z.object({ slug: z.string().min(1) })))
   .handler(async ({ data }): Promise<{ orderNumber: string }> => {
+    // Defense-in-depth: de route-guard vangt ongeauthenticeerde bezoekers op,
+    // maar server functions zijn direct aanroepbaar — dus ook hier afdwingen.
+    const user = await requireUser()
     const now = new Date()
 
     const orderNumber = await db.$transaction(async (tx) => {
@@ -179,9 +184,9 @@ export const createOrder = createServerFn({ method: 'POST' })
 
       const customer = await tx.customer.create({
         data: {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
           phone: data.phone,
         },
       })
@@ -197,6 +202,7 @@ export const createOrder = createServerFn({ method: 'POST' })
             data: {
               eventId: event.id,
               customerId: customer.id,
+              userId: user.id,
               orderNumber: number,
               paymentMethod: data.paymentMethod,
               paymentApp:
@@ -296,6 +302,12 @@ export const createOrder = createServerFn({ method: 'POST' })
     return { orderNumber }
   })
 
+/**
+ * Bewust publiek en ongeauthenticeerd: dit is de link uit de bevestigingsmail
+ * (`/bestelling/$orderNumber`), die ook deelbaar moet zijn met iemand die
+ * meegaat naar het evenement. Voor het overzicht van de ingelogde koper zelf,
+ * zie `listMyOrders` in `src/server/orders.ts`.
+ */
 export const getOrderByNumber = createServerFn({ method: 'GET' })
   .validator(z.object({ orderNumber: z.string().min(1) }))
   .handler(async ({ data }) => {

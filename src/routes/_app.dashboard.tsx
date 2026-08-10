@@ -9,8 +9,11 @@ import {
   ORDER_STAGE_LABELS,
   orderStageBadgeVariant,
 } from '#/lib/order-stage.ts'
-import { effectiveOrderStatus } from '#/lib/order-status.ts'
-import { getDashboardStats, listRecentOrders } from '#/server/dashboard.ts'
+import {
+  getDashboardStats,
+  getNextReviewOrder,
+  listRecentOrders,
+} from '#/server/dashboard.ts'
 import { listMyEventsSummary } from '#/server/event.ts'
 import {
   Card,
@@ -27,12 +30,13 @@ import { StatCard } from '#/components/app/stat-card.tsx'
 
 export const Route = createFileRoute('/_app/dashboard')({
   loader: async () => {
-    const [stats, recentOrders, events] = await Promise.all([
+    const [stats, recentOrders, events, reviewOrder] = await Promise.all([
       getDashboardStats(),
       listRecentOrders(),
       listMyEventsSummary(),
+      getNextReviewOrder(),
     ])
-    return { stats, recentOrders, events }
+    return { stats, recentOrders, events, reviewOrder }
   },
   component: Dashboard,
 })
@@ -58,7 +62,7 @@ const fullDate = new Intl.DateTimeFormat('nl-NL', {
 
 function Dashboard() {
   const { user, organization } = Route.useRouteContext()
-  const { stats, recentOrders, events } = Route.useLoaderData()
+  const { stats, recentOrders, events, reviewOrder } = Route.useLoaderData()
 
   const firstName = user.name.split(' ')[0] ?? user.name
 
@@ -69,9 +73,6 @@ function Dashboard() {
       : 0
 
   const draftEvent = events.find((e) => e.status === 'Draft')
-  const reviewOrder = recentOrders.find(
-    (o) => effectiveOrderStatus(o) === 'AwaitingReview',
-  )
 
   const actions: Array<ActionItem> = []
   if (stats.openPayments > 0) {

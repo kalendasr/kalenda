@@ -57,6 +57,12 @@ const SAMPLES: NotificationData = {
     orderNumber: 'KAL-1234',
     eventTitle: 'Owru Yari Fest',
   },
+  'organizer.message': {
+    title: 'Ingang verplaatst',
+    body: 'De ingang is voortaan aan de achterkant van het gebouw.',
+    orderNumber: 'KAL-1234',
+    nonce: 'n1',
+  },
 }
 
 describe('notificatie-payloads', () => {
@@ -98,6 +104,31 @@ describe('notificatie-payloads', () => {
       remaining: 0,
     })
     expect(sold.title).toBe('Uitverkocht')
+  })
+
+  it('organizer.message: kort af binnen het limiet en geeft elk bericht een eigen tag', () => {
+    const long = NOTIFICATIONS['organizer.message'].build({
+      title: 'x'.repeat(80),
+      body: 'y'.repeat(200),
+      orderNumber: 'KAL-1234',
+      nonce: 'a',
+    })
+    expect(long.title.length).toBeLessThanOrEqual(50)
+    expect(long.body.length).toBeLessThanOrEqual(140)
+
+    const first = NOTIFICATIONS['organizer.message'].build({
+      title: 'Hoi',
+      body: 'Bericht',
+      orderNumber: 'KAL-1234',
+      nonce: 'a',
+    })
+    const second = NOTIFICATIONS['organizer.message'].build({
+      title: 'Hoi',
+      body: 'Bericht',
+      orderNumber: 'KAL-1234',
+      nonce: 'b',
+    })
+    expect(first.tag).not.toBe(second.tag)
   })
 
   it('event.changed: annulering krijgt een eigen titel', () => {

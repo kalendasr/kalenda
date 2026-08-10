@@ -217,6 +217,7 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    @apply overflow-x-hidden;
   }
 
   body {

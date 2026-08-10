@@ -6,6 +6,7 @@ import { requireUser } from '#/lib/session.server.ts'
 import { requireOwnedEvent } from '#/lib/event-guard.server.ts'
 import { getServerEnv } from '#/lib/env.server.ts'
 import { waLink } from '#/lib/whatsapp.ts'
+import { buildTicketShareMessage } from '#/lib/ticket-share-message.ts'
 import { ticketQrPayload } from '#/lib/ticket-qr.ts'
 import { sendTicketEmailForOrder } from '#/server/tickets.server.ts'
 
@@ -42,6 +43,28 @@ export const resendOrderTickets = createServerFn({ method: 'POST' })
   })
 
 /**
+ * Registreert dat de tickets via WhatsApp zijn (of gaan worden) geleverd:
+ * markeert de tickets als `Sent` met kanaal `WhatsApp` en promoot de order
+ * naar `Completed` zodra ze eerder alleen `Paid` was. Gedeeld door
+ * `shareTicketsViaWhatsApp` (organisator klikt op "Delen") en de
+ * bevestigingspopup (organisator klikt op de `wa.me`-link zelf).
+ */
+async function registerWhatsAppDelivery(orderId: string): Promise<void> {
+  const now = new Date()
+  const result = await db.ticket.updateMany({
+    where: { orderItem: { orderId } },
+    data: { status: 'Sent', sentAt: now, sentVia: 'WhatsApp' },
+  })
+  if (result.count === 0) {
+    throw new Error('Voor deze bestelling zijn geen tickets beschikbaar.')
+  }
+  await db.order.updateMany({
+    where: { id: orderId, orderStatus: 'Paid' },
+    data: { orderStatus: 'Completed' },
+  })
+}
+
+/**
  * Deelt de tickets via WhatsApp (Fase 9). Het platform verstuurt zelf niets —
  * er is geen WhatsApp Business API (BR-600) — het opent het gesprek met de
  * klant met een link naar de tickets, en registreert dat als leveringskanaal.
@@ -63,26 +86,38 @@ export const shareTicketsViaWhatsApp = createServerFn({ method: 'POST' })
     await requireOwnedEvent(user.id, order.eventId)
     assertHasTickets(order.orderStatus)
 
-    const now = new Date()
     const orderUrl = `${getServerEnv().BETTER_AUTH_URL}/bestelling/${order.orderNumber}`
-    const message = [
-      `Hoi ${order.customer.firstName}, hier zijn je tickets voor ${order.event.title}:`,
+    const message = buildTicketShareMessage({
+      customerFirstName: order.customer.firstName,
+      eventTitle: order.event.title,
       orderUrl,
-    ].join('\n')
+    })
 
-    const result = await db.ticket.updateMany({
-      where: { orderItem: { orderId: order.id } },
-      data: { status: 'Sent', sentAt: now, sentVia: 'WhatsApp' },
-    })
-    if (result.count === 0) {
-      throw new Error('Voor deze bestelling zijn geen tickets beschikbaar.')
-    }
-    await db.order.updateMany({
-      where: { id: order.id, orderStatus: 'Paid' },
-      data: { orderStatus: 'Completed' },
-    })
+    await registerWhatsAppDelivery(order.id)
 
     return { whatsappUrl: waLink(order.customer.phone, message) }
+  })
+
+/**
+ * Registreert dat de organisator zojuist zelf de `wa.me`-link met de
+ * ticketlink heeft geopend (bevestigingspopup na `approvePayment`). Zelfde
+ * registratie als `shareTicketsViaWhatsApp`, maar zonder nieuwe link te
+ * bouwen — die heeft de organisator al via het bevestigingsresultaat.
+ */
+export const markTicketsSharedViaWhatsApp = createServerFn({ method: 'POST' })
+  .validator(orderIdSchema)
+  .handler(async ({ data }): Promise<{ ok: true }> => {
+    const user = await requireUser()
+
+    const order = await db.order.findUnique({ where: { id: data.orderId } })
+    if (!order) throw new Error('ORDER_NOT_FOUND')
+
+    await requireOwnedEvent(user.id, order.eventId)
+    assertHasTickets(order.orderStatus)
+
+    await registerWhatsAppDelivery(order.id)
+
+    return { ok: true }
   })
 
 /**

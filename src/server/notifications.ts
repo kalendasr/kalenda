@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { db } from '#/lib/db.server.ts'
 import { getPushEnv } from '#/lib/env.server.ts'
+import { requireOwnedEvent } from '#/lib/event-guard.server.ts'
 import { describeDevice } from '#/lib/notifications/device.ts'
 import { resolveEnabled } from '#/lib/notifications/preferences.ts'
 import {
@@ -12,6 +13,7 @@ import {
 } from '#/lib/notifications/registry.ts'
 import { sendPush } from '#/lib/push.server.ts'
 import { requireUser } from '#/lib/session.server.ts'
+import { notify } from '#/server/notifications.server.ts'
 
 /**
  * Server functions voor pushmeldingen (Fase 4/5).
@@ -224,6 +226,46 @@ export const sendTestPush = createServerFn({ method: 'POST' }).handler(
     return { delivered }
   },
 )
+
+/**
+ * Stuurt een vrij pushbericht van de organisator naar de klant achter één
+ * order (Fase 10) — bijv. "De ingang is verplaatst". Eigendom via
+ * `requireOwnedEvent`, net als de betalings- en ticketacties op dezelfde
+ * order. Gooit niet wanneer de klant geen apparaat heeft: `delivered: 0` is
+ * een geldige uitkomst, de UI meldt dat netjes.
+ */
+export const sendCustomerMessagePush = createServerFn({ method: 'POST' })
+  .validator(
+    z.object({
+      orderId: z.uuid(),
+      title: z.string().trim().min(1).max(50),
+      body: z.string().trim().min(1).max(140),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+
+    const order = await db.order.findUnique({
+      where: { id: data.orderId },
+      select: { eventId: true, orderNumber: true, customerId: true },
+    })
+    if (!order) throw new Error('ORDER_NOT_FOUND')
+
+    await requireOwnedEvent(user.id, order.eventId)
+
+    const result = await notify(
+      'organizer.message',
+      { kind: 'customer', customerId: order.customerId },
+      {
+        title: data.title,
+        body: data.body,
+        orderNumber: order.orderNumber,
+        nonce: crypto.randomUUID(),
+      },
+    )
+
+    return { delivered: result.delivered }
+  })
 
 // Voorkomt een "ongebruikte import" bij een lege registry; ook een expliciete
 // verzekering dat de registry geladen is wanneer dit bestand wordt geïmporteerd.

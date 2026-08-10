@@ -30,6 +30,14 @@ describe('effectiveOrderStatus', () => {
     )
     expect(status).toBe('Paid')
   })
+
+  it('laat een order met ingediend betaalbewijs niet verlopen, ook niet na de oorspronkelijke deadline', () => {
+    const status = effectiveOrderStatus(
+      { orderStatus: 'AwaitingReview', expiresAt: past },
+      now,
+    )
+    expect(status).toBe('AwaitingReview')
+  })
 })
 
 describe('isReserving', () => {
@@ -49,5 +57,11 @@ describe('isReserving', () => {
     expect(
       isReserving({ orderStatus: 'Cancelled', expiresAt: future }, now),
     ).toBe(false)
+  })
+
+  it('blijft reserveren voor ingediend betaalbewijs voorbij de oorspronkelijke deadline', () => {
+    expect(
+      isReserving({ orderStatus: 'AwaitingReview', expiresAt: past }, now),
+    ).toBe(true)
   })
 })

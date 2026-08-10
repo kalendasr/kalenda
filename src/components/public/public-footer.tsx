@@ -29,7 +29,11 @@ const FOOTER_COLUMNS = [
   {
     title: 'Organisatoren',
     links: [
-      { label: 'Event plaatsen', to: '/register' as const, search: undefined },
+      {
+        label: 'Event plaatsen',
+        to: '/organisator' as const,
+        search: undefined,
+      },
       { label: 'Inloggen', to: '/login' as const, search: undefined },
     ],
   },

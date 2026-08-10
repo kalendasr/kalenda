@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as MijnTicketsRouteImport } from './routes/mijn-tickets'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppOrganizationRouteImport } from './routes/_app.organization'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth.forgot-password'
@@ -23,6 +22,8 @@ import { Route as AuthResetPasswordRouteImport } from './routes/_auth.reset-pass
 import { Route as BestellingOrderNumberRouteImport } from './routes/bestelling.$orderNumber'
 import { Route as EvenementenIndexRouteImport } from './routes/evenementen.index'
 import { Route as EvenementenSlugRouteImport } from './routes/evenementen.$slug'
+import { Route as OrganisatorIndexRouteImport } from './routes/organisator.index'
+import { Route as OrganisatorStartenRouteImport } from './routes/organisator.starten'
 import { Route as TicketTicketNumberRouteImport } from './routes/ticket.$ticketNumber'
 import { Route as AppEventsIndexRouteImport } from './routes/_app.events.index'
 import { Route as AppEventsNewRouteImport } from './routes/_app.events.new'
@@ -58,11 +59,6 @@ const AuthRoute = AuthRouteImport.update({
 const MijnTicketsRoute = MijnTicketsRouteImport.update({
   id: '/mijn-tickets',
   path: '/mijn-tickets',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
@@ -108,6 +104,16 @@ const EvenementenIndexRoute = EvenementenIndexRouteImport.update({
 const EvenementenSlugRoute = EvenementenSlugRouteImport.update({
   id: '/evenementen/$slug',
   path: '/evenementen/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganisatorIndexRoute = OrganisatorIndexRouteImport.update({
+  id: '/organisator/',
+  path: '/organisator/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganisatorStartenRoute = OrganisatorStartenRouteImport.update({
+  id: '/organisator/starten',
+  path: '/organisator/starten',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TicketTicketNumberRoute = TicketTicketNumberRouteImport.update({
@@ -207,7 +213,6 @@ const AppEventsEventIdTicketsRoute = AppEventsEventIdTicketsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/mijn-tickets': typeof MijnTicketsRoute
-  '/onboarding': typeof OnboardingRoute
   '/dashboard': typeof AppDashboardRoute
   '/organization': typeof AppOrganizationRouteWithChildren
   '/forgot-password': typeof AuthForgotPasswordRoute
@@ -216,8 +221,10 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof AuthResetPasswordRoute
   '/bestelling/$orderNumber': typeof BestellingOrderNumberRoute
   '/evenementen/$slug': typeof EvenementenSlugRoute
+  '/organisator/starten': typeof OrganisatorStartenRoute
   '/ticket/$ticketNumber': typeof TicketTicketNumberRoute
   '/evenementen/': typeof EvenementenIndexRoute
+  '/organisator/': typeof OrganisatorIndexRoute
   '/events/new': typeof AppEventsNewRoute
   '/events/$eventId': typeof AppEventsEventIdRouteWithChildren
   '/organization/details': typeof AppOrganizationDetailsRoute
@@ -239,7 +246,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/mijn-tickets': typeof MijnTicketsRoute
-  '/onboarding': typeof OnboardingRoute
   '/dashboard': typeof AppDashboardRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
@@ -247,8 +253,10 @@ export interface FileRoutesByTo {
   '/reset-password': typeof AuthResetPasswordRoute
   '/bestelling/$orderNumber': typeof BestellingOrderNumberRoute
   '/evenementen/$slug': typeof EvenementenSlugRoute
+  '/organisator/starten': typeof OrganisatorStartenRoute
   '/ticket/$ticketNumber': typeof TicketTicketNumberRoute
   '/evenementen': typeof EvenementenIndexRoute
+  '/organisator': typeof OrganisatorIndexRoute
   '/events/new': typeof AppEventsNewRoute
   '/organization/details': typeof AppOrganizationDetailsRoute
   '/organization/notifications': typeof AppOrganizationNotificationsRoute
@@ -272,7 +280,6 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/mijn-tickets': typeof MijnTicketsRoute
-  '/onboarding': typeof OnboardingRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/organization': typeof AppOrganizationRouteWithChildren
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -281,8 +288,10 @@ export interface FileRoutesById {
   '/_auth/reset-password': typeof AuthResetPasswordRoute
   '/bestelling/$orderNumber': typeof BestellingOrderNumberRoute
   '/evenementen/$slug': typeof EvenementenSlugRoute
+  '/organisator/starten': typeof OrganisatorStartenRoute
   '/ticket/$ticketNumber': typeof TicketTicketNumberRoute
   '/evenementen/': typeof EvenementenIndexRoute
+  '/organisator/': typeof OrganisatorIndexRoute
   '/_app/events/new': typeof AppEventsNewRoute
   '/_app/events_/$eventId': typeof AppEventsEventIdRouteWithChildren
   '/_app/organization/details': typeof AppOrganizationDetailsRoute
@@ -306,7 +315,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/mijn-tickets'
-    | '/onboarding'
     | '/dashboard'
     | '/organization'
     | '/forgot-password'
@@ -315,8 +323,10 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/bestelling/$orderNumber'
     | '/evenementen/$slug'
+    | '/organisator/starten'
     | '/ticket/$ticketNumber'
     | '/evenementen/'
+    | '/organisator/'
     | '/events/new'
     | '/events/$eventId'
     | '/organization/details'
@@ -338,7 +348,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/mijn-tickets'
-    | '/onboarding'
     | '/dashboard'
     | '/forgot-password'
     | '/login'
@@ -346,8 +355,10 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/bestelling/$orderNumber'
     | '/evenementen/$slug'
+    | '/organisator/starten'
     | '/ticket/$ticketNumber'
     | '/evenementen'
+    | '/organisator'
     | '/events/new'
     | '/organization/details'
     | '/organization/notifications'
@@ -370,7 +381,6 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/mijn-tickets'
-    | '/onboarding'
     | '/_app/dashboard'
     | '/_app/organization'
     | '/_auth/forgot-password'
@@ -379,8 +389,10 @@ export interface FileRouteTypes {
     | '/_auth/reset-password'
     | '/bestelling/$orderNumber'
     | '/evenementen/$slug'
+    | '/organisator/starten'
     | '/ticket/$ticketNumber'
     | '/evenementen/'
+    | '/organisator/'
     | '/_app/events/new'
     | '/_app/events_/$eventId'
     | '/_app/organization/details'
@@ -405,11 +417,12 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   MijnTicketsRoute: typeof MijnTicketsRoute
-  OnboardingRoute: typeof OnboardingRoute
   BestellingOrderNumberRoute: typeof BestellingOrderNumberRoute
   EvenementenSlugRoute: typeof EvenementenSlugRoute
+  OrganisatorStartenRoute: typeof OrganisatorStartenRoute
   TicketTicketNumberRoute: typeof TicketTicketNumberRoute
   EvenementenIndexRoute: typeof EvenementenIndexRoute
+  OrganisatorIndexRoute: typeof OrganisatorIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   EvenementenSlugAfrekenenRoute: typeof EvenementenSlugAfrekenenRoute
 }
@@ -442,13 +455,6 @@ declare module '@tanstack/react-router' {
       path: '/mijn-tickets'
       fullPath: '/mijn-tickets'
       preLoaderRoute: typeof MijnTicketsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/dashboard': {
@@ -512,6 +518,20 @@ declare module '@tanstack/react-router' {
       path: '/evenementen/$slug'
       fullPath: '/evenementen/$slug'
       preLoaderRoute: typeof EvenementenSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organisator/': {
+      id: '/organisator/'
+      path: '/organisator'
+      fullPath: '/organisator/'
+      preLoaderRoute: typeof OrganisatorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organisator/starten': {
+      id: '/organisator/starten'
+      path: '/organisator/starten'
+      fullPath: '/organisator/starten'
+      preLoaderRoute: typeof OrganisatorStartenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ticket/$ticketNumber': {
@@ -725,11 +745,12 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   MijnTicketsRoute: MijnTicketsRoute,
-  OnboardingRoute: OnboardingRoute,
   BestellingOrderNumberRoute: BestellingOrderNumberRoute,
   EvenementenSlugRoute: EvenementenSlugRoute,
+  OrganisatorStartenRoute: OrganisatorStartenRoute,
   TicketTicketNumberRoute: TicketTicketNumberRoute,
   EvenementenIndexRoute: EvenementenIndexRoute,
+  OrganisatorIndexRoute: OrganisatorIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   EvenementenSlugAfrekenenRoute: EvenementenSlugAfrekenenRoute,
 }

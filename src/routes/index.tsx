@@ -1,10 +1,5 @@
 import { useRef, useState } from 'react'
-import {
-  Link,
-  createFileRoute,
-  redirect,
-  useNavigate,
-} from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   ArrowRight,
   CalendarDays,
@@ -17,7 +12,6 @@ import {
   Ticket,
 } from 'lucide-react'
 
-import { fetchSessionUser } from '#/server/session.ts'
 import {
   listPublishedCategories,
   listPublishedEvents,
@@ -43,13 +37,6 @@ import { EventCard } from '#/components/public/event-card.tsx'
 import { categoryColor } from '#/components/public/category-colors.ts'
 
 export const Route = createFileRoute('/')({
-  beforeLoad: async () => {
-    // Ingelogde organisatoren horen in de app, niet op de landingspagina.
-    const user = await fetchSessionUser()
-    if (user) {
-      throw redirect({ to: '/dashboard' })
-    }
-  },
   loader: async () => ({
     events: await listPublishedEvents(),
     categories: await listPublishedCategories(),
@@ -191,7 +178,7 @@ function Home() {
                     variant="outline"
                     className="rounded-full"
                   >
-                    <Link to="/register">Event plaatsen</Link>
+                    <Link to="/organisator">Event plaatsen</Link>
                   </Button>
                 </div>
 
@@ -587,7 +574,7 @@ function Home() {
                   variant="secondary"
                   className="rounded-full"
                 >
-                  <Link to="/register">Gratis beginnen</Link>
+                  <Link to="/organisator">Gratis beginnen</Link>
                 </Button>
               </div>
             </div>

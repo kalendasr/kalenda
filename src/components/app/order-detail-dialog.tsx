@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, ExternalLink, Send, X } from 'lucide-react'
+import { Bell, Check, ExternalLink, Send, X } from 'lucide-react'
 
 import type { OrderStatus } from '#/lib/order-status.ts'
 import {
@@ -28,6 +28,7 @@ import {
 } from '#/components/ui/dialog.tsx'
 import { Separator } from '#/components/ui/separator.tsx'
 import { ConfirmDialog } from '#/components/app/confirm-dialog.tsx'
+import { CustomerPushForm } from '#/components/app/customer-push-form.tsx'
 
 /**
  * Orderdetail voor de organisator (Fase 9): tijdlijn + ticketlevering.
@@ -136,6 +137,7 @@ export function OrderDetailDialog({
   onResendEmail,
   onShareWhatsApp,
   onViewProof,
+  onSendPush,
 }: {
   order: OrderDetailData
   open: boolean
@@ -146,6 +148,7 @@ export function OrderDetailDialog({
   onResendEmail: () => Promise<void>
   onShareWhatsApp: () => Promise<void>
   onViewProof: () => Promise<void>
+  onSendPush: (title: string, body: string) => Promise<number>
 }) {
   const tickets = order.items.flatMap((item) =>
     item.tickets.map((ticket) => ({
@@ -327,6 +330,7 @@ export function OrderDetailDialog({
                 <Button size="sm" variant="outline" onClick={onShareWhatsApp}>
                   Delen via WhatsApp
                 </Button>
+                <SendPushButton onSend={onSendPush} />
               </>
             ) : null}
           </div>
@@ -341,6 +345,40 @@ function StageBadge({ stage }: { stage: OrderStage }) {
     <Badge variant={orderStageBadgeVariant(stage)}>
       {ORDER_STAGE_LABELS[stage]}
     </Badge>
+  )
+}
+
+function SendPushButton({
+  onSend,
+}: {
+  onSend: (title: string, body: string) => Promise<number>
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+        <Bell />
+        Bericht sturen
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bericht sturen</DialogTitle>
+            <DialogDescription>
+              Stuur een pushmelding naar deze klant, bijvoorbeeld over een
+              gewijzigde locatie of starttijd.
+            </DialogDescription>
+          </DialogHeader>
+          <CustomerPushForm onSend={onSend} />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Sluiten
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

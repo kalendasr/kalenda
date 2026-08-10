@@ -5,6 +5,13 @@
  * verlopen zonder dat we de database hoeven bij te werken. Zo geven verlopen
  * orders hun gereserveerde tickets vrij (BR-507) en tonen we overal dezelfde
  * effectieve status.
+ *
+ * Zodra een klant betaalbewijs indient (`AwaitingReview`) verloopt de order
+ * niet meer vanzelf: de oorspronkelijke deadline was bedoeld om klanten te
+ * ontmoedigen die nooit betalen, niet om organisatoren te straffen die traag
+ * controleren. Vanaf dat moment ligt de beslissing bij de organisator
+ * (BR-607) — de order blijft dus zichtbaar en houdt capaciteit bezet totdat
+ * die order goed- of afgekeurd wordt.
  */
 
 export type OrderStatus =
@@ -15,11 +22,8 @@ export type OrderStatus =
   | 'Cancelled'
   | 'Expired'
 
-/** Statussen waarin een order nog op betaling wacht en kan verlopen. */
-const PENDING_STATUSES: ReadonlySet<OrderStatus> = new Set([
-  'PendingPayment',
-  'AwaitingReview',
-])
+/** Status waarin een order nog geen actie van de klant kent en kan verlopen. */
+const EXPIRABLE_STATUSES: ReadonlySet<OrderStatus> = new Set(['PendingPayment'])
 
 /** Statussen die capaciteit gereserveerd houden. */
 const RESERVING_STATUSES: ReadonlySet<OrderStatus> = new Set([
@@ -33,7 +37,7 @@ export function effectiveOrderStatus(
   order: { orderStatus: OrderStatus; expiresAt: Date },
   now: Date = new Date(),
 ): OrderStatus {
-  if (PENDING_STATUSES.has(order.orderStatus) && now > order.expiresAt) {
+  if (EXPIRABLE_STATUSES.has(order.orderStatus) && now > order.expiresAt) {
     return 'Expired'
   }
   return order.orderStatus

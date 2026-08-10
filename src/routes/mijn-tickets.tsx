@@ -1,10 +1,15 @@
-import * as React from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Ticket } from 'lucide-react'
+import { Link, createFileRoute, redirect } from '@tanstack/react-router'
+import { ArrowRight, Ticket } from 'lucide-react'
 
+import { listMyOrders } from '#/server/orders.ts'
+import { formatDateNl } from '#/lib/datetime.ts'
+import {
+  ORDER_STATUS_LABELS,
+  effectiveOrderStatus,
+  orderStatusBadgeVariant,
+} from '#/lib/order-status.ts'
+import { Badge } from '#/components/ui/badge.tsx'
 import { Button } from '#/components/ui/button.tsx'
-import { Input } from '#/components/ui/input.tsx'
-import { Label } from '#/components/ui/label.tsx'
 import { PublicHeader } from '#/components/public/public-header.tsx'
 import { PublicFooter } from '#/components/public/public-footer.tsx'
 
@@ -12,63 +17,86 @@ export const Route = createFileRoute('/mijn-tickets')({
   head: () => ({
     meta: [{ title: 'Mijn tickets · Kalenda' }],
   }),
+  beforeLoad: async ({ context }) => {
+    if (!context.user) {
+      throw redirect({
+        to: '/login',
+        search: { redirect: '/mijn-tickets' },
+      })
+    }
+  },
+  loader: () => listMyOrders(),
   component: MijnTickets,
 })
 
-/**
- * Er is geen bezoekersaccount (BR-502: één klant per order, geen login).
- * Bestelnummers staan in de bevestigingsmail; deze pagina is een
- * lichtgewicht opzoekpunt naar `/bestelling/$orderNumber`.
- */
 function MijnTickets() {
-  const navigate = useNavigate()
-  const [orderNumber, setOrderNumber] = React.useState('')
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const trimmed = orderNumber.trim()
-    if (!trimmed) return
-    navigate({
-      to: '/bestelling/$orderNumber',
-      params: { orderNumber: trimmed },
-    })
-  }
+  const orders = Route.useLoaderData()
 
   return (
     <div className="storefront">
       <PublicHeader />
-      <main
-        id="main"
-        className="mx-auto flex w-full max-w-md flex-col items-center px-4 py-20 text-center sm:px-6"
-      >
-        <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <Ticket className="size-6" aria-hidden="true" />
-        </div>
-        <h1 className="mt-5 text-2xl font-bold tracking-tight">Mijn tickets</h1>
-        <p className="mt-2 text-muted-foreground">
-          Vul je bestelnummer in om je tickets te bekijken. Je vindt het terug
-          in de bevestigingsmail van je bestelling.
+      <main id="main" className="mx-auto w-full max-w-2xl px-4 py-12 sm:px-6">
+        <h1 className="text-2xl font-bold tracking-tight">Mijn tickets</h1>
+        <p className="mt-1 text-muted-foreground">
+          Al je bestellingen op één plek.
         </p>
 
-        <form
-          onSubmit={handleSubmit}
-          className="mt-6 flex w-full flex-col gap-3"
-        >
-          <div className="text-left">
-            <Label htmlFor="order-number">Bestelnummer</Label>
-            <Input
-              id="order-number"
-              value={orderNumber}
-              onChange={(e) => setOrderNumber(e.target.value)}
-              placeholder="Bijv. OYF-4821"
-              className="mt-1.5"
-              autoFocus
-            />
+        {orders.length === 0 ? (
+          <div className="mt-8 flex flex-col items-center rounded-xl border border-dashed py-16 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Ticket className="size-6" aria-hidden="true" />
+            </div>
+            <p className="mt-4 font-medium">Je hebt nog geen tickets</p>
+            <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+              Zodra je een ticket koopt, verschijnt je bestelling hier.
+            </p>
+            <Button asChild className="mt-5">
+              <Link to="/evenementen">Bekijk evenementen</Link>
+            </Button>
           </div>
-          <Button type="submit" disabled={orderNumber.trim() === ''}>
-            Bekijk mijn tickets
-          </Button>
-        </form>
+        ) : (
+          <ul className="mt-6 flex flex-col gap-3">
+            {orders.map((order) => {
+              const status = effectiveOrderStatus(order)
+              const ticketCount = order.items.reduce(
+                (sum, item) => sum + item.quantity,
+                0,
+              )
+
+              return (
+                <li key={order.id}>
+                  <Link
+                    to="/bestelling/$orderNumber"
+                    params={{ orderNumber: order.orderNumber }}
+                    className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-shadow hover:shadow-md"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-semibold">
+                        {order.event.title}
+                      </div>
+                      <div className="mt-0.5 text-sm text-muted-foreground">
+                        {formatDateNl(order.event.startsAt)}
+                        {order.event.venue
+                          ? ` · ${order.event.venue.name}`
+                          : ''}
+                      </div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        {ticketCount} {ticketCount === 1 ? 'ticket' : 'tickets'}
+                      </div>
+                    </div>
+                    <Badge variant={orderStatusBadgeVariant(status)}>
+                      {ORDER_STATUS_LABELS[status]}
+                    </Badge>
+                    <ArrowRight
+                      className="size-4 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </main>
       <PublicFooter />
     </div>

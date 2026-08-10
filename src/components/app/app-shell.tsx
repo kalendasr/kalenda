@@ -76,7 +76,7 @@ function UserMenu({ user }: { user: ShellUser }) {
   async function handleSignOut() {
     await signOut()
     await router.invalidate()
-    await navigate({ to: '/login' })
+    await navigate({ to: '/login', search: { redirect: undefined } })
   }
 
   return (

@@ -22,7 +22,8 @@ import { submitProofOfPayment } from '#/server/payments.ts'
 import { saveCustomerPushSubscription } from '#/server/notifications.ts'
 import type { SavePushSubscriptionFn } from '#/hooks/use-push-subscription.ts'
 import { usePushSubscription } from '#/hooks/use-push-subscription.ts'
-import { checkoutSchema } from '#/lib/validation/checkout.ts'
+import { checkoutClientSchema } from '#/lib/validation/checkout.ts'
+import { signOut } from '#/lib/auth-client.ts'
 import { useZodForm } from '#/lib/use-zod-form.ts'
 import { formatSrd } from '#/lib/money.ts'
 import {
@@ -64,13 +65,22 @@ const WHATSAPP_GROEN = 'bg-[#16A34A] hover:bg-[#15803D]'
 const CARD =
   'rounded-[14px] border bg-card shadow-[0_22px_50px_-34px_rgba(11,18,32,0.4)]'
 
+type SessionUserInfo = {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string | null
+}
+
 export type OrderFlowProps =
-  | { mode: 'new'; slug: string; data: CheckoutData }
+  | { mode: 'new'; slug: string; data: CheckoutData; user: SessionUserInfo }
   | { mode: 'existing'; order: OrderDetail; justCreated: boolean }
 
 export function OrderFlow(props: OrderFlowProps) {
   if (props.mode === 'new') {
-    return <NewOrderForm slug={props.slug} data={props.data} />
+    return (
+      <NewOrderForm slug={props.slug} data={props.data} user={props.user} />
+    )
   }
   return (
     <ExistingOrderView order={props.order} justCreated={props.justCreated} />
@@ -81,7 +91,15 @@ export function OrderFlow(props: OrderFlowProps) {
 // Scherm 1 — nog geen order: het aanvraagformulier
 // ---------------------------------------------------------------------------
 
-function NewOrderForm({ slug, data }: { slug: string; data: CheckoutData }) {
+function NewOrderForm({
+  slug,
+  data,
+  user,
+}: {
+  slug: string
+  data: CheckoutData
+  user: SessionUserInfo
+}) {
   const navigate = useNavigate()
 
   const methods: Array<'WhatsApp' | 'BankTransfer'> = [
@@ -90,12 +108,9 @@ function NewOrderForm({ slug, data }: { slug: string; data: CheckoutData }) {
   ]
 
   const form = useZodForm({
-    schema: checkoutSchema,
+    schema: checkoutClientSchema,
     initialValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
+      phone: user.phone ?? '',
       paymentMethod: methods[0] ?? 'WhatsApp',
       paymentApp: data.payment.whatsappApps[0],
       items: data.lines.map((line) => ({
@@ -154,65 +169,36 @@ function NewOrderForm({ slug, data }: { slug: string; data: CheckoutData }) {
                 Jouw gegevens
               </h2>
             </div>
-            <div className="grid gap-4 px-5 py-5 sm:grid-cols-2">
-              <FormField
-                id="firstName"
-                label="Voornaam"
-                required
-                error={form.errorFor('firstName')}
-              >
-                {(aria) => (
-                  <Input
-                    {...aria}
-                    autoComplete="given-name"
-                    value={form.values.firstName}
-                    onChange={(e) => form.setValue('firstName', e.target.value)}
-                    onBlur={() => form.handleBlur('firstName')}
-                  />
-                )}
-              </FormField>
-              <FormField
-                id="lastName"
-                label="Achternaam"
-                required
-                error={form.errorFor('lastName')}
-              >
-                {(aria) => (
-                  <Input
-                    {...aria}
-                    autoComplete="family-name"
-                    value={form.values.lastName}
-                    onChange={(e) => form.setValue('lastName', e.target.value)}
-                    onBlur={() => form.handleBlur('lastName')}
-                  />
-                )}
-              </FormField>
-              <FormField
-                id="email"
-                label="E-mailadres"
-                required
-                hint="Hierheen sturen we je bestelling en tickets."
-                error={form.errorFor('email')}
-                className="sm:col-span-2"
-              >
-                {(aria) => (
-                  <Input
-                    {...aria}
-                    type="email"
-                    autoComplete="email"
-                    value={form.values.email}
-                    onChange={(e) => form.setValue('email', e.target.value)}
-                    onBlur={() => form.handleBlur('email')}
-                  />
-                )}
-              </FormField>
+            <div className="flex flex-col gap-4 px-5 py-5">
+              <div className="flex items-start justify-between gap-3 rounded-[14px] bg-muted px-4 py-3.5">
+                <div className="min-w-0">
+                  <p className="text-[14.5px] font-bold">
+                    {user.firstName} {user.lastName}
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-muted-foreground">
+                    {user.email}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="shrink-0 text-[12.5px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                  onClick={() =>
+                    signOut({
+                      fetchOptions: {
+                        onSuccess: () => window.location.reload(),
+                      },
+                    })
+                  }
+                >
+                  Niet jou? Uitloggen
+                </button>
+              </div>
               <FormField
                 id="phone"
                 label="Telefoonnummer"
                 required
                 hint="Voor WhatsApp-contact over je betaling."
                 error={form.errorFor('phone')}
-                className="sm:col-span-2"
               >
                 {(aria) => (
                   <Input

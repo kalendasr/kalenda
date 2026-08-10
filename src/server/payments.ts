@@ -14,6 +14,7 @@ import {
 import { nextState } from '#/lib/payment-transitions.ts'
 import { generateTicketNumber } from '#/lib/ticket-number.ts'
 import { buildPaymentRequestMessage } from '#/lib/payment-request-message.ts'
+import { buildTicketShareMessage } from '#/lib/ticket-share-message.ts'
 import { waLink } from '#/lib/whatsapp.ts'
 import { getServerEnv } from '#/lib/env.server.ts'
 import { sendPaymentRejectedEmail } from '#/lib/emails.server.ts'
@@ -107,10 +108,21 @@ export const sendPaymentRequest = createServerFn({ method: 'POST' })
     return { whatsappUrl }
   })
 
+/** Wat de organisator direct na het bevestigen van een betaling te zien krijgt. */
+export type ApprovePaymentResult = {
+  orderId: string
+  orderNumber: string
+  customerFirstName: string
+  ticketCount: number
+  email: { to: string; sentAt: Date | null }
+  push: { delivered: number; devices: number }
+  whatsappUrl: string | null
+}
+
 /** Zet een order + bijbehorende Payment in de Betaald-toestand (BR-602/603/604). */
 export const approvePayment = createServerFn({ method: 'POST' })
   .validator(approvePaymentSchema)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<ApprovePaymentResult> => {
     const user = await requireUser()
 
     const order = await db.order.findUnique({
@@ -118,6 +130,7 @@ export const approvePayment = createServerFn({ method: 'POST' })
       include: {
         payment: true,
         items: { select: { id: true, quantity: true } },
+        customer: { select: { firstName: true, phone: true, email: true } },
         event: { select: { title: true } },
       },
     })
@@ -173,15 +186,17 @@ export const approvePayment = createServerFn({ method: 'POST' })
     // Ticketmail met PDF + pushmelding na commit; een fout hier mag de
     // uitgifte niet ongedaan maken (zelfde patroon als de checkout-bevestiging).
     // Bij succes zet dit de order pas op Completed (tickets.server.ts).
+    let emailSentAt: Date | null = null
     try {
-      await sendTicketEmailForOrder(order.id, 'Email')
+      const result = await sendTicketEmailForOrder(order.id, 'Email')
+      emailSentAt = result.sentAt
     } catch {
-      // Stil: de tickets staan (Paid); de organisator ziet "nog niet
-      // verstuurd" en kan het opnieuw proberen. De klant kan ze ook op de
-      // orderpagina zien.
+      // Stil: de tickets staan (Paid); de organisator ziet in de
+      // bevestigingspopup "Mailen is niet gelukt" en kan het opnieuw
+      // proberen. De klant kan ze ook op de orderpagina zien.
     }
     // notify() gooit nooit (zie notifications.server.ts) — geen try/catch nodig.
-    await notify(
+    const push = await notify(
       'tickets.issued',
       { kind: 'customer', customerId: order.customerId },
       {
@@ -191,7 +206,26 @@ export const approvePayment = createServerFn({ method: 'POST' })
       },
     )
 
-    return { ok: true }
+    // Zelfde WhatsApp-link als de losse "Delen via WhatsApp"-knop, hier
+    // meteen aangeboden zodat de organisator niet terug hoeft naar het
+    // orderdetail om de tickets ook te appen (BR-600: platform verstuurt
+    // zelf niets, het opent alleen het gesprek).
+    const orderUrl = `${getServerEnv().BETTER_AUTH_URL}/bestelling/${order.orderNumber}`
+    const shareMessage = buildTicketShareMessage({
+      customerFirstName: order.customer.firstName,
+      eventTitle: order.event.title,
+      orderUrl,
+    })
+
+    return {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      customerFirstName: order.customer.firstName,
+      ticketCount: ticketCreates.length,
+      email: { to: order.customer.email, sentAt: emailSentAt },
+      push: { delivered: push.delivered, devices: push.devices },
+      whatsappUrl: waLink(order.customer.phone, shareMessage),
+    }
   })
 
 /** Keurt een ingediende betaling af (BR-603/607). De klant kan opnieuw indienen (BR-605). */

@@ -92,6 +92,35 @@ export const getDashboardStats = createServerFn({ method: 'GET' }).handler(
   },
 )
 
+export const getNextReviewOrder = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const user = await requireUser()
+    const organization = await requireOwnedOrganization(user.id)
+
+    const events = await db.event.findMany({
+      where: { organizationId: organization.id, deletedAt: null },
+      select: { id: true },
+    })
+    const eventIds = events.map((event) => event.id)
+
+    if (eventIds.length === 0) {
+      return null
+    }
+
+    const order = await db.order.findFirst({
+      where: {
+        eventId: { in: eventIds },
+        deletedAt: null,
+        orderStatus: 'AwaitingReview',
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, event: { select: { id: true } } },
+    })
+
+    return order
+  },
+)
+
 export const listRecentOrders = createServerFn({ method: 'GET' }).handler(
   async () => {
     const user = await requireUser()

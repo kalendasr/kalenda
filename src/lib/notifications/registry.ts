@@ -16,6 +16,7 @@ import { checkinConfirmed } from '#/lib/notifications/definitions/checkin-confir
 import { eventChanged } from '#/lib/notifications/definitions/event-changed.ts'
 import { eventReminderCustomer } from '#/lib/notifications/definitions/event-reminder-customer.ts'
 import { orderCreated } from '#/lib/notifications/definitions/order-created.ts'
+import { organizerMessage } from '#/lib/notifications/definitions/organizer-message.ts'
 import { paymentRejected } from '#/lib/notifications/definitions/payment-rejected.ts'
 import { paymentRequested } from '#/lib/notifications/definitions/payment-requested.ts'
 import { paymentSubmitted } from '#/lib/notifications/definitions/payment-submitted.ts'
@@ -37,6 +38,7 @@ export const NOTIFICATIONS = {
   'event.reminder.customer': eventReminderCustomer,
   'event.changed': eventChanged,
   'checkin.confirmed': checkinConfirmed,
+  'organizer.message': organizerMessage,
 } as const
 
 export type NotificationKey = keyof typeof NOTIFICATIONS

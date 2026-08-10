@@ -1,7 +1,8 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 
 import { getCheckoutData } from '#/server/checkout.ts'
+import { fetchSessionUser } from '#/server/session.ts'
 import { decodeSelection } from '#/lib/selection.ts'
 import { OrderFlow } from '#/components/public/order-flow.tsx'
 import { Button } from '#/components/ui/button.tsx'
@@ -11,6 +12,13 @@ export const Route = createFileRoute('/evenementen/$slug_/afrekenen')({
   validateSearch: (search: Record<string, unknown>) => ({
     t: typeof search.t === 'string' ? search.t : '',
   }),
+  beforeLoad: async ({ location }) => {
+    const user = await fetchSessionUser()
+    if (!user) {
+      throw redirect({ to: '/login', search: { redirect: location.href } })
+    }
+    return { user }
+  },
   loaderDeps: ({ search }) => ({ t: search.t }),
   loader: async ({ params, deps }) => ({
     data: await getCheckoutData({
@@ -38,6 +46,7 @@ export const Route = createFileRoute('/evenementen/$slug_/afrekenen')({
 function Checkout() {
   const { slug } = Route.useParams()
   const { data } = Route.useLoaderData()
+  const { user } = Route.useRouteContext()
 
   if (!data || data.lines.length === 0) {
     return (
@@ -77,7 +86,7 @@ function Checkout() {
         </Link>
 
         <div className="mt-4">
-          <OrderFlow mode="new" slug={slug} data={data} />
+          <OrderFlow mode="new" slug={slug} data={data} user={user} />
         </div>
       </main>
     </div>

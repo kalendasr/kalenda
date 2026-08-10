@@ -1,14 +1,13 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 
-import { loadAppContext } from '#/server/app-context.ts'
 import { AppShell } from '#/components/app/app-shell.tsx'
 
 /**
  * Layout voor de ingelogde applicatie (dashboard + organisatie-workspace).
  *
  * Guards (BR §13): geen sessie → naar inloggen; wél ingelogd maar nog geen
- * organisatie → naar onboarding. De organisatie zit in de route-context zodat
- * de onderliggende schermen hem zonder extra fetch kunnen gebruiken.
+ * organisatie → naar het organisatietraject. De sessiecontext komt uit de
+ * `beforeLoad` van `__root.tsx`, dus geen extra round-trip hier.
  */
 export const Route = createFileRoute('/_app')({
   head: () => ({
@@ -25,15 +24,15 @@ export const Route = createFileRoute('/_app')({
       },
     ],
   }),
-  beforeLoad: async () => {
-    const { user, organization } = await loadAppContext()
+  beforeLoad: async ({ context }) => {
+    const { user, organization } = context
 
     if (!user) {
-      throw redirect({ to: '/login' })
+      throw redirect({ to: '/login', search: { redirect: undefined } })
     }
 
     if (!organization) {
-      throw redirect({ to: '/onboarding' })
+      throw redirect({ to: '/organisator/starten' })
     }
 
     return { user, organization }

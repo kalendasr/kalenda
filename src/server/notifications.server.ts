@@ -34,11 +34,16 @@ export type Audience =
 /** Boven deze drempel is een abonnement structureel dood en ruimen we het op. */
 const MAX_FAILURES = 10
 
+/** Resultaat van een verzendpoging: hoeveel apparaten er waren en hoeveel de push echt kregen. */
+export type NotifyResult = { delivered: number; devices: number }
+
+const NOTIFY_NONE: NotifyResult = { delivered: 0, devices: 0 }
+
 export async function notify<TKey extends NotificationKey>(
   key: TKey,
   audience: Audience,
   data: NotificationData[TKey],
-): Promise<void> {
+): Promise<NotifyResult> {
   try {
     const definition = NOTIFICATIONS[key]
 
@@ -48,7 +53,7 @@ export async function notify<TKey extends NotificationKey>(
         where: { userId: audience.userId },
         select: { type: true, enabled: true },
       })
-      if (!resolveEnabled(definition, stored)) return
+      if (!resolveEnabled(definition, stored)) return NOTIFY_NONE
     }
 
     // 2. Abonnementen van de doelgroep.
@@ -57,7 +62,7 @@ export async function notify<TKey extends NotificationKey>(
         ? { userId: audience.userId }
         : { customerId: audience.customerId }
     const subscriptions = await db.pushSubscription.findMany({ where })
-    if (subscriptions.length === 0) return
+    if (subscriptions.length === 0) return NOTIFY_NONE
 
     // 3. Payload één keer bouwen. De cast is nodig omdat TypeScript de
     // build-functie over de union niet vanzelf aan de bijbehorende data koppelt;
@@ -106,8 +111,11 @@ export async function notify<TKey extends NotificationKey>(
         where: { id: { in: failedIds }, failureCount: { gt: MAX_FAILURES } },
       })
     }
+
+    return { delivered: okIds.length, devices: subscriptions.length }
   } catch {
     // Stil: pushmeldingen zijn een extra kanaal, nooit een blokkade.
+    return NOTIFY_NONE
   }
 }
 
