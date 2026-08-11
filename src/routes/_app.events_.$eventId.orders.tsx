@@ -30,6 +30,7 @@ import { Badge } from '#/components/ui/badge.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import { StatCard } from '#/components/app/stat-card.tsx'
 import { EmptyState } from '#/components/app/empty-state.tsx'
+import { AsyncButton } from '#/components/app/async-button.tsx'
 import {
   Dialog,
   DialogContent,
@@ -432,9 +433,13 @@ function OrderCard({
         </div>
 
         {stage === 'NewOrder' && status !== 'Expired' ? (
-          <Button size="sm" onClick={onSendPaymentRequest}>
+          <AsyncButton
+            size="sm"
+            onClick={onSendPaymentRequest}
+            pendingLabel="Versturen…"
+          >
             Betaalverzoek versturen
-          </Button>
+          </AsyncButton>
         ) : null}
 
         {(stage === 'PaymentRequested' || stage === 'AwaitingTransfer') &&
@@ -450,9 +455,14 @@ function OrderCard({
 
         {(stage === 'TicketsPending' || stage === 'Done') &&
         status !== 'Expired' ? (
-          <Button size="sm" variant="outline" onClick={onResend}>
+          <AsyncButton
+            size="sm"
+            variant="outline"
+            onClick={onResend}
+            pendingLabel="Versturen…"
+          >
             {stage === 'Done' ? 'Opnieuw versturen' : 'Verstuur tickets'}
-          </Button>
+          </AsyncButton>
         ) : null}
       </div>
     </li>

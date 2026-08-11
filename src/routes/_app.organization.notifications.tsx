@@ -27,6 +27,7 @@ import {
   RouteErrorState,
   RoutePendingState,
 } from '#/components/app/route-states.tsx'
+import { AsyncButton } from '#/components/app/async-button.tsx'
 
 export const Route = createFileRoute('/_app/organization/notifications')({
   loader: async () => ({
@@ -160,10 +161,15 @@ function OrganizationNotifications() {
               <p className="text-sm text-muted-foreground">
                 Dit apparaat ontvangt meldingen.
               </p>
-              <Button variant="outline" size="sm" onClick={handleTest}>
+              <AsyncButton
+                variant="outline"
+                size="sm"
+                onClick={handleTest}
+                pendingLabel="Versturen…"
+              >
                 <RefreshCw className="size-3.5" />
                 Stuur een testmelding
-              </Button>
+              </AsyncButton>
             </div>
           )}
 

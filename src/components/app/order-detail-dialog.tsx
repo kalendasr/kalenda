@@ -28,6 +28,7 @@ import {
 } from '#/components/ui/dialog.tsx'
 import { Separator } from '#/components/ui/separator.tsx'
 import { ConfirmDialog } from '#/components/app/confirm-dialog.tsx'
+import { AsyncButton } from '#/components/app/async-button.tsx'
 import { CustomerPushForm } from '#/components/app/customer-push-form.tsx'
 
 /**
@@ -323,10 +324,15 @@ export function OrderDetailDialog({
 
             {stage === 'TicketsPending' || stage === 'Done' ? (
               <>
-                <Button size="sm" variant="outline" onClick={onResendEmail}>
+                <AsyncButton
+                  size="sm"
+                  variant="outline"
+                  onClick={onResendEmail}
+                  pendingLabel="Mailen…"
+                >
                   <Send />
                   {stage === 'Done' ? 'Opnieuw mailen' : 'Verstuur tickets'}
-                </Button>
+                </AsyncButton>
                 <Button size="sm" variant="outline" onClick={onShareWhatsApp}>
                   Delen via WhatsApp
                 </Button>
