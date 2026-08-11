@@ -72,6 +72,11 @@ export const sendPaymentRequest = createServerFn({ method: 'POST' })
     if (effectiveOrderStatus(order, now) === 'Expired') {
       throw new Error('De betaaltermijn van deze bestelling is verstreken.')
     }
+    // Expliciet, niet leunend op de toestandsmachine van Payment: een
+    // geannuleerde order mag nooit alsnog doorgezet worden.
+    if (order.orderStatus === 'Cancelled') {
+      throw new Error('Deze bestelling is geannuleerd.')
+    }
     if (!order.payment) throw new Error('PAYMENT_NOT_FOUND')
     if (!nextState(order.payment.state, 'request')) {
       throw new Error('Er is al een betaalverzoek verstuurd.')
@@ -147,6 +152,11 @@ export const approvePayment = createServerFn({ method: 'POST' })
     }
     if (effectiveOrderStatus(order, now) === 'Expired') {
       throw new Error('De betaaltermijn van deze bestelling is verstreken.')
+    }
+    // Expliciet, niet leunend op de toestandsmachine van Payment: een
+    // geannuleerde order mag nooit alsnog doorgezet worden.
+    if (order.orderStatus === 'Cancelled') {
+      throw new Error('Deze bestelling is geannuleerd.')
     }
     if (!order.payment) throw new Error('PAYMENT_NOT_FOUND')
     if (!nextState(order.payment.state, 'approve')) {
@@ -264,6 +274,11 @@ export const rejectPayment = createServerFn({ method: 'POST' })
     if (effectiveOrderStatus(order, now) === 'Expired') {
       throw new Error('De betaaltermijn van deze bestelling is verstreken.')
     }
+    // Expliciet, niet leunend op de toestandsmachine van Payment: een
+    // geannuleerde order mag nooit alsnog doorgezet worden.
+    if (order.orderStatus === 'Cancelled') {
+      throw new Error('Deze bestelling is geannuleerd.')
+    }
     if (!order.payment) throw new Error('PAYMENT_NOT_FOUND')
     if (!nextState(order.payment.state, 'reject')) {
       throw new Error('Deze betaling kan niet worden afgekeurd.')
@@ -368,6 +383,11 @@ export const submitProofOfPayment = createServerFn({ method: 'POST' })
     }
     if (effectiveOrderStatus(order, now) === 'Expired') {
       throw new Error('De betaaltermijn van deze bestelling is verstreken.')
+    }
+    // Expliciet, niet leunend op de toestandsmachine van Payment: een
+    // geannuleerde order mag nooit alsnog doorgezet worden.
+    if (order.orderStatus === 'Cancelled') {
+      throw new Error('Deze bestelling is geannuleerd.')
     }
     if (!order.payment) throw new Error('PAYMENT_NOT_FOUND')
     if (!nextState(order.payment.state, 'submit')) {
