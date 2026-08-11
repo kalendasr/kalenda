@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { db } from '#/lib/db.server.ts'
 import { requireUser } from '#/lib/session.server.ts'
 import { requireOwnedEvent } from '#/lib/event-guard.server.ts'
+import { REALISED_ORDER_STATUSES } from '#/lib/order-status.ts'
 import type { CheckInResult } from '#/generated/prisma/client.ts'
 
 /**
@@ -30,7 +31,7 @@ export const getEventReport = createServerFn({ method: 'GET' })
         where: {
           eventId: data.eventId,
           deletedAt: null,
-          orderStatus: { in: ['Paid', 'Completed'] },
+          orderStatus: { in: [...REALISED_ORDER_STATUSES] },
         },
         _sum: { totalCents: true },
       }),
@@ -50,7 +51,7 @@ export const getEventReport = createServerFn({ method: 'GET' })
             where: {
               order: {
                 deletedAt: null,
-                orderStatus: { in: ['Paid', 'Completed'] },
+                orderStatus: { in: [...REALISED_ORDER_STATUSES] },
               },
             },
             select: { quantity: true },

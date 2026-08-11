@@ -22,6 +22,17 @@ export type OrderStatus =
   | 'Cancelled'
   | 'Expired'
 
+/**
+ * Statussen die als gerealiseerde verkoop tellen — de enige bron van waarheid
+ * voor "omzet", zowel in de organisatorrapportage als op platformniveau.
+ *
+ * Bewust smal: `PendingPayment` en `AwaitingReview` zijn nog geen geld,
+ * `Cancelled` en `Expired` worden het nooit meer. Wie hier een status aan
+ * toevoegt, verandert elk omzetcijfer in de applicatie tegelijk — dat is
+ * precies de bedoeling.
+ */
+export const REALISED_ORDER_STATUSES = ['Paid', 'Completed'] as const
+
 /** Status waarin een order nog geen actie van de klant kent en kan verlopen. */
 const EXPIRABLE_STATUSES: ReadonlySet<OrderStatus> = new Set(['PendingPayment'])
 

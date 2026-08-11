@@ -58,12 +58,15 @@ model User {
   checkedInTickets        Ticket[]                 @relation("TicketCheckedBy")
   pushSubscriptions       PushSubscription[]
   notificationPreferences NotificationPreference[]
+  auditLogs               AuditLog[]               @relation("AuditActor")
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   @@index([email])
+  @@index([createdAt])
+  @@index([isPlatformAdmin])
   @@map("user")
 }
 
@@ -288,6 +291,8 @@ model Event {
   @@index([slug])
   @@index([organizationId])
   @@index([categoryId])
+  @@index([status])
+  @@index([createdAt])
   @@map("event")
 }
 
@@ -460,6 +465,9 @@ model Order {
   @@index([customerId])
   @@index([userId])
   @@index([orderNumber])
+  @@index([createdAt])
+  @@index([orderStatus])
+  @@index([paymentStatus])
   @@map("order")
 }
 
@@ -516,6 +524,7 @@ model Payment {
   updatedAt DateTime @updatedAt
 
   @@index([orderId])
+  @@index([state])
   @@map("payment")
 }
 
@@ -563,6 +572,8 @@ model Ticket {
 
   @@index([orderItemId])
   @@index([ticketNumber])
+  @@index([status])
+  @@index([checkedInAt])
   @@map("ticket")
 }
 
@@ -693,4 +704,70 @@ model NotificationLog {
 
   @@unique([type, targetKey])
   @@map("notification_log")
+}
+
+// ---------------------------------------------------------------------------
+// Audit log (Fase 12)
+//
+// Append-only: rijen worden nooit gewijzigd of verwijderd — daarom geen
+// `updatedAt` en geen `deletedAt`. Er bestaat bewust géén server function die
+// een AuditLog muteert of verwijdert; de enige schrijver is
+// `writeAuditLog()` in het adminserverdomein.
+//
+// Registreert vandaag uitsluitend platformbeheerder-acties. Het model is
+// generiek genoeg om later ook organisator-acties vast te leggen (BR §17)
+// zonder migratie van bestaande rijen: dan komen er enkel enum-waarden bij.
+//
+// `targetLabel` is een momentopname van de naam op het moment van de actie,
+// zodat het log leesbaar blijft nadat het doel hernoemd of verwijderd is.
+// `metadata` bevat alleen de gewijzigde toestand (before/after) — nooit
+// wachtwoorden, tokens, betaalbewijzen of andere geheimen.
+// ---------------------------------------------------------------------------
+
+enum AuditAction {
+  UserBlocked
+  UserUnblocked
+  UserRoleGranted
+  UserRoleRevoked
+  UserDeleted
+  OrganizationDeactivated
+  OrganizationReactivated
+  OrganizationVerified
+  OrganizationUnverified
+  EventPublished
+  EventUnpublished
+  EventArchived
+  EventDeleted
+  CategoryCreated
+  CategoryUpdated
+}
+
+enum AuditTargetType {
+  User
+  Organization
+  Event
+  Category
+}
+
+model AuditLog {
+  id String @id @default(uuid())
+
+  // Altijd de handelende beheerder; nooit nullable. Een audit log zonder
+  // actor heeft geen waarde.
+  actorId String
+  actor   User   @relation("AuditActor", fields: [actorId], references: [id])
+
+  action      AuditAction
+  targetType  AuditTargetType
+  targetId    String
+  targetLabel String
+  metadata    Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@index([action])
+  @@map("audit_log")
 }

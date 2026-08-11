@@ -2,11 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { db } from '#/lib/db.server.ts'
 import { notify } from '#/server/notifications.server.ts'
-import {
-  hasEventTimeChanged,
-  hasVenueChanged,
-  notifyEventChanged,
-} from '#/server/event.ts'
+import { notifyEventChanged } from '#/server/event-notifications.server.ts'
+import { hasEventTimeChanged, hasVenueChanged } from '#/server/event.ts'
 
 // event.ts importeert deze modules op module-niveau; ze raken db/auth aan die
 // zonder env-variabelen niet instantieerbaar zijn in een testomgeving. Vitest

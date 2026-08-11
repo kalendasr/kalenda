@@ -13,9 +13,13 @@ import {
   eventIntroSchema,
   venueSchema,
 } from '#/lib/validation/event.ts'
-import { notify } from '#/server/notifications.server.ts'
-import type { EventChange } from '#/lib/notifications/definitions/event-changed.ts'
+import { notifyEventChanged } from '#/server/event-notifications.server.ts'
 import { eventPublishReadiness } from '#/lib/event-readiness.ts'
+import {
+  assertLifecycle,
+  canDeleteEvent,
+  canUnpublishEvent,
+} from '#/lib/event-lifecycle.ts'
 import { z } from 'zod'
 
 /**
@@ -52,37 +56,6 @@ export function hasVenueChanged(
     before.address !== after.address ||
     before.district !== after.district ||
     before.country !== after.country
-  )
-}
-
-/**
- * BR-904: een materiële wijziging (tijd/locatie) aan een gepubliceerd event
- * informeert elke klant met een actieve bestelling. "Actief" = niet
- * geannuleerd/verlopen — ook wie nog moet betalen heeft een reservering voor
- * dit event en wil van de wijziging weten.
- */
-export async function notifyEventChanged(
-  eventId: string,
-  eventTitle: string,
-  change: EventChange,
-) {
-  const orders = await db.order.findMany({
-    where: {
-      eventId,
-      deletedAt: null,
-      orderStatus: { notIn: ['Cancelled', 'Expired'] },
-    },
-    select: { orderNumber: true, customerId: true },
-  })
-
-  await Promise.all(
-    orders.map((order) =>
-      notify(
-        'event.changed',
-        { kind: 'customer', customerId: order.customerId },
-        { orderNumber: order.orderNumber, eventTitle, change },
-      ),
-    ),
   )
 }
 
@@ -332,11 +305,7 @@ export const unpublishEvent = createServerFn({ method: 'POST' })
         },
       },
     })
-    if (ticketCount > 0) {
-      throw new Error(
-        'Dit evenement heeft al verkochte tickets en kan niet meer naar concept terug.',
-      )
-    }
+    assertLifecycle(canUnpublishEvent({ ticketCount }))
 
     return db.event.update({
       where: { id: data.eventId },
@@ -363,20 +332,10 @@ export const deleteEvent = createServerFn({ method: 'POST' })
     const user = await requireUser()
     const event = await requireOwnedEvent(user.id, data.eventId)
 
-    if (event.status !== 'Draft') {
-      throw new Error(
-        'Een gepubliceerd evenement kan niet verwijderd worden. Archiveer het in plaats daarvan.',
-      )
-    }
-
     const orderCount = await db.order.count({
       where: { eventId: event.id, deletedAt: null },
     })
-    if (orderCount > 0) {
-      throw new Error(
-        'Dit evenement heeft bestellingen en kan niet verwijderd worden. Archiveer het in plaats daarvan.',
-      )
-    }
+    assertLifecycle(canDeleteEvent({ status: event.status, orderCount }))
 
     await db.event.update({
       where: { id: event.id },

@@ -15,6 +15,21 @@ const SENTINEL_MESSAGES: Record<string, string> = {
   TICKET_TYPE_NOT_FOUND: 'Dit tickettype is niet gevonden.',
   CONTENT_NOT_FOUND: 'Dit onderdeel is niet gevonden.',
   CANNOT_BLOCK_SELF: 'Je kunt jezelf niet blokkeren.',
+  USER_NOT_FOUND: 'Deze gebruiker is niet gevonden.',
+  CATEGORY_NOT_FOUND: 'Deze categorie is niet gevonden.',
+  CANNOT_BLOCK_ADMIN:
+    'Deze gebruiker is platformbeheerder. Trek eerst de beheerdersrol in.',
+  CANNOT_CHANGE_OWN_ROLE:
+    'Je kunt je eigen beheerdersrol niet wijzigen. Laat een andere beheerder dit doen.',
+  CANNOT_PROMOTE_INACTIVE_USER:
+    'Een geblokkeerd of verwijderd account kan geen platformbeheerder worden.',
+  LAST_PLATFORM_ADMIN:
+    'Dit is de laatste platformbeheerder. Maak eerst iemand anders beheerder.',
+  CANNOT_DELETE_SELF: 'Je kunt je eigen account niet verwijderen.',
+  CANNOT_DELETE_ADMIN:
+    'Een platformbeheerder kan niet verwijderd worden. Trek eerst de beheerdersrol in.',
+  CANNOT_DELETE_ORGANIZER:
+    'Deze gebruiker is eigenaar van een actieve organisatie. Deactiveer eerst de organisatie.',
 }
 
 export function errorMessage(
