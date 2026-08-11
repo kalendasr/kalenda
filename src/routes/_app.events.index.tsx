@@ -7,8 +7,8 @@ import { formatSrd } from '#/lib/money.ts'
 import { formatDateNl } from '#/lib/datetime.ts'
 import { listMyEventsSummary } from '#/server/event.ts'
 import { Button } from '#/components/ui/button.tsx'
-import { Card } from '#/components/ui/card.tsx'
 import { EventStatusBadge } from '#/components/app/event-status-badge.tsx'
+import { EmptyState } from '#/components/app/empty-state.tsx'
 import {
   RouteErrorState,
   RoutePendingState,
@@ -66,7 +66,18 @@ function EventsList() {
       </header>
 
       {events.length === 0 ? (
-        <EmptyState />
+        <EmptyState
+          icon={Ticket}
+          title="Nog geen evenementen"
+          description="Maak je eerste evenement aan en vul het aan met alle informatie voordat je het publiceert."
+          action={
+            <Button asChild>
+              <Link to="/events/new">
+                <Plus /> Nieuw evenement
+              </Link>
+            </Button>
+          }
+        />
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-3">
@@ -101,9 +112,22 @@ function EventsList() {
           </div>
 
           {visible.length === 0 ? (
-            <p className="rounded-xl border border-dashed py-12 text-center text-sm text-muted-foreground">
-              Geen evenementen gevonden voor deze filter.
-            </p>
+            <EmptyState
+              icon={Search}
+              title="Geen evenementen in deze selectie"
+              description={`Je hebt ${events.length} ${events.length === 1 ? 'evenement' : 'evenementen'}, maar geen enkele past bij dit filter of deze zoekterm.`}
+              action={
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setFilter('Alle')
+                    setSearch('')
+                  }}
+                >
+                  Toon alle evenementen
+                </Button>
+              }
+            />
           ) : (
             <ul className="flex flex-col gap-3">
               {visible.map((event) => (
@@ -181,27 +205,5 @@ function EventRow({ event }: { event: EventSummary }) {
         </div>
       </div>
     </Link>
-  )
-}
-
-function EmptyState() {
-  return (
-    <Card className="items-center gap-4 px-6 py-16 text-center">
-      <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-        <Ticket className="size-6" />
-      </span>
-      <div className="max-w-sm">
-        <h2 className="text-lg font-semibold">Nog geen evenementen</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Maak je eerste evenement aan en vul het aan met alle informatie
-          voordat je het publiceert.
-        </p>
-      </div>
-      <Button asChild>
-        <Link to="/events/new">
-          <Plus /> Nieuw evenement
-        </Link>
-      </Button>
-    </Card>
   )
 }

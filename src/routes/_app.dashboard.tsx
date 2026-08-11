@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { ArrowRight, FileSpreadsheet } from 'lucide-react'
+import { ArrowRight, CalendarPlus, FileSpreadsheet } from 'lucide-react'
 
 import { formatSrd } from '#/lib/money.ts'
 import { formatDateTimeShortNl } from '#/lib/datetime.ts'
@@ -27,6 +27,7 @@ import { Badge } from '#/components/ui/badge.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import { EventStatusBadge } from '#/components/app/event-status-badge.tsx'
 import { StatCard } from '#/components/app/stat-card.tsx'
+import { PanelEmpty } from '#/components/app/empty-state.tsx'
 import {
   RouteErrorState,
   RoutePendingState,
@@ -237,9 +238,16 @@ function Dashboard() {
                   .slice(0, 4)
                   .map((event) => <MiniEventRow key={event.id} event={event} />)
               ) : (
-                <p className="px-6 py-8 text-center text-sm text-muted-foreground">
-                  Nog geen evenementen.
-                </p>
+                <PanelEmpty
+                  icon={CalendarPlus}
+                  title="Nog geen evenementen"
+                  description="Zodra je een evenement aanmaakt, zie je hier per evenement hoeveel er verkocht is."
+                  action={
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to="/events/new">Nieuw evenement</Link>
+                    </Button>
+                  }
+                />
               )}
             </CardContent>
           </Card>

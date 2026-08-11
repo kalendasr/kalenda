@@ -1,9 +1,10 @@
-import { createFileRoute, getRouteApi } from '@tanstack/react-router'
+import { Link, createFileRoute, getRouteApi } from '@tanstack/react-router'
 
 import { getEventReport } from '#/server/reports.ts'
 import { formatSrd } from '#/lib/money.ts'
 import { cn } from '#/lib/utils.ts'
 import { StatCard } from '#/components/app/stat-card.tsx'
+import { PanelEmpty } from '#/components/app/empty-state.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import {
   Card,
@@ -110,9 +111,20 @@ function EventReports() {
         </CardHeader>
         <CardContent>
           {report.ticketTypes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Er zijn nog geen tickettypes voor dit event.
-            </p>
+            <PanelEmpty
+              title="Nog geen tickettypes"
+              description="Voeg een tickettype toe; daarna zie je hier per type hoeveel er verkocht is."
+              action={
+                <Button variant="outline" size="sm" asChild>
+                  <Link
+                    to="/events/$eventId/tickets"
+                    params={{ eventId: event.id }}
+                  >
+                    Tickettypes beheren
+                  </Link>
+                </Button>
+              }
+            />
           ) : (
             <ul className="flex flex-col gap-4">
               {report.ticketTypes.map((type) => {

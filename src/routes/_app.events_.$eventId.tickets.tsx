@@ -24,7 +24,6 @@ import { ticketSaleStatus } from '#/lib/ticket-sales.ts'
 import type { SaleStatus } from '#/lib/ticket-sales.ts'
 import { toast } from '#/components/ui/sonner.tsx'
 import { errorMessage } from '#/lib/error-message.ts'
-import { Card } from '#/components/ui/card.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import { Input } from '#/components/ui/input.tsx'
 import { Textarea } from '#/components/ui/textarea.tsx'
@@ -33,6 +32,7 @@ import { Badge } from '#/components/ui/badge.tsx'
 import { FormField } from '#/components/ui/form-field.tsx'
 import { FormError } from '#/components/auth/form-error.tsx'
 import { ConfirmDialog } from '#/components/app/confirm-dialog.tsx'
+import { EmptyState } from '#/components/app/empty-state.tsx'
 import {
   Dialog,
   DialogContent,
@@ -95,26 +95,21 @@ function EventTicketsTab() {
       </div>
 
       {ticketTypes.length === 0 ? (
-        <Card className="items-center gap-4 px-6 py-14 text-center">
-          <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <Ticket className="size-6" />
-          </span>
-          <div className="max-w-sm">
-            <h2 className="text-lg font-semibold">Nog geen tickettypes</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Voeg minimaal één tickettype toe voordat je je evenement kunt
-              publiceren.
-            </p>
-          </div>
-          <TicketTypeDialog
-            eventId={event.id}
-            trigger={
-              <Button>
-                <Plus /> Nieuw tickettype
-              </Button>
-            }
-          />
-        </Card>
+        <EmptyState
+          icon={Ticket}
+          title="Nog geen tickettypes"
+          description="Voeg minimaal één tickettype toe voordat je je evenement kunt publiceren."
+          action={
+            <TicketTypeDialog
+              eventId={event.id}
+              trigger={
+                <Button>
+                  <Plus /> Nieuw tickettype
+                </Button>
+              }
+            />
+          }
+        />
       ) : (
         <ul className="flex flex-col gap-3">
           {ticketTypes.map((type, index) => (

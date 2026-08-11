@@ -11,6 +11,39 @@ import { cn } from '#/lib/utils.ts'
  * *waarom* hij leeg is — er is nog niets, of het filter sluit alles uit — en
  * niet alleen "geen resultaten".
  */
+/**
+ * Compacte variant voor een leeg paneel *binnen* een kaart (dashboardkolom,
+ * scangeschiedenis, apparatenlijst). Zelfde regel als hierboven: vertel waarom
+ * het leeg is en wat de eerstvolgende stap is — nooit alleen "geen gegevens".
+ */
+export function PanelEmpty({
+  icon: Icon,
+  title,
+  description,
+  action,
+}: {
+  icon?: LucideIcon
+  title: string
+  description: string
+  action?: ReactNode
+}) {
+  return (
+    <div className="px-6 py-8 text-center">
+      {Icon ? (
+        <Icon
+          className="mx-auto mb-2 size-7 text-muted-foreground/50"
+          aria-hidden="true"
+        />
+      ) : null}
+      <p className="text-sm font-medium">{title}</p>
+      <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
+        {description}
+      </p>
+      {action ? <div className="mt-3">{action}</div> : null}
+    </div>
+  )
+}
+
 export function EmptyState({
   icon: Icon,
   title,

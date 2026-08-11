@@ -560,7 +560,8 @@ function ContentSection({
       <CardContent>
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Nog geen {section.itemLabel} toegevoegd.
+            Nog geen {section.itemLabel} toegevoegd — dit onderdeel blijft
+            verborgen op de eventpagina tot je er één toevoegt.
           </p>
         ) : (
           <ul className="flex flex-col divide-y">

@@ -13,6 +13,7 @@ import {
 } from '#/lib/order-stage.ts'
 import { effectiveOrderStatus } from '#/lib/order-status.ts'
 import { cn } from '#/lib/utils.ts'
+import { PanelEmpty } from '#/components/app/empty-state.tsx'
 import {
   Card,
   CardContent,
@@ -210,9 +211,10 @@ function EventOverview() {
                 )
               })
             ) : (
-              <p className="px-6 py-8 text-center text-sm text-muted-foreground">
-                Nog geen bestellingen.
-              </p>
+              <PanelEmpty
+                title="Nog geen bestellingen"
+                description="Zodra iemand tickets bestelt, verschijnt de bestelling hier en kun je de betaling bevestigen."
+              />
             )}
           </CardContent>
         </Card>

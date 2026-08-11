@@ -28,8 +28,8 @@ import type { OrderStage } from '#/lib/order-stage.ts'
 import { cn } from '#/lib/utils.ts'
 import { Badge } from '#/components/ui/badge.tsx'
 import { Button } from '#/components/ui/button.tsx'
-import { Card } from '#/components/ui/card.tsx'
 import { StatCard } from '#/components/app/stat-card.tsx'
+import { EmptyState } from '#/components/app/empty-state.tsx'
 import {
   Dialog,
   DialogContent,
@@ -173,18 +173,11 @@ function EventOrders() {
 
   if (orders.length === 0) {
     return (
-      <Card className="items-center gap-4 px-6 py-14 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <Inbox className="size-6" />
-        </span>
-        <div className="max-w-sm">
-          <h2 className="text-lg font-semibold">Nog geen bestellingen</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Zodra bezoekers tickets bestellen, verschijnen ze hier. Je kunt de
-            betaling bevestigen zodra je geld hebt ontvangen.
-          </p>
-        </div>
-      </Card>
+      <EmptyState
+        icon={Inbox}
+        title="Nog geen bestellingen"
+        description="Zodra bezoekers tickets bestellen, verschijnen ze hier. Je kunt de betaling bevestigen zodra je geld hebt ontvangen."
+      />
     )
   }
 
@@ -241,9 +234,16 @@ function EventOrders() {
       </div>
 
       {visible.length === 0 ? (
-        <p className="rounded-xl border border-dashed py-10 text-center text-sm text-muted-foreground">
-          Geen orders in deze categorie.
-        </p>
+        <EmptyState
+          icon={Inbox}
+          title={`Geen bestellingen onder "${filter}"`}
+          description={`Dit evenement heeft ${orders.length} ${orders.length === 1 ? 'bestelling' : 'bestellingen'}, maar geen enkele valt in deze categorie.`}
+          action={
+            <Button variant="outline" onClick={() => setFilter('Alle')}>
+              Toon alle bestellingen
+            </Button>
+          }
+        />
       ) : (
         <ul className="flex flex-col gap-3">
           {visible.map((order) => (
