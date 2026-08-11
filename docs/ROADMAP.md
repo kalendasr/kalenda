@@ -344,10 +344,10 @@ De applicatie klaar is voor productie.
 
 ## Content
 
-- [ ] FAQ
-- [ ] Agenda
-- [ ] Sprekers
-- [ ] Huisregels
+- [x] FAQ
+- [x] Agenda
+- [x] Sprekers
+- [x] Huisregels
 
 ---
 

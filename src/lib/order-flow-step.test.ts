@@ -3,12 +3,15 @@ import { describe, expect, it } from 'vitest'
 import { deriveOrderFlowStep } from '#/lib/order-flow-step.ts'
 
 const expiresAt = new Date('2026-08-07T00:00:00Z')
-const now = new Date('2026-08-05T00:00:00Z') // vóór expiresAt
+const beforeExpiry = new Date('2026-08-05T00:00:00Z')
 
 describe('deriveOrderFlowStep', () => {
   it('PendingPayment → wacht-scherm, stap 1 actief', () => {
     expect(
-      deriveOrderFlowStep({ orderStatus: 'PendingPayment', expiresAt }, now),
+      deriveOrderFlowStep(
+        { orderStatus: 'PendingPayment', expiresAt },
+        beforeExpiry,
+      ),
     ).toEqual({
       screen: 'wacht',
       activeStep: 1,
@@ -19,7 +22,10 @@ describe('deriveOrderFlowStep', () => {
 
   it('AwaitingReview → wacht-scherm, stap 2 actief', () => {
     expect(
-      deriveOrderFlowStep({ orderStatus: 'AwaitingReview', expiresAt }, now),
+      deriveOrderFlowStep(
+        { orderStatus: 'AwaitingReview', expiresAt },
+        beforeExpiry,
+      ),
     ).toEqual({
       screen: 'wacht',
       activeStep: 2,
@@ -30,7 +36,7 @@ describe('deriveOrderFlowStep', () => {
 
   it('Paid → betaald-scherm, stap 3 (laatste) actief', () => {
     expect(
-      deriveOrderFlowStep({ orderStatus: 'Paid', expiresAt }, now),
+      deriveOrderFlowStep({ orderStatus: 'Paid', expiresAt }, beforeExpiry),
     ).toEqual({
       screen: 'betaald',
       activeStep: 3,
@@ -41,7 +47,10 @@ describe('deriveOrderFlowStep', () => {
 
   it('Completed → betaald-scherm', () => {
     expect(
-      deriveOrderFlowStep({ orderStatus: 'Completed', expiresAt }, now),
+      deriveOrderFlowStep(
+        { orderStatus: 'Completed', expiresAt },
+        beforeExpiry,
+      ),
     ).toEqual({
       screen: 'betaald',
       activeStep: 3,
@@ -52,7 +61,10 @@ describe('deriveOrderFlowStep', () => {
 
   it('Cancelled → verlopen-scherm', () => {
     expect(
-      deriveOrderFlowStep({ orderStatus: 'Cancelled', expiresAt }, now),
+      deriveOrderFlowStep(
+        { orderStatus: 'Cancelled', expiresAt },
+        beforeExpiry,
+      ),
     ).toEqual({
       screen: 'verlopen',
       activeStep: 0,
@@ -62,9 +74,12 @@ describe('deriveOrderFlowStep', () => {
   })
 
   it('een verstreken PendingPayment-order telt als verlopen (lazy expiry, BR-506/507)', () => {
-    const now = new Date('2026-08-08T00:00:00Z') // na expiresAt
+    const afterExpiry = new Date('2026-08-08T00:00:00Z')
     expect(
-      deriveOrderFlowStep({ orderStatus: 'PendingPayment', expiresAt }, now),
+      deriveOrderFlowStep(
+        { orderStatus: 'PendingPayment', expiresAt },
+        afterExpiry,
+      ),
     ).toEqual({
       screen: 'verlopen',
       activeStep: 0,
@@ -74,9 +89,9 @@ describe('deriveOrderFlowStep', () => {
   })
 
   it('een reeds betaalde order blijft betaald, ook na expiresAt', () => {
-    const now = new Date('2026-08-08T00:00:00Z')
+    const afterExpiry = new Date('2026-08-08T00:00:00Z')
     expect(
-      deriveOrderFlowStep({ orderStatus: 'Completed', expiresAt }, now),
+      deriveOrderFlowStep({ orderStatus: 'Completed', expiresAt }, afterExpiry),
     ).toEqual({
       screen: 'betaald',
       activeStep: 3,
@@ -94,7 +109,7 @@ describe('deriveOrderFlowStep', () => {
           expiresAt,
           paymentRequestedAt: requestedAt,
         },
-        now,
+        beforeExpiry,
       ),
     ).toEqual({
       screen: 'wacht',

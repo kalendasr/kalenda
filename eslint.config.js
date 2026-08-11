@@ -29,6 +29,9 @@ export default [
       'src/routeTree.gen.ts',
       'src/generated/**',
       'src/components/ui/**',
+      // Statische assets; sw.js draait als service worker in de browser en
+      // hoort niet bij het TypeScript-project.
+      'public/**',
       '.output/**',
       'dist/**',
       'coverage/**',
