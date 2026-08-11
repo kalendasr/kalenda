@@ -1,5 +1,17 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
-import { Building2, LayoutDashboard, Ticket, Users } from 'lucide-react'
+import {
+  BarChart3,
+  Building2,
+  CalendarDays,
+  CreditCard,
+  LayoutDashboard,
+  QrCode,
+  Receipt,
+  ScrollText,
+  Settings,
+  Ticket,
+  Users,
+} from 'lucide-react'
 
 import { AppShell } from '#/components/app/app-shell.tsx'
 import type { NavItem } from '#/components/app/app-shell.tsx'
@@ -16,8 +28,15 @@ import type { NavItem } from '#/components/app/app-shell.tsx'
 const ADMIN_NAV_ITEMS: Array<NavItem> = [
   { to: '/admin', label: 'Overzicht', icon: LayoutDashboard, exact: true },
   { to: '/admin/organizations', label: 'Organisaties', icon: Building2 },
-  { to: '/admin/events', label: 'Evenementen', icon: Ticket },
+  { to: '/admin/events', label: 'Evenementen', icon: CalendarDays },
+  { to: '/admin/orders', label: 'Bestellingen', icon: Receipt },
+  { to: '/admin/payments', label: 'Betalingen', icon: CreditCard },
+  { to: '/admin/tickets', label: 'Tickets', icon: Ticket },
+  { to: '/admin/check-ins', label: 'Check-ins', icon: QrCode },
   { to: '/admin/users', label: 'Gebruikers', icon: Users },
+  { to: '/admin/reports', label: 'Rapportages', icon: BarChart3 },
+  { to: '/admin/audit-logs', label: 'Logboek', icon: ScrollText },
+  { to: '/admin/settings', label: 'Instellingen', icon: Settings },
 ]
 
 export const Route = createFileRoute('/_admin')({

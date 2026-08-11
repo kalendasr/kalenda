@@ -27,9 +27,12 @@ import { Route as OrganisatorIndexRouteImport } from './routes/organisator.index
 import { Route as OrganisatorStartenRouteImport } from './routes/organisator.starten'
 import { Route as TicketTicketNumberRouteImport } from './routes/ticket.$ticketNumber'
 import { Route as AdminAdminIndexRouteImport } from './routes/_admin.admin.index'
-import { Route as AdminAdminEventsRouteImport } from './routes/_admin.admin.events'
-import { Route as AdminAdminOrganizationsRouteImport } from './routes/_admin.admin.organizations'
-import { Route as AdminAdminUsersRouteImport } from './routes/_admin.admin.users'
+import { Route as AdminAdminAuditLogsRouteImport } from './routes/_admin.admin.audit-logs'
+import { Route as AdminAdminCheckInsRouteImport } from './routes/_admin.admin.check-ins'
+import { Route as AdminAdminPaymentsRouteImport } from './routes/_admin.admin.payments'
+import { Route as AdminAdminReportsRouteImport } from './routes/_admin.admin.reports'
+import { Route as AdminAdminSettingsRouteImport } from './routes/_admin.admin.settings'
+import { Route as AdminAdminTicketsRouteImport } from './routes/_admin.admin.tickets'
 import { Route as AppEventsIndexRouteImport } from './routes/_app.events.index'
 import { Route as AppEventsNewRouteImport } from './routes/_app.events.new'
 import { Route as AppEventsEventIdRouteImport } from './routes/_app.events_.$eventId'
@@ -42,6 +45,14 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiCronEventRemindersRouteImport } from './routes/api/cron/event-reminders'
 import { Route as ApiCronExpireOrdersRouteImport } from './routes/api/cron/expire-orders'
 import { Route as EvenementenSlugAfrekenenRouteImport } from './routes/evenementen.$slug_.afrekenen'
+import { Route as AdminAdminEventsIndexRouteImport } from './routes/_admin.admin.events.index'
+import { Route as AdminAdminEventsEventIdRouteImport } from './routes/_admin.admin.events.$eventId'
+import { Route as AdminAdminOrdersIndexRouteImport } from './routes/_admin.admin.orders.index'
+import { Route as AdminAdminOrdersOrderNumberRouteImport } from './routes/_admin.admin.orders.$orderNumber'
+import { Route as AdminAdminOrganizationsIndexRouteImport } from './routes/_admin.admin.organizations.index'
+import { Route as AdminAdminOrganizationsOrganizationIdRouteImport } from './routes/_admin.admin.organizations.$organizationId'
+import { Route as AdminAdminUsersIndexRouteImport } from './routes/_admin.admin.users.index'
+import { Route as AdminAdminUsersUserIdRouteImport } from './routes/_admin.admin.users.$userId'
 import { Route as AppEventsEventIdIndexRouteImport } from './routes/_app.events_.$eventId.index'
 import { Route as AppEventsEventIdDetailsRouteImport } from './routes/_app.events_.$eventId.details'
 import { Route as AppEventsEventIdOrdersRouteImport } from './routes/_app.events_.$eventId.orders'
@@ -137,19 +148,34 @@ const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminAdminEventsRoute = AdminAdminEventsRouteImport.update({
-  id: '/admin/events',
-  path: '/admin/events',
+const AdminAdminAuditLogsRoute = AdminAdminAuditLogsRouteImport.update({
+  id: '/admin/audit-logs',
+  path: '/admin/audit-logs',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminAdminOrganizationsRoute = AdminAdminOrganizationsRouteImport.update({
-  id: '/admin/organizations',
-  path: '/admin/organizations',
+const AdminAdminCheckInsRoute = AdminAdminCheckInsRouteImport.update({
+  id: '/admin/check-ins',
+  path: '/admin/check-ins',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
-  id: '/admin/users',
-  path: '/admin/users',
+const AdminAdminPaymentsRoute = AdminAdminPaymentsRouteImport.update({
+  id: '/admin/payments',
+  path: '/admin/payments',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminReportsRoute = AdminAdminReportsRouteImport.update({
+  id: '/admin/reports',
+  path: '/admin/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminSettingsRoute = AdminAdminSettingsRouteImport.update({
+  id: '/admin/settings',
+  path: '/admin/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminTicketsRoute = AdminAdminTicketsRouteImport.update({
+  id: '/admin/tickets',
+  path: '/admin/tickets',
   getParentRoute: () => AdminRoute,
 } as any)
 const AppEventsIndexRoute = AppEventsIndexRouteImport.update({
@@ -214,6 +240,49 @@ const EvenementenSlugAfrekenenRoute =
     path: '/evenementen/$slug/afrekenen',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AdminAdminEventsIndexRoute = AdminAdminEventsIndexRouteImport.update({
+  id: '/admin/events/',
+  path: '/admin/events/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminEventsEventIdRoute = AdminAdminEventsEventIdRouteImport.update({
+  id: '/admin/events/$eventId',
+  path: '/admin/events/$eventId',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminOrdersIndexRoute = AdminAdminOrdersIndexRouteImport.update({
+  id: '/admin/orders/',
+  path: '/admin/orders/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminOrdersOrderNumberRoute =
+  AdminAdminOrdersOrderNumberRouteImport.update({
+    id: '/admin/orders/$orderNumber',
+    path: '/admin/orders/$orderNumber',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminAdminOrganizationsIndexRoute =
+  AdminAdminOrganizationsIndexRouteImport.update({
+    id: '/admin/organizations/',
+    path: '/admin/organizations/',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminAdminOrganizationsOrganizationIdRoute =
+  AdminAdminOrganizationsOrganizationIdRouteImport.update({
+    id: '/admin/organizations/$organizationId',
+    path: '/admin/organizations/$organizationId',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminAdminUsersIndexRoute = AdminAdminUsersIndexRouteImport.update({
+  id: '/admin/users/',
+  path: '/admin/users/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminUsersUserIdRoute = AdminAdminUsersUserIdRouteImport.update({
+  id: '/admin/users/$userId',
+  path: '/admin/users/$userId',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AppEventsEventIdIndexRoute = AppEventsEventIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -266,9 +335,12 @@ export interface FileRoutesByFullPath {
   '/ticket/$ticketNumber': typeof TicketTicketNumberRoute
   '/evenementen/': typeof EvenementenIndexRoute
   '/organisator/': typeof OrganisatorIndexRoute
-  '/admin/events': typeof AdminAdminEventsRoute
-  '/admin/organizations': typeof AdminAdminOrganizationsRoute
-  '/admin/users': typeof AdminAdminUsersRoute
+  '/admin/audit-logs': typeof AdminAdminAuditLogsRoute
+  '/admin/check-ins': typeof AdminAdminCheckInsRoute
+  '/admin/payments': typeof AdminAdminPaymentsRoute
+  '/admin/reports': typeof AdminAdminReportsRoute
+  '/admin/settings': typeof AdminAdminSettingsRoute
+  '/admin/tickets': typeof AdminAdminTicketsRoute
   '/events/new': typeof AppEventsNewRoute
   '/events/$eventId': typeof AppEventsEventIdRouteWithChildren
   '/organization/details': typeof AppOrganizationDetailsRoute
@@ -282,12 +354,20 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminAdminIndexRoute
   '/events/': typeof AppEventsIndexRoute
   '/organization/': typeof AppOrganizationIndexRoute
+  '/admin/events/$eventId': typeof AdminAdminEventsEventIdRoute
+  '/admin/orders/$orderNumber': typeof AdminAdminOrdersOrderNumberRoute
+  '/admin/organizations/$organizationId': typeof AdminAdminOrganizationsOrganizationIdRoute
+  '/admin/users/$userId': typeof AdminAdminUsersUserIdRoute
   '/events/$eventId/details': typeof AppEventsEventIdDetailsRoute
   '/events/$eventId/orders': typeof AppEventsEventIdOrdersRoute
   '/events/$eventId/reports': typeof AppEventsEventIdReportsRoute
   '/events/$eventId/scanner': typeof AppEventsEventIdScannerRoute
   '/events/$eventId/settings': typeof AppEventsEventIdSettingsRoute
   '/events/$eventId/tickets': typeof AppEventsEventIdTicketsRoute
+  '/admin/events/': typeof AdminAdminEventsIndexRoute
+  '/admin/orders/': typeof AdminAdminOrdersIndexRoute
+  '/admin/organizations/': typeof AdminAdminOrganizationsIndexRoute
+  '/admin/users/': typeof AdminAdminUsersIndexRoute
   '/events/$eventId/': typeof AppEventsEventIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -304,9 +384,12 @@ export interface FileRoutesByTo {
   '/ticket/$ticketNumber': typeof TicketTicketNumberRoute
   '/evenementen': typeof EvenementenIndexRoute
   '/organisator': typeof OrganisatorIndexRoute
-  '/admin/events': typeof AdminAdminEventsRoute
-  '/admin/organizations': typeof AdminAdminOrganizationsRoute
-  '/admin/users': typeof AdminAdminUsersRoute
+  '/admin/audit-logs': typeof AdminAdminAuditLogsRoute
+  '/admin/check-ins': typeof AdminAdminCheckInsRoute
+  '/admin/payments': typeof AdminAdminPaymentsRoute
+  '/admin/reports': typeof AdminAdminReportsRoute
+  '/admin/settings': typeof AdminAdminSettingsRoute
+  '/admin/tickets': typeof AdminAdminTicketsRoute
   '/events/new': typeof AppEventsNewRoute
   '/organization/details': typeof AppOrganizationDetailsRoute
   '/organization/notifications': typeof AppOrganizationNotificationsRoute
@@ -319,12 +402,20 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminAdminIndexRoute
   '/events': typeof AppEventsIndexRoute
   '/organization': typeof AppOrganizationIndexRoute
+  '/admin/events/$eventId': typeof AdminAdminEventsEventIdRoute
+  '/admin/orders/$orderNumber': typeof AdminAdminOrdersOrderNumberRoute
+  '/admin/organizations/$organizationId': typeof AdminAdminOrganizationsOrganizationIdRoute
+  '/admin/users/$userId': typeof AdminAdminUsersUserIdRoute
   '/events/$eventId/details': typeof AppEventsEventIdDetailsRoute
   '/events/$eventId/orders': typeof AppEventsEventIdOrdersRoute
   '/events/$eventId/reports': typeof AppEventsEventIdReportsRoute
   '/events/$eventId/scanner': typeof AppEventsEventIdScannerRoute
   '/events/$eventId/settings': typeof AppEventsEventIdSettingsRoute
   '/events/$eventId/tickets': typeof AppEventsEventIdTicketsRoute
+  '/admin/events': typeof AdminAdminEventsIndexRoute
+  '/admin/orders': typeof AdminAdminOrdersIndexRoute
+  '/admin/organizations': typeof AdminAdminOrganizationsIndexRoute
+  '/admin/users': typeof AdminAdminUsersIndexRoute
   '/events/$eventId': typeof AppEventsEventIdIndexRoute
 }
 export interface FileRoutesById {
@@ -346,9 +437,12 @@ export interface FileRoutesById {
   '/ticket/$ticketNumber': typeof TicketTicketNumberRoute
   '/evenementen/': typeof EvenementenIndexRoute
   '/organisator/': typeof OrganisatorIndexRoute
-  '/_admin/admin/events': typeof AdminAdminEventsRoute
-  '/_admin/admin/organizations': typeof AdminAdminOrganizationsRoute
-  '/_admin/admin/users': typeof AdminAdminUsersRoute
+  '/_admin/admin/audit-logs': typeof AdminAdminAuditLogsRoute
+  '/_admin/admin/check-ins': typeof AdminAdminCheckInsRoute
+  '/_admin/admin/payments': typeof AdminAdminPaymentsRoute
+  '/_admin/admin/reports': typeof AdminAdminReportsRoute
+  '/_admin/admin/settings': typeof AdminAdminSettingsRoute
+  '/_admin/admin/tickets': typeof AdminAdminTicketsRoute
   '/_app/events/new': typeof AppEventsNewRoute
   '/_app/events_/$eventId': typeof AppEventsEventIdRouteWithChildren
   '/_app/organization/details': typeof AppOrganizationDetailsRoute
@@ -362,12 +456,20 @@ export interface FileRoutesById {
   '/_admin/admin/': typeof AdminAdminIndexRoute
   '/_app/events/': typeof AppEventsIndexRoute
   '/_app/organization/': typeof AppOrganizationIndexRoute
+  '/_admin/admin/events/$eventId': typeof AdminAdminEventsEventIdRoute
+  '/_admin/admin/orders/$orderNumber': typeof AdminAdminOrdersOrderNumberRoute
+  '/_admin/admin/organizations/$organizationId': typeof AdminAdminOrganizationsOrganizationIdRoute
+  '/_admin/admin/users/$userId': typeof AdminAdminUsersUserIdRoute
   '/_app/events_/$eventId/details': typeof AppEventsEventIdDetailsRoute
   '/_app/events_/$eventId/orders': typeof AppEventsEventIdOrdersRoute
   '/_app/events_/$eventId/reports': typeof AppEventsEventIdReportsRoute
   '/_app/events_/$eventId/scanner': typeof AppEventsEventIdScannerRoute
   '/_app/events_/$eventId/settings': typeof AppEventsEventIdSettingsRoute
   '/_app/events_/$eventId/tickets': typeof AppEventsEventIdTicketsRoute
+  '/_admin/admin/events/': typeof AdminAdminEventsIndexRoute
+  '/_admin/admin/orders/': typeof AdminAdminOrdersIndexRoute
+  '/_admin/admin/organizations/': typeof AdminAdminOrganizationsIndexRoute
+  '/_admin/admin/users/': typeof AdminAdminUsersIndexRoute
   '/_app/events_/$eventId/': typeof AppEventsEventIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -387,9 +489,12 @@ export interface FileRouteTypes {
     | '/ticket/$ticketNumber'
     | '/evenementen/'
     | '/organisator/'
-    | '/admin/events'
-    | '/admin/organizations'
-    | '/admin/users'
+    | '/admin/audit-logs'
+    | '/admin/check-ins'
+    | '/admin/payments'
+    | '/admin/reports'
+    | '/admin/settings'
+    | '/admin/tickets'
     | '/events/new'
     | '/events/$eventId'
     | '/organization/details'
@@ -403,12 +508,20 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/events/'
     | '/organization/'
+    | '/admin/events/$eventId'
+    | '/admin/orders/$orderNumber'
+    | '/admin/organizations/$organizationId'
+    | '/admin/users/$userId'
     | '/events/$eventId/details'
     | '/events/$eventId/orders'
     | '/events/$eventId/reports'
     | '/events/$eventId/scanner'
     | '/events/$eventId/settings'
     | '/events/$eventId/tickets'
+    | '/admin/events/'
+    | '/admin/orders/'
+    | '/admin/organizations/'
+    | '/admin/users/'
     | '/events/$eventId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -425,9 +538,12 @@ export interface FileRouteTypes {
     | '/ticket/$ticketNumber'
     | '/evenementen'
     | '/organisator'
-    | '/admin/events'
-    | '/admin/organizations'
-    | '/admin/users'
+    | '/admin/audit-logs'
+    | '/admin/check-ins'
+    | '/admin/payments'
+    | '/admin/reports'
+    | '/admin/settings'
+    | '/admin/tickets'
     | '/events/new'
     | '/organization/details'
     | '/organization/notifications'
@@ -440,12 +556,20 @@ export interface FileRouteTypes {
     | '/admin'
     | '/events'
     | '/organization'
+    | '/admin/events/$eventId'
+    | '/admin/orders/$orderNumber'
+    | '/admin/organizations/$organizationId'
+    | '/admin/users/$userId'
     | '/events/$eventId/details'
     | '/events/$eventId/orders'
     | '/events/$eventId/reports'
     | '/events/$eventId/scanner'
     | '/events/$eventId/settings'
     | '/events/$eventId/tickets'
+    | '/admin/events'
+    | '/admin/orders'
+    | '/admin/organizations'
+    | '/admin/users'
     | '/events/$eventId'
   id:
     | '__root__'
@@ -466,9 +590,12 @@ export interface FileRouteTypes {
     | '/ticket/$ticketNumber'
     | '/evenementen/'
     | '/organisator/'
-    | '/_admin/admin/events'
-    | '/_admin/admin/organizations'
-    | '/_admin/admin/users'
+    | '/_admin/admin/audit-logs'
+    | '/_admin/admin/check-ins'
+    | '/_admin/admin/payments'
+    | '/_admin/admin/reports'
+    | '/_admin/admin/settings'
+    | '/_admin/admin/tickets'
     | '/_app/events/new'
     | '/_app/events_/$eventId'
     | '/_app/organization/details'
@@ -482,12 +609,20 @@ export interface FileRouteTypes {
     | '/_admin/admin/'
     | '/_app/events/'
     | '/_app/organization/'
+    | '/_admin/admin/events/$eventId'
+    | '/_admin/admin/orders/$orderNumber'
+    | '/_admin/admin/organizations/$organizationId'
+    | '/_admin/admin/users/$userId'
     | '/_app/events_/$eventId/details'
     | '/_app/events_/$eventId/orders'
     | '/_app/events_/$eventId/reports'
     | '/_app/events_/$eventId/scanner'
     | '/_app/events_/$eventId/settings'
     | '/_app/events_/$eventId/tickets'
+    | '/_admin/admin/events/'
+    | '/_admin/admin/orders/'
+    | '/_admin/admin/organizations/'
+    | '/_admin/admin/users/'
     | '/_app/events_/$eventId/'
   fileRoutesById: FileRoutesById
 }
@@ -637,25 +772,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_admin/admin/events': {
-      id: '/_admin/admin/events'
-      path: '/admin/events'
-      fullPath: '/admin/events'
-      preLoaderRoute: typeof AdminAdminEventsRouteImport
+    '/_admin/admin/audit-logs': {
+      id: '/_admin/admin/audit-logs'
+      path: '/admin/audit-logs'
+      fullPath: '/admin/audit-logs'
+      preLoaderRoute: typeof AdminAdminAuditLogsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_admin/admin/organizations': {
-      id: '/_admin/admin/organizations'
-      path: '/admin/organizations'
-      fullPath: '/admin/organizations'
-      preLoaderRoute: typeof AdminAdminOrganizationsRouteImport
+    '/_admin/admin/check-ins': {
+      id: '/_admin/admin/check-ins'
+      path: '/admin/check-ins'
+      fullPath: '/admin/check-ins'
+      preLoaderRoute: typeof AdminAdminCheckInsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_admin/admin/users': {
-      id: '/_admin/admin/users'
-      path: '/admin/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminAdminUsersRouteImport
+    '/_admin/admin/payments': {
+      id: '/_admin/admin/payments'
+      path: '/admin/payments'
+      fullPath: '/admin/payments'
+      preLoaderRoute: typeof AdminAdminPaymentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/reports': {
+      id: '/_admin/admin/reports'
+      path: '/admin/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminAdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/settings': {
+      id: '/_admin/admin/settings'
+      path: '/admin/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminAdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/tickets': {
+      id: '/_admin/admin/tickets'
+      path: '/admin/tickets'
+      fullPath: '/admin/tickets'
+      preLoaderRoute: typeof AdminAdminTicketsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_app/events/': {
@@ -742,6 +898,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EvenementenSlugAfrekenenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_admin/admin/events/': {
+      id: '/_admin/admin/events/'
+      path: '/admin/events'
+      fullPath: '/admin/events/'
+      preLoaderRoute: typeof AdminAdminEventsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/events/$eventId': {
+      id: '/_admin/admin/events/$eventId'
+      path: '/admin/events/$eventId'
+      fullPath: '/admin/events/$eventId'
+      preLoaderRoute: typeof AdminAdminEventsEventIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/orders/': {
+      id: '/_admin/admin/orders/'
+      path: '/admin/orders'
+      fullPath: '/admin/orders/'
+      preLoaderRoute: typeof AdminAdminOrdersIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/orders/$orderNumber': {
+      id: '/_admin/admin/orders/$orderNumber'
+      path: '/admin/orders/$orderNumber'
+      fullPath: '/admin/orders/$orderNumber'
+      preLoaderRoute: typeof AdminAdminOrdersOrderNumberRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/organizations/': {
+      id: '/_admin/admin/organizations/'
+      path: '/admin/organizations'
+      fullPath: '/admin/organizations/'
+      preLoaderRoute: typeof AdminAdminOrganizationsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/organizations/$organizationId': {
+      id: '/_admin/admin/organizations/$organizationId'
+      path: '/admin/organizations/$organizationId'
+      fullPath: '/admin/organizations/$organizationId'
+      preLoaderRoute: typeof AdminAdminOrganizationsOrganizationIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/users/': {
+      id: '/_admin/admin/users/'
+      path: '/admin/users'
+      fullPath: '/admin/users/'
+      preLoaderRoute: typeof AdminAdminUsersIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/users/$userId': {
+      id: '/_admin/admin/users/$userId'
+      path: '/admin/users/$userId'
+      fullPath: '/admin/users/$userId'
+      preLoaderRoute: typeof AdminAdminUsersUserIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_app/events_/$eventId/': {
       id: '/_app/events_/$eventId/'
       path: '/'
@@ -795,17 +1007,40 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
-  AdminAdminEventsRoute: typeof AdminAdminEventsRoute
-  AdminAdminOrganizationsRoute: typeof AdminAdminOrganizationsRoute
-  AdminAdminUsersRoute: typeof AdminAdminUsersRoute
+  AdminAdminAuditLogsRoute: typeof AdminAdminAuditLogsRoute
+  AdminAdminCheckInsRoute: typeof AdminAdminCheckInsRoute
+  AdminAdminPaymentsRoute: typeof AdminAdminPaymentsRoute
+  AdminAdminReportsRoute: typeof AdminAdminReportsRoute
+  AdminAdminSettingsRoute: typeof AdminAdminSettingsRoute
+  AdminAdminTicketsRoute: typeof AdminAdminTicketsRoute
   AdminAdminIndexRoute: typeof AdminAdminIndexRoute
+  AdminAdminEventsEventIdRoute: typeof AdminAdminEventsEventIdRoute
+  AdminAdminOrdersOrderNumberRoute: typeof AdminAdminOrdersOrderNumberRoute
+  AdminAdminOrganizationsOrganizationIdRoute: typeof AdminAdminOrganizationsOrganizationIdRoute
+  AdminAdminUsersUserIdRoute: typeof AdminAdminUsersUserIdRoute
+  AdminAdminEventsIndexRoute: typeof AdminAdminEventsIndexRoute
+  AdminAdminOrdersIndexRoute: typeof AdminAdminOrdersIndexRoute
+  AdminAdminOrganizationsIndexRoute: typeof AdminAdminOrganizationsIndexRoute
+  AdminAdminUsersIndexRoute: typeof AdminAdminUsersIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
-  AdminAdminEventsRoute: AdminAdminEventsRoute,
-  AdminAdminOrganizationsRoute: AdminAdminOrganizationsRoute,
-  AdminAdminUsersRoute: AdminAdminUsersRoute,
+  AdminAdminAuditLogsRoute: AdminAdminAuditLogsRoute,
+  AdminAdminCheckInsRoute: AdminAdminCheckInsRoute,
+  AdminAdminPaymentsRoute: AdminAdminPaymentsRoute,
+  AdminAdminReportsRoute: AdminAdminReportsRoute,
+  AdminAdminSettingsRoute: AdminAdminSettingsRoute,
+  AdminAdminTicketsRoute: AdminAdminTicketsRoute,
   AdminAdminIndexRoute: AdminAdminIndexRoute,
+  AdminAdminEventsEventIdRoute: AdminAdminEventsEventIdRoute,
+  AdminAdminOrdersOrderNumberRoute: AdminAdminOrdersOrderNumberRoute,
+  AdminAdminOrganizationsOrganizationIdRoute:
+    AdminAdminOrganizationsOrganizationIdRoute,
+  AdminAdminUsersUserIdRoute: AdminAdminUsersUserIdRoute,
+  AdminAdminEventsIndexRoute: AdminAdminEventsIndexRoute,
+  AdminAdminOrdersIndexRoute: AdminAdminOrdersIndexRoute,
+  AdminAdminOrganizationsIndexRoute: AdminAdminOrganizationsIndexRoute,
+  AdminAdminUsersIndexRoute: AdminAdminUsersIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
