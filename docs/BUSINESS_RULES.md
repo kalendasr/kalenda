@@ -376,6 +376,12 @@ PaymentStatus == Verified
 
 Afgekeurde betalingen mogen opnieuw worden ingediend.
 
+De bestelling keert daarvoor terug naar Pending Payment met een hersteltermijn van 24 uur, gerekend vanaf het moment van afkeuren.
+
+Dit is de enige toegestane stap terug in BR-505. Zonder die stap blijft een afgekeurde bestelling in Awaiting Review staan, en die status verloopt nooit (BR-506) — de gereserveerde tickets zouden dan permanent bezet blijven, ook als de klant nooit meer iets indient. Dat botst met BR-507.
+
+Dient de klant binnen 24 uur niets in, dan verloopt de bestelling alsnog en komen de plaatsen terug in de verkoop.
+
 ---
 
 ## BR-606

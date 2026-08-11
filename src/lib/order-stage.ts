@@ -95,10 +95,14 @@ export function deriveOrderStage(
 
   const state = order.payment?.state ?? 'Waiting'
 
-  if (status === 'AwaitingReview') {
-    if (state === 'Rejected') return 'ProofRejected'
-    return 'ProofSubmitted'
-  }
+  // Een afgekeurde betaling zet de order terug op `PendingPayment` met een
+  // nieuwe deadline (zie `deadlineAfterRejection`). De betaaltoestand is dan
+  // het enige dat nog vertelt dat er iets is afgekeurd — zonder deze regel zou
+  // de klant weer een neutrale "wacht op overschrijving" zien en niet weten
+  // dat hij opnieuw moet indienen.
+  if (state === 'Rejected') return 'ProofRejected'
+
+  if (status === 'AwaitingReview') return 'ProofSubmitted'
 
   // PendingPayment: nog niets bevestigd, nog niets ingediend.
   if (order.paymentMethod === 'WhatsApp') {

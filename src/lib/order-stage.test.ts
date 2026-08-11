@@ -79,17 +79,35 @@ describe('deriveOrderStage — bankflow', () => {
     ).toBe('ProofSubmitted')
   })
 
-  it('wordt ProofRejected na afkeuring, ook al staat de order weer op AwaitingReview', () => {
+  // Na afkeuring gaat de order terug naar PendingPayment met een hersteltermijn
+  // (zie deadlineAfterRejection), zodat hij alsnog kan verlopen. De klant moet
+  // dan nog steeds lezen dát er iets is afgekeurd, niet een neutrale
+  // "wacht op overschrijving".
+  it('wordt ProofRejected na afkeuring, terwijl de order weer op PendingPayment staat', () => {
     expect(
       deriveOrderStage(
         base({
           paymentMethod: 'BankTransfer',
-          orderStatus: 'AwaitingReview',
+          orderStatus: 'PendingPayment',
           payment: { state: 'Rejected' },
         }),
         now,
       ),
     ).toBe('ProofRejected')
+  })
+
+  it('wordt Expired zodra ook de hersteltermijn na afkeuring voorbij is', () => {
+    expect(
+      deriveOrderStage(
+        base({
+          paymentMethod: 'BankTransfer',
+          orderStatus: 'PendingPayment',
+          payment: { state: 'Rejected' },
+          expiresAt: past,
+        }),
+        now,
+      ),
+    ).toBe('Expired')
   })
 })
 

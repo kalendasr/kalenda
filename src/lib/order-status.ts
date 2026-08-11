@@ -44,6 +44,27 @@ const RESERVING_STATUSES: ReadonlySet<OrderStatus> = new Set([
   'Completed',
 ])
 
+/**
+ * Hersteltermijn na een afgekeurde betaling (BR-605).
+ *
+ * Bij afkeuring keert de order terug naar `PendingPayment` met een nieuwe
+ * deadline, in plaats van in `AwaitingReview` te blijven staan. Dat is bewust
+ * een stap terug in de keten van BR-505, en de enige plek waar dat gebeurt:
+ * zonder deze stap kan een afgekeurde order nooit meer verlopen (alleen
+ * `PendingPayment` verloopt) en houdt hij zijn tickets voor altijd bezet, ook
+ * als de klant nooit meer iets indient. Dat botst met BR-507 en kost de
+ * organisator echte verkoop.
+ *
+ * Korter dan de oorspronkelijke 48 uur: de klant weet inmiddels wat er mis was
+ * en hoeft alleen opnieuw in te dienen, terwijl de plaatsen zolang vastzitten.
+ */
+export const REJECTION_GRACE_MS = 24 * 60 * 60 * 1000
+
+/** Nieuwe vervaldatum voor een order waarvan de betaling is afgekeurd. */
+export function deadlineAfterRejection(now: Date): Date {
+  return new Date(now.getTime() + REJECTION_GRACE_MS)
+}
+
 export function effectiveOrderStatus(
   order: { orderStatus: OrderStatus; expiresAt: Date },
   now: Date = new Date(),

@@ -12,7 +12,10 @@ import {
   rejectPaymentSchema,
 } from '#/lib/validation/payment.ts'
 import { allowedSourceStates, nextState } from '#/lib/payment-transitions.ts'
-import { effectiveOrderStatus } from '#/lib/order-status.ts'
+import {
+  deadlineAfterRejection,
+  effectiveOrderStatus,
+} from '#/lib/order-status.ts'
 import { enforceRateLimit } from '#/lib/rate-limit.server.ts'
 import { generateTicketNumber } from '#/lib/ticket-number.ts'
 import { buildPaymentRequestMessage } from '#/lib/payment-request-message.ts'
@@ -192,11 +195,7 @@ export const approvePayment = createServerFn({ method: 'POST' })
       // zichtbaar wanneer de betaling wél binnen is maar de levering nog niet.
       await tx.order.update({
         where: { id: order.id },
-        data: {
-          orderStatus: 'Paid',
-          paymentStatus: 'Verified',
-          notes: order.notes,
-        },
+        data: { orderStatus: 'Paid', paymentStatus: 'Verified' },
       })
 
       for (const ticket of ticketCreates) {
@@ -296,11 +295,19 @@ export const rejectPayment = createServerFn({ method: 'POST' })
         throw new Error('Deze betaling kan niet worden afgekeurd.')
       }
 
-      // Bij afkeuring keert de order terug naar "wacht op controle" en kan de
-      // klant een nieuw bewijs indienen (BR-605).
+      // Bij afkeuring ligt de bal weer bij de klant: die kan een nieuw bewijs
+      // indienen (BR-605). De order gaat daarom terug naar `PendingPayment`
+      // met een verse deadline, zodat hij weer kan verlopen en zijn plaatsen
+      // vrijgeeft als er niets meer gebeurt (BR-506/507). Zie
+      // `deadlineAfterRejection` voor waarom dit de ene toegestane stap terug
+      // in BR-505 is.
       await tx.order.update({
         where: { id: order.id },
-        data: { orderStatus: 'AwaitingReview', paymentStatus: 'Rejected' },
+        data: {
+          orderStatus: 'PendingPayment',
+          paymentStatus: 'Rejected',
+          expiresAt: deadlineAfterRejection(now),
+        },
       })
     })
 
