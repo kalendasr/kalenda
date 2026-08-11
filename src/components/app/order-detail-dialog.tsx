@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, Check, ExternalLink, Send, X } from 'lucide-react'
+import { Bell, Check, ExternalLink, Send, Trash2, X } from 'lucide-react'
 
 import type { OrderStatus } from '#/lib/order-status.ts'
 import {
@@ -139,6 +139,7 @@ export function OrderDetailDialog({
   onShareWhatsApp,
   onViewProof,
   onSendPush,
+  onCancel,
 }: {
   order: OrderDetailData
   open: boolean
@@ -150,6 +151,7 @@ export function OrderDetailDialog({
   onShareWhatsApp: () => Promise<void>
   onViewProof: () => Promise<void>
   onSendPush: (title: string, body: string) => Promise<number>
+  onCancel: (reason?: string) => Promise<void>
 }) {
   const tickets = order.items.flatMap((item) =>
     item.tickets.map((ticket) => ({
@@ -170,6 +172,24 @@ export function OrderDetailDialog({
     ticketsSent: tickets.length > 0 && tickets.every((t) => Boolean(t.sentAt)),
   })
   const timeline = buildTimeline(order, latestSentAt)
+
+  // Welke acties horen bij deze fase? Eén plek, zodat elke knop hieronder niet
+  // zijn eigen lijstje fasen herhaalt.
+  const wachtOpBetaling =
+    stage === 'PaymentRequested' ||
+    stage === 'AwaitingTransfer' ||
+    stage === 'ProofSubmitted'
+  // Ook na een afkeuring: komt het geld alsnog binnen, dan beslist de
+  // organisator (BR-607) en moet hij dat kunnen vastleggen.
+  const kanBevestigen = wachtOpBetaling || stage === 'ProofRejected'
+  // Bij bankoverschrijving dient de klant zelf nieuw bewijs in (BR-605); in de
+  // WhatsApp-flow heeft hij geen actie en moet de organisator opnieuw vragen.
+  const kanBetaalverzoekSturen =
+    stage === 'NewOrder' ||
+    (stage === 'ProofRejected' && order.paymentMethod === 'WhatsApp')
+  const kanAnnuleren =
+    stage === 'NewOrder' || stage === 'ProofRejected' || wachtOpBetaling
+  const heeftTickets = stage === 'TicketsPending' || stage === 'Done'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -286,10 +306,12 @@ export function OrderDetailDialog({
 
         <DialogFooter className="flex-wrap gap-2 sm:justify-between">
           <div className="flex flex-wrap gap-2">
-            {stage === 'NewOrder' ? (
+            {kanBetaalverzoekSturen ? (
               <Button size="sm" onClick={onSendPaymentRequest}>
                 <Send />
-                Betaalverzoek versturen
+                {stage === 'ProofRejected'
+                  ? 'Nieuw betaalverzoek sturen'
+                  : 'Betaalverzoek versturen'}
               </Button>
             ) : null}
 
@@ -299,9 +321,7 @@ export function OrderDetailDialog({
               </Button>
             ) : null}
 
-            {stage === 'PaymentRequested' ||
-            stage === 'AwaitingTransfer' ||
-            stage === 'ProofSubmitted' ? (
+            {kanBevestigen ? (
               <ConfirmDialog
                 trigger={
                   <Button size="sm">
@@ -316,13 +336,11 @@ export function OrderDetailDialog({
               />
             ) : null}
 
-            {stage === 'PaymentRequested' ||
-            stage === 'AwaitingTransfer' ||
-            stage === 'ProofSubmitted' ? (
-              <RejectButton onReject={onReject} />
-            ) : null}
+            {wachtOpBetaling ? <RejectButton onReject={onReject} /> : null}
 
-            {stage === 'TicketsPending' || stage === 'Done' ? (
+            {kanAnnuleren ? <CancelButton onCancel={onCancel} /> : null}
+
+            {heeftTickets ? (
               <>
                 <AsyncButton
                   size="sm"
@@ -418,8 +436,10 @@ function RejectButton({
           <DialogHeader>
             <DialogTitle>Betaling afkeuren</DialogTitle>
             <DialogDescription>
-              De klant krijgt hier automatisch een melding van en kan daarna
-              opnieuw een betaalbewijs indienen. Voeg zo nodig een reden toe.
+              De klant krijgt hier automatisch een melding van. Bij
+              bankoverschrijving kan hij daarna een nieuw betaalbewijs indienen;
+              bij WhatsApp stuur jij een nieuw betaalverzoek. Voeg zo nodig een
+              reden toe.
             </DialogDescription>
           </DialogHeader>
           <textarea
@@ -434,6 +454,68 @@ function RejectButton({
             </Button>
             <Button variant="destructive" disabled={busy} onClick={submit}>
               Betaling afkeuren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+/**
+ * Annuleren is definitief en geeft de gereserveerde plaatsen terug in de
+ * verkoop, dus het gaat bewust via een eigen bevestiging met ruimte voor een
+ * reden — dezelfde opzet als afkeuren. De sluitknop heet hier "Terug" en niet
+ * "Annuleren": twee betekenissen van hetzelfde woord naast elkaar is precies
+ * het moment waarop iemand de verkeerde knop indrukt.
+ */
+function CancelButton({
+  onCancel,
+}: {
+  onCancel: (reason?: string) => Promise<void>
+}) {
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function submit() {
+    setBusy(true)
+    try {
+      await onCancel(reason.trim() || undefined)
+      setOpen(false)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>
+        <Trash2 />
+        Bestelling annuleren
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bestelling annuleren</DialogTitle>
+            <DialogDescription>
+              De bestelling vervalt en de gereserveerde tickets komen meteen
+              terug in de verkoop. De klant krijgt hier automatisch een melding
+              van. Dit kun je niet ongedaan maken.
+            </DialogDescription>
+          </DialogHeader>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Bijv. dubbele bestelling"
+            className="min-h-20 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              Terug
+            </Button>
+            <Button variant="destructive" disabled={busy} onClick={submit}>
+              Ja, annuleer bestelling
             </Button>
           </DialogFooter>
         </DialogContent>

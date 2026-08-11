@@ -15,6 +15,7 @@ import { cancellationRequested } from '#/lib/notifications/definitions/cancellat
 import { checkinConfirmed } from '#/lib/notifications/definitions/checkin-confirmed.ts'
 import { eventChanged } from '#/lib/notifications/definitions/event-changed.ts'
 import { eventReminderCustomer } from '#/lib/notifications/definitions/event-reminder-customer.ts'
+import { orderCancelled } from '#/lib/notifications/definitions/order-cancelled.ts'
 import { orderCreated } from '#/lib/notifications/definitions/order-created.ts'
 import { organizerMessage } from '#/lib/notifications/definitions/organizer-message.ts'
 import { paymentRejected } from '#/lib/notifications/definitions/payment-rejected.ts'
@@ -35,6 +36,7 @@ export const NOTIFICATIONS = {
   'tickets.issued': ticketsIssued,
   'payment.requested': paymentRequested,
   'payment.rejected': paymentRejected,
+  'order.cancelled': orderCancelled,
   'event.reminder.customer': eventReminderCustomer,
   'event.changed': eventChanged,
   'checkin.confirmed': checkinConfirmed,

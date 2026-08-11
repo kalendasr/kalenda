@@ -37,11 +37,27 @@ describe('nextState', () => {
     expect(nextState('Rejected', 'submit')).toBe('Submitted')
   })
 
+  // In de WhatsApp-flow kan de klant na een afkeuring niets zelf doen: er is
+  // geen bewijs om in te dienen. Zonder deze twee uitwegen zou zo'n bestelling
+  // voor iedereen vastlopen.
+  it('laat de organisator na afkeuring opnieuw een betaalverzoek sturen', () => {
+    expect(nextState('Rejected', 'request')).toBe('Requested')
+  })
+
+  it('laat de organisator een afgekeurde betaling alsnog bevestigen (BR-607)', () => {
+    expect(nextState('Rejected', 'approve')).toBe('Verified')
+  })
+
+  it('laat een bestelling met ingediend bewijs annuleren', () => {
+    expect(nextState('Submitted', 'cancel')).toBe('Cancelled')
+  })
+
   it('blokkeert illegale overgangen', () => {
     expect(nextState('Verified', 'submit')).toBeNull()
     expect(nextState('Verified', 'reject')).toBeNull()
+    expect(nextState('Verified', 'cancel')).toBeNull()
+    expect(nextState('Cancelled', 'submit')).toBeNull()
     expect(nextState('Waiting', 'something' as PaymentAction)).toBeNull()
-    expect(nextState('Rejected', 'approve')).toBeNull()
   })
 })
 

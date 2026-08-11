@@ -30,9 +30,14 @@ export const ALLOWED_ACTIONS: Record<
   // Alleen de WhatsApp-flow komt hier: het verzoek staat uit, de klant heeft
   // nog niet betaald. Bank-flow springt Waiting → Submitted, nooit hierlangs.
   Requested: new Set(['approve', 'reject', 'cancel']),
-  Submitted: new Set(['approve', 'reject']),
+  Submitted: new Set(['approve', 'reject', 'cancel']),
   Verified: new Set(),
-  Rejected: new Set(['submit', 'cancel']),
+  // Afkeuren is geen eindstation. Bij bankoverschrijving dient de klant nieuw
+  // bewijs in (BR-605), maar in de WhatsApp-flow heeft hij helemaal geen
+  // actie: daar moet de organisator een nieuw betaalverzoek kunnen sturen, of
+  // alsnog kunnen bevestigen als het geld later toch binnenkomt. Zonder die
+  // twee is een afgekeurde WhatsApp-betaling voor niemand meer op te lossen.
+  Rejected: new Set(['request', 'submit', 'approve', 'cancel']),
   Cancelled: new Set(),
 }
 
@@ -49,9 +54,14 @@ export const NEXT_STATE: Record<
     cancel: 'Cancelled',
   },
   Requested: { approve: 'Verified', reject: 'Rejected', cancel: 'Cancelled' },
-  Submitted: { approve: 'Verified', reject: 'Rejected' },
+  Submitted: { approve: 'Verified', reject: 'Rejected', cancel: 'Cancelled' },
   Verified: {},
-  Rejected: { submit: 'Submitted', cancel: 'Cancelled' },
+  Rejected: {
+    request: 'Requested',
+    submit: 'Submitted',
+    approve: 'Verified',
+    cancel: 'Cancelled',
+  },
   Cancelled: {},
 }
 

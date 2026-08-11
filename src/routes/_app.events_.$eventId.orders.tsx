@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { Inbox } from 'lucide-react'
 
-import { listEventOrders } from '#/server/orders.ts'
+import { cancelOrder, listEventOrders } from '#/server/orders.ts'
 import {
   approvePayment,
   getProofSignedUrl,
@@ -322,6 +322,12 @@ function EventOrders() {
               data: { orderId: openOrder.id, title, body },
             }).then((r) => r.delivered)
           }
+          onCancel={(reason) =>
+            runAction(
+              () => cancelOrder({ data: { orderId: openOrder.id, reason } }),
+              'Bestelling geannuleerd. De klant is op de hoogte gesteld.',
+            )
+          }
         />
       ) : null}
 
@@ -451,6 +457,18 @@ function OrderCard({
           <Button size="sm" variant="outline" onClick={onOpen}>
             Bewijs controleren
           </Button>
+        ) : null}
+
+        {/* Na een afkeuring ligt de bal bij de klant — behalve bij WhatsApp,
+            waar hij niets kan indienen en de organisator opnieuw moet vragen. */}
+        {stage === 'ProofRejected' && isWhatsApp && status !== 'Expired' ? (
+          <AsyncButton
+            size="sm"
+            onClick={onSendPaymentRequest}
+            pendingLabel="Versturen…"
+          >
+            Opnieuw vragen
+          </AsyncButton>
         ) : null}
 
         {(stage === 'TicketsPending' || stage === 'Done') &&

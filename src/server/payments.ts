@@ -85,10 +85,19 @@ export const sendPaymentRequest = createServerFn({ method: 'POST' })
       throw new Error('Er is al een betaalverzoek verstuurd.')
     }
 
-    await db.payment.update({
-      where: { id: order.payment.id },
+    // Zelfde conditionele-update-patroon als `approvePayment`: de where op
+    // `state` is de echte gelijktijdigheidsgrens. De `nextState`-check hierboven
+    // ziet alleen een vooraf gelezen snapshot.
+    const requested = await db.payment.updateMany({
+      where: {
+        id: order.payment.id,
+        state: { in: allowedSourceStates('request') },
+      },
       data: { state: 'Requested', requestedAt: now, requestedBy: user.id },
     })
+    if (requested.count !== 1) {
+      throw new Error('Er is al een betaalverzoek verstuurd.')
+    }
 
     // Klant krijgt een push zodra het verzoek onderweg is (geen try/catch
     // nodig: notify() gooit nooit).
