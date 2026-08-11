@@ -296,6 +296,26 @@ Een verlopen bestelling geeft gereserveerde tickets vrij.
 
 ---
 
+## BR-508
+
+Een bestelling kan geannuleerd worden zolang er nog geen tickets zijn uitgegeven.
+
+Na Paid bestaan de QR-codes (BR-604) en zou annuleren betekenen dat geldige tickets ingetrokken worden. Dat is terugbetalingsgebied en valt buiten de MVP; de organisator handelt dat buiten het platform af (BR-600).
+
+Annuleren geeft de gereserveerde tickets direct vrij, net als bij verlopen (BR-507).
+
+---
+
+## BR-509
+
+Een klant kan om annulering vragen; de organisator beslist.
+
+De klant dient een verzoek in met een reden. Het platform annuleert niets uit zichzelf — het brengt het verzoek bij de organisator, die het toekent (de bestelling wordt geannuleerd, BR-508) of afwijst (de bestelling blijft staan). In beide gevallen krijgt de klant automatisch bericht.
+
+Er kan hoogstens één verzoek tegelijk openstaan. Een afgehandeld verzoek blijft zichtbaar in de geschiedenis van de bestelling.
+
+---
+
 # 8. Payment Rules
 
 ## BR-600

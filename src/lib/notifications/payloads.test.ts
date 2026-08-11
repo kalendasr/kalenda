@@ -47,6 +47,10 @@ const SAMPLES: NotificationData = {
     orderNumber: 'KAL-1234',
     eventTitle: 'Owru Yari Fest',
   },
+  'cancellation.declined': {
+    orderNumber: 'KAL-1234',
+    eventTitle: 'Owru Yari Fest',
+  },
   'event.reminder.customer': {
     orderNumber: 'KAL-1234',
     eventTitle: 'Owru Yari Fest',

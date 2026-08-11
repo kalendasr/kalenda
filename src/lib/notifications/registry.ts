@@ -11,6 +11,7 @@
  *
  * PUUR: dit bestand en alles eronder importeren nooit de database of web-push.
  */
+import { cancellationDeclined } from '#/lib/notifications/definitions/cancellation-declined.ts'
 import { cancellationRequested } from '#/lib/notifications/definitions/cancellation-requested.ts'
 import { checkinConfirmed } from '#/lib/notifications/definitions/checkin-confirmed.ts'
 import { eventChanged } from '#/lib/notifications/definitions/event-changed.ts'
@@ -37,6 +38,7 @@ export const NOTIFICATIONS = {
   'payment.requested': paymentRequested,
   'payment.rejected': paymentRejected,
   'order.cancelled': orderCancelled,
+  'cancellation.declined': cancellationDeclined,
   'event.reminder.customer': eventReminderCustomer,
   'event.changed': eventChanged,
   'checkin.confirmed': checkinConfirmed,

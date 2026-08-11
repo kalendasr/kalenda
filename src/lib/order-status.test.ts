@@ -4,6 +4,8 @@ import {
   REJECTION_GRACE_MS,
   deadlineAfterRejection,
   effectiveOrderStatus,
+  hasOpenCancellationRequest,
+  isCancellationHandled,
   isReserving,
 } from '#/lib/order-status.ts'
 
@@ -99,5 +101,42 @@ describe('deadlineAfterRejection', () => {
     // Daarna verloopt hij en komen de plaatsen terug in de verkoop.
     expect(effectiveOrderStatus(order, now)).toBe('Expired')
     expect(isReserving(order, now)).toBe(false)
+  })
+})
+
+/**
+ * Annuleringsverzoek (BR-509). "Open" en "afgehandeld" moeten elkaar uitsluiten:
+ * anders ziet de klant tegelijk "je verzoek staat klaar" en "je verzoek is
+ * afgewezen", en zou de organisator hetzelfde verzoek twee keer af kunnen wijzen.
+ */
+describe('annuleringsverzoek', () => {
+  const gevraagd = new Date('2026-06-01T09:00:00-03:00')
+  const afgehandeld = new Date('2026-06-01T11:00:00-03:00')
+
+  it('telt geen verzoek zolang de klant er niet om vroeg', () => {
+    const order = {
+      cancellationRequestedAt: null,
+      cancellationHandledAt: null,
+    }
+    expect(hasOpenCancellationRequest(order)).toBe(false)
+    expect(isCancellationHandled(order)).toBe(false)
+  })
+
+  it('staat open zodra de klant vraagt en de organisator nog niets deed', () => {
+    const order = {
+      cancellationRequestedAt: gevraagd,
+      cancellationHandledAt: null,
+    }
+    expect(hasOpenCancellationRequest(order)).toBe(true)
+    expect(isCancellationHandled(order)).toBe(false)
+  })
+
+  it('is afgehandeld en niet meer open zodra de organisator reageerde', () => {
+    const order = {
+      cancellationRequestedAt: gevraagd,
+      cancellationHandledAt: afgehandeld,
+    }
+    expect(hasOpenCancellationRequest(order)).toBe(false)
+    expect(isCancellationHandled(order)).toBe(true)
   })
 })

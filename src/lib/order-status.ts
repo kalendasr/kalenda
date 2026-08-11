@@ -83,6 +83,33 @@ export function isReserving(
   return RESERVING_STATUSES.has(effectiveOrderStatus(order, now))
 }
 
+/**
+ * Annuleringsverzoek van de klant (BR-509). Er is er hoogstens één per
+ * bestelling; `handledAt` wordt gezet zodra de organisator annuleert of het
+ * verzoek afwijst, zodat de geschiedenis bewaard blijft en er tegelijk maar
+ * één verzoek tegelijk open kan staan.
+ */
+export type CancellationFields = {
+  cancellationRequestedAt: Date | null
+  cancellationHandledAt: Date | null
+}
+
+/** Wacht er een annuleringsverzoek op een reactie van de organisator? */
+export function hasOpenCancellationRequest(order: CancellationFields): boolean {
+  return (
+    order.cancellationRequestedAt !== null &&
+    order.cancellationHandledAt === null
+  )
+}
+
+/** Is er ooit een verzoek gedaan dat inmiddels is afgehandeld? */
+export function isCancellationHandled(order: CancellationFields): boolean {
+  return (
+    order.cancellationRequestedAt !== null &&
+    order.cancellationHandledAt !== null
+  )
+}
+
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   PendingPayment: 'Wacht op betaling',
   AwaitingReview: 'Wacht op controle',

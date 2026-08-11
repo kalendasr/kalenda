@@ -2,7 +2,11 @@ import { useMemo, useState } from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { Inbox } from 'lucide-react'
 
-import { cancelOrder, listEventOrders } from '#/server/orders.ts'
+import {
+  cancelOrder,
+  declineCancellation,
+  listEventOrders,
+} from '#/server/orders.ts'
 import {
   approvePayment,
   getProofSignedUrl,
@@ -326,6 +330,12 @@ function EventOrders() {
             runAction(
               () => cancelOrder({ data: { orderId: openOrder.id, reason } }),
               'Bestelling geannuleerd. De klant is op de hoogte gesteld.',
+            )
+          }
+          onDeclineCancellation={() =>
+            runAction(
+              () => declineCancellation({ data: { orderId: openOrder.id } }),
+              'Verzoek afgewezen. De klant is op de hoogte gesteld.',
             )
           }
         />

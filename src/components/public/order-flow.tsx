@@ -19,6 +19,7 @@ import {
 import { createOrder } from '#/server/checkout.ts'
 import type { getCheckoutData, getOrderByNumber } from '#/server/checkout.ts'
 import { submitProofOfPayment } from '#/server/payments.ts'
+import { requestCancellation } from '#/server/orders.ts'
 import { saveCustomerPushSubscription } from '#/server/notifications.ts'
 import type { SavePushSubscriptionFn } from '#/hooks/use-push-subscription.ts'
 import { usePushSubscription } from '#/hooks/use-push-subscription.ts'
@@ -33,6 +34,10 @@ import {
 } from '#/lib/datetime.ts'
 import { deriveOrderFlowStep } from '#/lib/order-flow-step.ts'
 import type { OrderStatus } from '#/lib/order-status.ts'
+import {
+  hasOpenCancellationRequest,
+  isCancellationHandled,
+} from '#/lib/order-status.ts'
 import { waLink } from '#/lib/whatsapp.ts'
 import { cn } from '#/lib/utils.ts'
 import { TicketQr } from '#/components/public/ticket-qr.tsx'
@@ -724,6 +729,7 @@ function WaitingScreen({
 
       <OrderSummaryCard order={order} />
       <PushOptInCard orderNumber={order.orderNumber} />
+      <CancellationRequestCard order={order} />
 
       <p className="mt-4 text-center text-[12px] text-muted-foreground">
         Bewaar deze pagina — je hebt geen account nodig om je bestelling te
@@ -1058,6 +1064,119 @@ function PushOptInCard({ orderNumber }: { orderNumber: string }) {
         <span className="shrink-0 text-[12.5px] text-muted-foreground">
           Bezig…
         </span>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Annuleringsverzoek van de klant (BR-509).
+ *
+ * Bewust onderaan en ingeklapt: dit is de uitweg, niet de hoofdhandeling — het
+ * scherm gaat over betalen. Het platform annuleert niets zelf; het verzoek
+ * gaat naar de organisator, die beslist (BR-607). Dat staat er ook zo, zodat
+ * niemand denkt dat zijn bestelling al weg is.
+ */
+function CancellationRequestCard({ order }: { order: OrderDetail }) {
+  const router = useRouter()
+  const [open, setOpen] = React.useState(false)
+  const [reason, setReason] = React.useState('')
+  const [busy, setBusy] = React.useState(false)
+
+  const openRequest = hasOpenCancellationRequest(order)
+  const handled = isCancellationHandled(order)
+
+  async function submit() {
+    if (reason.trim().length < 5) {
+      toast.error('Vertel kort waarom je wilt annuleren.')
+      return
+    }
+    setBusy(true)
+    try {
+      await requestCancellation({
+        data: { orderNumber: order.orderNumber, reason: reason.trim() },
+      })
+      await router.invalidate()
+      setOpen(false)
+      setReason('')
+      toast.success('Je verzoek is naar de organisator gestuurd.')
+    } catch (error) {
+      toast.error(errorMessage(error, 'Je verzoek versturen is niet gelukt.'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (openRequest) {
+    return (
+      <div className={cn('mt-4 px-5 py-4', CARD)}>
+        <p className="text-[13.5px] font-medium">
+          Je annuleringsverzoek staat bij de organisator
+        </p>
+        <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+          Hij neemt contact met je op. Zolang je niets hoort, blijft je
+          bestelling gewoon staan.
+        </p>
+      </div>
+    )
+  }
+
+  if (handled) {
+    return (
+      <div className={cn('mt-4 px-5 py-4', CARD)}>
+        <p className="text-[13.5px] font-medium">
+          Je annuleringsverzoek is afgewezen
+        </p>
+        <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+          Je bestelling blijft staan. Neem contact op met de organisator als je
+          er samen niet uitkomt.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className={cn('mt-4 px-5 py-4', CARD)}>
+      {open ? (
+        <>
+          <label
+            htmlFor="cancellation-reason"
+            className="text-[13.5px] font-medium"
+          >
+            Waarom wil je annuleren?
+          </label>
+          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+            De organisator beslist zelf of hij je bestelling annuleert.
+          </p>
+          <textarea
+            id="cancellation-reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Bijv. ik kan er die avond toch niet bij zijn"
+            className="mt-2 min-h-20 w-full rounded-md border bg-background px-3 py-2 text-[13.5px] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          />
+          <div className="mt-3 flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={busy}
+            >
+              Terug
+            </Button>
+            <Button size="sm" onClick={submit} disabled={busy}>
+              {busy ? 'Versturen…' : 'Verstuur verzoek'}
+            </Button>
+          </div>
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="text-[12.5px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        >
+          Toch annuleren? Vraag het de organisator
+        </button>
       )}
     </div>
   )

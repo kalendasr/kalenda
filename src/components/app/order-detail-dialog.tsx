@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Bell, Check, ExternalLink, Send, Trash2, X } from 'lucide-react'
 
 import type { OrderStatus } from '#/lib/order-status.ts'
+import { hasOpenCancellationRequest } from '#/lib/order-status.ts'
 import {
   deriveOrderStage,
   ORDER_STAGE_LABELS,
@@ -58,6 +59,9 @@ export type OrderDetailData = {
   expiresAt: Date
   totalCents: number
   paymentMethod: 'WhatsApp' | 'BankTransfer'
+  cancellationRequestedAt: Date | null
+  cancellationReason: string | null
+  cancellationHandledAt: Date | null
   customer: {
     firstName: string
     lastName: string
@@ -140,6 +144,7 @@ export function OrderDetailDialog({
   onViewProof,
   onSendPush,
   onCancel,
+  onDeclineCancellation,
 }: {
   order: OrderDetailData
   open: boolean
@@ -152,6 +157,7 @@ export function OrderDetailDialog({
   onViewProof: () => Promise<void>
   onSendPush: (title: string, body: string) => Promise<number>
   onCancel: (reason?: string) => Promise<void>
+  onDeclineCancellation: () => Promise<void>
 }) {
   const tickets = order.items.flatMap((item) =>
     item.tickets.map((ticket) => ({
@@ -220,6 +226,42 @@ export function OrderDetailDialog({
         </DialogHeader>
 
         <Separator />
+
+        {/* Bovenaan, boven de tijdlijn: een klant die om annulering vraagt
+            wacht op antwoord, en dat mag niet onderin het scherm verdwijnen. */}
+        {hasOpenCancellationRequest(order) ? (
+          <div className="rounded-md border border-warning/40 bg-warning/10 px-4 py-3">
+            <p className="text-sm font-medium">
+              Deze klant vraagt om annulering
+            </p>
+            {order.cancellationReason ? (
+              <p className="mt-1 text-sm text-muted-foreground">
+                “{order.cancellationReason}”
+              </p>
+            ) : null}
+            {order.cancellationRequestedAt ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Gevraagd op {formatDateTimeNl(order.cancellationRequestedAt)}
+              </p>
+            ) : null}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {kanAnnuleren ? null : (
+                <p className="text-xs text-muted-foreground">
+                  Deze bestelling heeft al tickets — annuleren kan niet meer.
+                  Neem contact op met de klant.
+                </p>
+              )}
+              <AsyncButton
+                size="sm"
+                variant="outline"
+                onClick={onDeclineCancellation}
+                pendingLabel="Bezig…"
+              >
+                Verzoek afwijzen
+              </AsyncButton>
+            </div>
+          </div>
+        ) : null}
 
         <ol className="flex flex-col gap-3">
           {timeline.map((step) => (

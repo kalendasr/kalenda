@@ -67,6 +67,13 @@ model User {
   @@index([email])
   @@index([createdAt])
   @@index([isPlatformAdmin])
+
+  // Trigram-index voor het zoekveld in het adminworkspace (ILIKE %term%).
+  // Staat hier en niet alleen als losse SQL: wat Prisma niet in het schema
+  // ziet, beschouwt het als drift en gooit het bij de eerstvolgende migratie
+  // weg. Vereist de pg_trgm-extensie (aangemaakt in de fase 12-migratie).
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "user_name_trgm_idx")
+  @@index([email(ops: raw("gin_trgm_ops"))], type: Gin, map: "user_email_trgm_idx")
   @@map("user")
 }
 
@@ -168,6 +175,12 @@ model Organization {
 
   @@index([slug])
   @@index([ownerId])
+
+  // Trigram-index voor het zoekveld in het adminworkspace (ILIKE %term%).
+  // Staat hier en niet alleen als losse SQL: wat Prisma niet in het schema
+  // ziet, beschouwt het als drift en gooit het bij de eerstvolgende migratie
+  // weg. Vereist de pg_trgm-extensie (aangemaakt in de fase 12-migratie).
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "organization_name_trgm_idx")
   @@map("organization")
 }
 
@@ -293,6 +306,12 @@ model Event {
   @@index([categoryId])
   @@index([status])
   @@index([createdAt])
+
+  // Trigram-index voor het zoekveld in het adminworkspace (ILIKE %term%).
+  // Staat hier en niet alleen als losse SQL: wat Prisma niet in het schema
+  // ziet, beschouwt het als drift en gooit het bij de eerstvolgende migratie
+  // weg. Vereist de pg_trgm-extensie (aangemaakt in de fase 12-migratie).
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "event_title_trgm_idx")
   @@map("event")
 }
 
@@ -379,6 +398,12 @@ model Customer {
   deletedAt DateTime?
 
   @@index([email])
+
+  // Trigram-index voor het zoekveld in het adminworkspace (ILIKE %term%).
+  // Staat hier en niet alleen als losse SQL: wat Prisma niet in het schema
+  // ziet, beschouwt het als drift en gooit het bij de eerstvolgende migratie
+  // weg. Vereist de pg_trgm-extensie (aangemaakt in de fase 12-migratie).
+  @@index([email(ops: raw("gin_trgm_ops"))], type: Gin, map: "customer_email_trgm_idx")
   @@map("customer")
 }
 
@@ -453,6 +478,15 @@ model Order {
 
   notes     String?
   expiresAt DateTime
+
+  // Annuleringsverzoek van de klant (BR-509). Drie kolommen in plaats van een
+  // eigen model: er is er hoogstens één per bestelling, en een open verzoek is
+  // simpelweg `cancellationRequestedAt != null && cancellationHandledAt == null`.
+  // `handledAt` wordt gezet zodra de organisator annuleert óf het verzoek
+  // afwijst — zo blijft zichtbaar dát er ooit gevraagd is.
+  cancellationRequestedAt DateTime?
+  cancellationReason      String?
+  cancellationHandledAt   DateTime?
 
   items   OrderItem[]
   payment Payment?

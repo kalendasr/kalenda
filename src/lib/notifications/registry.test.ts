@@ -7,8 +7,8 @@ import {
 } from '#/lib/notifications/registry.ts'
 
 describe('notificatie-registry', () => {
-  it('registreert precies dertien typen', () => {
-    expect(NOTIFICATION_KEYS).toHaveLength(13)
+  it('registreert precies veertien typen', () => {
+    expect(NOTIFICATION_KEYS).toHaveLength(14)
   })
 
   it('de map-sleutel is gelijk aan de key van de definitie', () => {

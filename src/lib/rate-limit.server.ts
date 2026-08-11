@@ -7,8 +7,8 @@ import { getRequest } from '@tanstack/react-start/server'
  * ordernummer alleen beperkt door netwerklatency.
  *
  * Bewust in-memory: de app draait als één Node-proces achter Caddy (zie
- * infra/kalenda.caddy, geen PM2/clustering), dus een module-level Map is
- * genoeg om brute-force onpraktisch te maken. Bij een herstart of een
+ * infra/DEPLOY.md — PM2 in fork-modus, één instantie, geen clustering), dus
+ * een module-level Map is genoeg om brute-force onpraktisch te maken. Bij een herstart of een
  * toekomstige multi-instance-deploy reset dit — een Redis-achtige gedeelde
  * teller is voor de MVP-schaal van dit platform premature complexiteit.
  */
