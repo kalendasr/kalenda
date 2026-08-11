@@ -8,9 +8,11 @@
 #
 # Zelfde opzet als test-tickets.mijnonline.shop (ticketsysteem): pushmeldingen
 # (Web Push) werken alleen in een secure context, dus lokaal over http lukt
-# testen op een telefoon niet. De app draait NIET onder PM2: start hem met
-# `npm run dev:test` in /home/amresh/kalenda. Staat hij niet aan, dan geeft
-# Caddy een 502 — bewust, dit hoeft geen 24/7-omgeving te zijn.
+# testen op een telefoon niet.
+#
+# De app draait onder PM2 als proces `kalenda-test` — zie
+# kalenda-test.ecosystem.config.cjs en DEPLOY.md. Staat dat proces niet aan,
+# dan geeft Caddy een 502.
 
 kalenda.mijnonline.shop {
 	encode zstd gzip
