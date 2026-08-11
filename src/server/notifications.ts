@@ -45,10 +45,22 @@ export const savePushSubscription = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser()
 
+    // Een `endpoint` is uniek per browser-abonnement. Alleen her-koppelen als
+    // hij nog vrij is óf al van deze gebruiker is — anders zou wie een
+    // endpoint-string van iemand anders leert, diens abonnement kunnen
+    // kapen (en zo hun meldingen kunnen stopzetten).
+    const existing = await db.pushSubscription.findUnique({
+      where: { endpoint: data.endpoint },
+      select: { userId: true },
+    })
+    if (existing && existing.userId !== user.id) {
+      throw new Error('FORBIDDEN')
+    }
+
     await db.pushSubscription.upsert({
       where: { endpoint: data.endpoint },
-      // Een gedeeld apparaat kan van eigenaar wisselen: bij een bestaand
-      // endpoint her-koppelen we het aan deze gebruiker en resetten de teller.
+      // Eén uitzondering op "niet her-koppelen": een gedeeld apparaat kan
+      // van eigenaar wisselen zolang het endpoint nog niemand toebehoorde.
       update: {
         p256dh: data.p256dh,
         auth: data.auth,
@@ -71,17 +83,24 @@ export const savePushSubscription = createServerFn({ method: 'POST' })
   })
 
 /**
- * Slaat het abonnement van een gastklant op, gekoppeld aan de klant achter een
- * ordernummer. Publiek: het ordernummer op de orderpagina is de sleutel.
+ * Slaat het abonnement van de koper op, gekoppeld aan de klant achter een
+ * ordernummer. Checkout vereist inloggen (`createOrder`), dus elke order
+ * heeft een `userId` — de aanroeper moet de ingelogde eigenaar van die order
+ * zijn. Zonder deze check zou het ordernummer (het enige "geheim" op de
+ * deelbare orderlink) genoeg zijn om je permanent te abonneren op iemand
+ * anders' betaal-/ticketmeldingen.
  */
 export const saveCustomerPushSubscription = createServerFn({ method: 'POST' })
   .validator(subscriptionSchema.extend({ orderNumber: z.string().min(1) }))
   .handler(async ({ data }) => {
+    const user = await requireUser()
+
     const order = await db.order.findUnique({
       where: { orderNumber: data.orderNumber },
-      select: { customerId: true },
+      select: { customerId: true, userId: true },
     })
     if (!order) throw new Error('ORDER_NOT_FOUND')
+    if (order.userId !== user.id) throw new Error('FORBIDDEN')
 
     await db.pushSubscription.upsert({
       where: { endpoint: data.endpoint },

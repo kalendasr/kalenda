@@ -19,6 +19,7 @@ import { reservedByTicketType } from '#/server/reservations.server.ts'
 import { claimNotification, notify } from '#/server/notifications.server.ts'
 import { sendOrderConfirmationEmail } from '#/lib/emails.server.ts'
 import { requireUser } from '#/lib/session.server.ts'
+import { enforceRateLimit } from '#/lib/rate-limit.server.ts'
 
 /**
  * Checkout — vereist een ingelogde gebruiker. Identiteit (naam/e-mail) komt
@@ -120,7 +121,22 @@ export const createOrder = createServerFn({ method: 'POST' })
         throw new Error('Bankoverschrijving is niet beschikbaar.')
       }
 
-      const ids = data.items.map((item) => item.ticketTypeId)
+      // Meerdere regels voor hetzelfde tickettype samenvoegen vóór validatie:
+      // anders wordt elke regel onafhankelijk tegen dezelfde beschikbaarheid
+      // getoetst en kan `[{X,5},{X,5}]` de capaciteit én het maximum per
+      // bestelling omzeilen terwijl allebei de checks losstaand slagen.
+      const aggregatedItems = Array.from(
+        data.items.reduce((map, item) => {
+          map.set(
+            item.ticketTypeId,
+            (map.get(item.ticketTypeId) ?? 0) + item.quantity,
+          )
+          return map
+        }, new Map<string, number>()),
+        ([ticketTypeId, quantity]) => ({ ticketTypeId, quantity }),
+      )
+
+      const ids = aggregatedItems.map((item) => item.ticketTypeId)
 
       // Rij-locks op de tickettypes: serialiseert gelijktijdige orders voor
       // dezelfde tickets, zodat de beschikbaarheidscheck niet overboekt.
@@ -138,7 +154,7 @@ export const createOrder = createServerFn({ method: 'POST' })
       })
       const reserved = await reservedByTicketType(ids, now, tx)
 
-      const orderItems = data.items.map((item) => {
+      const orderItems = aggregatedItems.map((item) => {
         const type = types.find((t) => t.id === item.ticketTypeId)
         if (!type) throw new Error('Een gekozen ticket bestaat niet meer.')
         if (
@@ -182,20 +198,40 @@ export const createOrder = createServerFn({ method: 'POST' })
         0,
       )
 
-      const customer = await tx.customer.create({
-        data: {
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          phone: data.phone,
-        },
+      // Checkout vereist inloggen, dus een terugkerende koper heeft mogelijk al
+      // een Customer-rij van een eerdere order. Die hergebruiken (met het
+      // actuele telefoonnummer) voorkomt dat elke bestelling een nieuwe,
+      // vrijwel identieke Customer-rij aanmaakt.
+      const previousOrder = await tx.order.findFirst({
+        where: { userId: user.id, deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        select: { customerId: true },
       })
+      const customer = previousOrder
+        ? await tx.customer.update({
+            where: { id: previousOrder.customerId },
+            data: {
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email,
+              phone: data.phone,
+            },
+          })
+        : await tx.customer.create({
+            data: {
+              firstName: user.firstName,
+              lastName: user.lastName,
+              email: user.email,
+              phone: data.phone,
+            },
+          })
 
       // Uniek ordernummer (BR-500). We genereren en schrijven direct, en vangen
       // een P2002 (unique-botsing) op om opnieuw te proberen. Een read-vooraf
       // dekt de gelijktijdige race niet — twee transacties kunnen beiden "vrij"
       // zien; de unique-constraint is de echte grens en vangt de verliezer.
       let number = generateOrderNumber()
+      let created = false
       for (let attempt = 0; attempt < 5; attempt += 1) {
         try {
           await tx.order.create({
@@ -218,6 +254,7 @@ export const createOrder = createServerFn({ method: 'POST' })
               },
             },
           })
+          created = true
           break
         } catch (err) {
           if (
@@ -229,6 +266,11 @@ export const createOrder = createServerFn({ method: 'POST' })
           }
           throw err
         }
+      }
+      if (!created) {
+        throw new Error(
+          'Kon geen uniek ordernummer genereren. Probeer het opnieuw.',
+        )
       }
 
       return number
@@ -311,10 +353,19 @@ export const createOrder = createServerFn({ method: 'POST' })
 export const getOrderByNumber = createServerFn({ method: 'GET' })
   .validator(z.object({ orderNumber: z.string().min(1) }))
   .handler(async ({ data }) => {
+    // Publiek endpoint met het ordernummer als enige geheim — een rem tegen
+    // enumeratie (zie rate-limit.server.ts).
+    enforceRateLimit('getOrderByNumber', 30)
+
+    // Select bewust smal: dit is een publiek endpoint (het ordernummer is het
+    // enige geheim), dus alleen de velden die de orderpagina daadwerkelijk
+    // toont — geen klanttelefoonnummer/-naam en geen bankfilialen die de
+    // pagina niet gebruikt (zie order-flow.tsx: alleen customer.email en
+    // bank.{bankName,accountNumber,accountHolder,paymentInstructions}).
     const order = await db.order.findUnique({
       where: { orderNumber: data.orderNumber },
       include: {
-        customer: true,
+        customer: { select: { email: true } },
         items: {
           include: {
             ticketType: { select: { name: true } },
@@ -346,7 +397,15 @@ export const getOrderByNumber = createServerFn({ method: 'GET' })
               select: {
                 name: true,
                 phone: true,
-                paymentSettings: true,
+                paymentSettings: {
+                  select: {
+                    whatsappPhone: true,
+                    bankName: true,
+                    accountHolder: true,
+                    accountNumber: true,
+                    paymentInstructions: true,
+                  },
+                },
               },
             },
           },

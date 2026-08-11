@@ -22,15 +22,9 @@ import { centsToInput, formatSrd } from '#/lib/money.ts'
 import { dateToSurinameLocal, formatDateNl } from '#/lib/datetime.ts'
 import { ticketSaleStatus } from '#/lib/ticket-sales.ts'
 import type { SaleStatus } from '#/lib/ticket-sales.ts'
-import { cn } from '#/lib/utils.ts'
 import { toast } from '#/components/ui/sonner.tsx'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '#/components/ui/card.tsx'
+import { errorMessage } from '#/lib/error-message.ts'
+import { Card } from '#/components/ui/card.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import { Input } from '#/components/ui/input.tsx'
 import { Textarea } from '#/components/ui/textarea.tsx'
@@ -134,79 +128,7 @@ function EventTicketsTab() {
           ))}
         </ul>
       )}
-
-      {ticketTypes.length > 0 ? <SaleRulesCard /> : null}
     </div>
-  )
-}
-
-/**
- * Event-brede verkoopregels. Verkoopperiode en maximum per bestelling worden
- * per ticketsoort ingesteld (één bron van waarheid); hier staan alléén de
- * regels die voor álle soorten gelden. Wachtlijst en groepskorting zijn nog
- * front-end-only in deze ronde.
- */
-function SaleRulesCard() {
-  const [toggles, setToggles] = React.useState({
-    waitlist: true,
-    groupDiscount: false,
-  })
-
-  const rows: Array<{ key: keyof typeof toggles; title: string; sub: string }> =
-    [
-      {
-        key: 'waitlist',
-        title: 'Wachtlijst bij uitverkocht',
-        sub: 'Bezoekers krijgen bericht zodra er plek vrijkomt.',
-      },
-      {
-        key: 'groupDiscount',
-        title: 'Groepskorting',
-        sub: 'Automatisch 10% korting vanaf 8 tickets.',
-      },
-    ]
-
-  return (
-    <Card className="mt-2">
-      <CardHeader>
-        <CardTitle className="text-base">Verkoopregels</CardTitle>
-        <CardDescription>
-          Geldt voor alle ticketsoorten. Verkoopperiode en maximum per
-          bestelling stel je per ticketsoort in.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col divide-y">
-        {rows.map((row) => (
-          <div
-            key={row.key}
-            className="flex flex-wrap items-center gap-4 py-3 first:pt-0"
-          >
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-medium">{row.title}</span>
-              <span className="block text-sm text-muted-foreground">
-                {row.sub}
-              </span>
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={toggles[row.key]}
-              onClick={() =>
-                setToggles((t) => ({ ...t, [row.key]: !t[row.key] }))
-              }
-              className={cn(
-                'min-h-8 rounded-full border px-3 text-xs font-semibold transition-colors',
-                toggles[row.key]
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-input bg-background text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {toggles[row.key] ? 'Aan' : 'Uit'}
-            </button>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
   )
 }
 
@@ -230,7 +152,7 @@ function TicketTypeRow({
       await router.invalidate()
       if (message) toast.success(message)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Er ging iets mis.')
+      toast.error(errorMessage(error, 'Er ging iets mis.'))
     }
   }
 

@@ -547,6 +547,26 @@ Klant informeren.
 
 ---
 
+## BR-904
+
+Gepubliceerd event: begintijd of locatie gewijzigd
+
+↓
+
+Alle klanten met een actieve bestelling (niet geannuleerd/verlopen) voor dat event informeren.
+
+---
+
+## BR-905
+
+Event vindt vandaag plaats
+
+↓
+
+Elke klant met een betaalde/afgeronde bestelling voor dat event krijgt eenmalig een herinnering (per bestelling geclaimd, zodat een dagelijkse cronrun niet dubbel verstuurt).
+
+---
+
 # 12. Dashboard Rules
 
 Dashboard toont uitsluitend:

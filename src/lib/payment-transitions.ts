@@ -64,6 +64,21 @@ export function nextState(
   return NEXT_STATE[current][action] ?? null
 }
 
+/**
+ * Alle bron-toestanden waarvandaan `action` is toegestaan. Gebruikt als
+ * where-voorwaarde in een conditionele `updateMany`, zodat de statusovergang
+ * zelf de gelijktijdigheidsgrens is (net als bij `resolveScan`): twee
+ * gelijktijdige aanroepen kunnen dan niet allebei slagen, want de tweede
+ * vindt de rij niet meer in een toegestane bron-toestand.
+ */
+export function allowedSourceStates(
+  action: PaymentAction,
+): Array<PaymentState> {
+  return (Object.keys(ALLOWED_ACTIONS) as Array<PaymentState>).filter((state) =>
+    ALLOWED_ACTIONS[state].has(action),
+  )
+}
+
 /** Is deze overgang (huidig → doel) toegestaan? */
 export function canTransition(
   current: PaymentState,

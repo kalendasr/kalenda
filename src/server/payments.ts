@@ -11,7 +11,9 @@ import {
   parseProofUpload,
   rejectPaymentSchema,
 } from '#/lib/validation/payment.ts'
-import { nextState } from '#/lib/payment-transitions.ts'
+import { allowedSourceStates, nextState } from '#/lib/payment-transitions.ts'
+import { effectiveOrderStatus } from '#/lib/order-status.ts'
+import { enforceRateLimit } from '#/lib/rate-limit.server.ts'
 import { generateTicketNumber } from '#/lib/ticket-number.ts'
 import { buildPaymentRequestMessage } from '#/lib/payment-request-message.ts'
 import { buildTicketShareMessage } from '#/lib/ticket-share-message.ts'
@@ -67,7 +69,7 @@ export const sendPaymentRequest = createServerFn({ method: 'POST' })
       )
     }
     const now = new Date()
-    if (order.expiresAt < now) {
+    if (effectiveOrderStatus(order, now) === 'Expired') {
       throw new Error('De betaaltermijn van deze bestelling is verstreken.')
     }
     if (!order.payment) throw new Error('PAYMENT_NOT_FOUND')
@@ -143,7 +145,7 @@ export const approvePayment = createServerFn({ method: 'POST' })
     if (order.orderStatus === 'Paid' || order.orderStatus === 'Completed') {
       throw new Error('Deze bestelling is al betaald.')
     }
-    if (order.orderStatus !== 'Cancelled' && order.expiresAt < now) {
+    if (effectiveOrderStatus(order, now) === 'Expired') {
       throw new Error('De betaaltermijn van deze bestelling is verstreken.')
     }
     if (!order.payment) throw new Error('PAYMENT_NOT_FOUND')
@@ -160,28 +162,37 @@ export const approvePayment = createServerFn({ method: 'POST' })
       })),
     )
 
-    await db.$transaction([
-      db.payment.update({
-        where: { id: order.payment.id },
+    // Conditionele update: de where-voorwaarde op `state` is de echte
+    // gelijktijdigheidsgrens (zelfde patroon als `resolveScan`). Zonder dit
+    // kunnen twee gelijktijdige goedkeuringen allebei de vroege `nextState`-
+    // check hierboven passeren (die alleen een vooraf-gelezen snapshot ziet)
+    // en dus allebei een volledige ticketset aanmaken voor dezelfde order.
+    const paymentId = order.payment.id
+    await db.$transaction(async (tx) => {
+      const updated = await tx.payment.updateMany({
+        where: { id: paymentId, state: { in: allowedSourceStates('approve') } },
         data: { state: 'Verified', verifiedBy: user.id, verifiedAt: now },
-      }),
+      })
+      if (updated.count !== 1) {
+        throw new Error('Deze betaling kan niet worden goedgekeurd.')
+      }
+
       // De order is nu betaald (BR-505); pas als de ticketmail daadwerkelijk
       // verstuurd is (tickets.server.ts) wordt hij Completed. Zo blijft
       // zichtbaar wanneer de betaling wél binnen is maar de levering nog niet.
-      db.order.update({
+      await tx.order.update({
         where: { id: order.id },
         data: {
           orderStatus: 'Paid',
           paymentStatus: 'Verified',
           notes: order.notes,
         },
-      }),
-      ...ticketCreates.map((ticket) =>
-        db.ticket.create({
-          data: ticket,
-        }),
-      ),
-    ])
+      })
+
+      for (const ticket of ticketCreates) {
+        await tx.ticket.create({ data: ticket })
+      }
+    })
 
     // Ticketmail met PDF + pushmelding na commit; een fout hier mag de
     // uitgifte niet ongedaan maken (zelfde patroon als de checkout-bevestiging).
@@ -250,7 +261,7 @@ export const rejectPayment = createServerFn({ method: 'POST' })
     if (order.orderStatus === 'Paid' || order.orderStatus === 'Completed') {
       throw new Error('Deze bestelling is al betaald.')
     }
-    if (order.orderStatus !== 'Cancelled' && order.expiresAt < now) {
+    if (effectiveOrderStatus(order, now) === 'Expired') {
       throw new Error('De betaaltermijn van deze bestelling is verstreken.')
     }
     if (!order.payment) throw new Error('PAYMENT_NOT_FOUND')
@@ -258,18 +269,25 @@ export const rejectPayment = createServerFn({ method: 'POST' })
       throw new Error('Deze betaling kan niet worden afgekeurd.')
     }
 
-    await db.$transaction([
-      db.payment.update({
-        where: { id: order.payment.id },
+    // Zelfde conditionele-update-patroon als `approvePayment`: de where op
+    // `state` is de echte gelijktijdigheidsgrens.
+    const paymentId = order.payment.id
+    await db.$transaction(async (tx) => {
+      const updated = await tx.payment.updateMany({
+        where: { id: paymentId, state: { in: allowedSourceStates('reject') } },
         data: { state: 'Rejected', notes: data.notes ?? null },
-      }),
+      })
+      if (updated.count !== 1) {
+        throw new Error('Deze betaling kan niet worden afgekeurd.')
+      }
+
       // Bij afkeuring keert de order terug naar "wacht op controle" en kan de
       // klant een nieuw bewijs indienen (BR-605).
-      db.order.update({
+      await tx.order.update({
         where: { id: order.id },
         data: { orderStatus: 'AwaitingReview', paymentStatus: 'Rejected' },
-      }),
-    ])
+      })
+    })
 
     // Klant krijgt automatisch een melding (BR-606/903) — voorheen ontbrak dit
     // volledig en zag de klant een afkeuring pas bij een toevallig bezoek.
@@ -322,7 +340,11 @@ export const getProofSignedUrl = createServerFn({ method: 'GET' })
 export const submitProofOfPayment = createServerFn({ method: 'POST' })
   .validator(parseProofUpload)
   .handler(async ({ data }): Promise<{ ok: boolean }> => {
-    const { file, extension } = validateImageFile(data.file)
+    // Publiek endpoint met het ordernummer als enige geheim — een rem tegen
+    // enumeratie en tegen misbruik van de uploadopslag (zie rate-limit.server.ts).
+    enforceRateLimit('submitProofOfPayment', 10)
+
+    const { file, extension } = await validateImageFile(data.file)
 
     // Publieke lookup op bestelnummer (zoals getOrderByNumber, maar binnen tx).
     const order = await db.order.findUnique({
@@ -344,7 +366,7 @@ export const submitProofOfPayment = createServerFn({ method: 'POST' })
     if (order.orderStatus === 'Paid' || order.orderStatus === 'Completed') {
       throw new Error('Deze bestelling is al betaald.')
     }
-    if (order.expiresAt < now) {
+    if (effectiveOrderStatus(order, now) === 'Expired') {
       throw new Error('De betaaltermijn van deze bestelling is verstreken.')
     }
     if (!order.payment) throw new Error('PAYMENT_NOT_FOUND')
@@ -359,20 +381,29 @@ export const submitProofOfPayment = createServerFn({ method: 'POST' })
     const bytes = new Uint8Array(await file.arrayBuffer())
     await uploadObject({ key, body: bytes, contentType: file.type })
 
-    await db.$transaction([
-      db.payment.update({
-        where: { id: order.payment.id },
+    // Zelfde conditionele-update-patroon als `approvePayment`: de where op
+    // `state` is de echte gelijktijdigheidsgrens.
+    const paymentId = order.payment.id
+    await db.$transaction(async (tx) => {
+      const updated = await tx.payment.updateMany({
+        where: { id: paymentId, state: { in: allowedSourceStates('submit') } },
         data: {
           state: 'Submitted',
           proofKey: key,
           reference: data.reference ?? null,
         },
-      }),
-      db.order.update({
+      })
+      if (updated.count !== 1) {
+        throw new Error(
+          'Het betaalbewijs is al ontvangen of de betaling is al verwerkt.',
+        )
+      }
+
+      await tx.order.update({
         where: { id: order.id },
         data: { orderStatus: 'AwaitingReview', paymentStatus: 'Pending' },
-      }),
-    ])
+      })
+    })
 
     // notify() gooit nooit (zie notifications.server.ts) — geen try/catch nodig.
     await notify(

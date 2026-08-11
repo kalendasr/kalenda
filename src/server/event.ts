@@ -13,16 +13,78 @@ import {
   eventIntroSchema,
   venueSchema,
 } from '#/lib/validation/event.ts'
+import { notify } from '#/server/notifications.server.ts'
+import type { EventChange } from '#/lib/notifications/definitions/event-changed.ts'
+import { eventPublishReadiness } from '#/lib/event-readiness.ts'
 import { z } from 'zod'
 
 /**
- * Server functions voor het evenementdomein (BR-200..BR-204).
+ * Server functions voor het evenementdomein (BR-200..BR-204, BR-904).
  *
  * Iedere mutatie loopt via `requireUser()` en werkt uitsluitend op events van de
  * organisatie van de ingelogde gebruiker (security §13).
  */
 
 const eventIdSchema = z.object({ eventId: z.uuid() })
+
+/** Is de begintijd van het event daadwerkelijk gewijzigd? */
+export function hasEventTimeChanged(
+  before: Date | null,
+  after: Date | null,
+): boolean {
+  return before?.getTime() !== after?.getTime()
+}
+
+export type VenueFields = {
+  name: string
+  address: string | null
+  district: string | null
+  country: string
+}
+
+/** Is er iets aan de locatiegegevens daadwerkelijk gewijzigd? */
+export function hasVenueChanged(
+  before: VenueFields,
+  after: VenueFields,
+): boolean {
+  return (
+    before.name !== after.name ||
+    before.address !== after.address ||
+    before.district !== after.district ||
+    before.country !== after.country
+  )
+}
+
+/**
+ * BR-904: een materiële wijziging (tijd/locatie) aan een gepubliceerd event
+ * informeert elke klant met een actieve bestelling. "Actief" = niet
+ * geannuleerd/verlopen — ook wie nog moet betalen heeft een reservering voor
+ * dit event en wil van de wijziging weten.
+ */
+export async function notifyEventChanged(
+  eventId: string,
+  eventTitle: string,
+  change: EventChange,
+) {
+  const orders = await db.order.findMany({
+    where: {
+      eventId,
+      deletedAt: null,
+      orderStatus: { notIn: ['Cancelled', 'Expired'] },
+    },
+    select: { orderNumber: true, customerId: true },
+  })
+
+  await Promise.all(
+    orders.map((order) =>
+      notify(
+        'event.changed',
+        { kind: 'customer', customerId: order.customerId },
+        { orderNumber: order.orderNumber, eventTitle, change },
+      ),
+    ),
+  )
+}
 
 /** Alle events van de eigen organisatie (nieuwste eerst). */
 export const listMyEvents = createServerFn({ method: 'GET' }).handler(
@@ -135,18 +197,28 @@ export const updateEventDetails = createServerFn({ method: 'POST' })
   .validator(eventDetailsSchema.and(z.object({ eventId: z.uuid() })))
   .handler(async ({ data }) => {
     const user = await requireUser()
-    await requireOwnedEvent(user.id, data.eventId)
+    const before = await requireOwnedEvent(user.id, data.eventId)
 
-    return db.event.update({
+    const startsAt = surinameLocalToDate(data.startsAt)
+    const event = await db.event.update({
       where: { id: data.eventId },
       data: {
         title: data.title,
         categoryId: data.categoryId ?? null,
-        startsAt: surinameLocalToDate(data.startsAt),
+        startsAt,
         endsAt: surinameLocalToDate(data.endsAt),
         timezone: data.timezone,
       },
     })
+
+    if (
+      before.status === 'Published' &&
+      hasEventTimeChanged(before.startsAt, startsAt)
+    ) {
+      await notifyEventChanged(event.id, event.title, 'time')
+    }
+
+    return event
   })
 
 /** Introductie (korte + lange omschrijving), beheerd vanuit de Inhoud-tab. */
@@ -180,7 +252,18 @@ export const updateEventVenue = createServerFn({ method: 'POST' })
 
     // Eén venue per event: bestaande bijwerken, anders aanmaken en koppelen.
     if (event.venueId) {
-      return db.venue.update({ where: { id: event.venueId }, data: values })
+      const before = await db.venue.findUnique({ where: { id: event.venueId } })
+      const venue = await db.venue.update({
+        where: { id: event.venueId },
+        data: values,
+      })
+
+      const changed = before !== null && hasVenueChanged(before, venue)
+      if (event.status === 'Published' && changed) {
+        await notifyEventChanged(event.id, event.title, 'venue')
+      }
+
+      return venue
     }
 
     const venue = await db.venue.create({ data: values })
@@ -193,11 +276,41 @@ export const updateEventVenue = createServerFn({ method: 'POST' })
 
 // --- Lifecycle -------------------------------------------------------------
 
+/** Publiceren mag alleen als de checklist compleet is (BR-201) — de client
+ * disablet de knop hierop, maar server functions zijn direct aanroepbaar. */
 export const publishEvent = createServerFn({ method: 'POST' })
   .validator(eventIdSchema)
   .handler(async ({ data }) => {
     const user = await requireUser()
     await requireOwnedEvent(user.id, data.eventId)
+
+    const event = await db.event.findFirst({
+      where: { id: data.eventId, deletedAt: null },
+      include: {
+        _count: { select: { ticketTypes: { where: { deletedAt: null } } } },
+        organization: { select: { paymentSettings: true } },
+      },
+    })
+    if (!event) throw new Error('EVENT_NOT_FOUND')
+
+    const readiness = eventPublishReadiness(
+      {
+        title: event.title,
+        shortDescription: event.shortDescription,
+        description: event.description,
+        startsAt: event.startsAt,
+        categoryId: event.categoryId,
+        venueId: event.venueId,
+        coverImage: event.coverImage,
+        ticketTypeCount: event._count.ticketTypes,
+      },
+      event.organization.paymentSettings,
+    )
+    if (!readiness.ready) {
+      throw new Error(
+        `Evenement is nog niet compleet: ${readiness.missing.map((item) => item.label).join(', ')}.`,
+      )
+    }
 
     return db.event.update({
       where: { id: data.eventId },
@@ -211,6 +324,19 @@ export const unpublishEvent = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser()
     await requireOwnedEvent(user.id, data.eventId)
+
+    const ticketCount = await db.ticket.count({
+      where: {
+        orderItem: {
+          order: { eventId: data.eventId, deletedAt: null },
+        },
+      },
+    })
+    if (ticketCount > 0) {
+      throw new Error(
+        'Dit evenement heeft al verkochte tickets en kan niet meer naar concept terug.',
+      )
+    }
 
     return db.event.update({
       where: { id: data.eventId },
@@ -240,6 +366,15 @@ export const deleteEvent = createServerFn({ method: 'POST' })
     if (event.status !== 'Draft') {
       throw new Error(
         'Een gepubliceerd evenement kan niet verwijderd worden. Archiveer het in plaats daarvan.',
+      )
+    }
+
+    const orderCount = await db.order.count({
+      where: { eventId: event.id, deletedAt: null },
+    })
+    if (orderCount > 0) {
+      throw new Error(
+        'Dit evenement heeft bestellingen en kan niet verwijderd worden. Archiveer het in plaats daarvan.',
       )
     }
 

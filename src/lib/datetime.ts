@@ -59,6 +59,16 @@ export function formatDateTimeShortNl(date: Date | null | undefined): string {
   return `${datePart.replace('.', '')} ${timePart}`
 }
 
+/** Alleen de tijd, bijv. "20:00", voor "vandaag om ..."-teksten. */
+export function formatTimeNl(date: Date | null | undefined): string {
+  if (!date) return ''
+  return new Intl.DateTimeFormat('nl-NL', {
+    timeZone: 'America/Paramaribo',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
 /** Alleen de datum, bijv. "1 september 2026". */
 export function formatDateNl(date: Date | null | undefined): string {
   if (!date) return ''

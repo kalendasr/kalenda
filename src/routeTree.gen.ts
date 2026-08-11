@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as MijnTicketsRouteImport } from './routes/mijn-tickets'
@@ -25,6 +26,10 @@ import { Route as EvenementenSlugRouteImport } from './routes/evenementen.$slug'
 import { Route as OrganisatorIndexRouteImport } from './routes/organisator.index'
 import { Route as OrganisatorStartenRouteImport } from './routes/organisator.starten'
 import { Route as TicketTicketNumberRouteImport } from './routes/ticket.$ticketNumber'
+import { Route as AdminAdminIndexRouteImport } from './routes/_admin.admin.index'
+import { Route as AdminAdminEventsRouteImport } from './routes/_admin.admin.events'
+import { Route as AdminAdminOrganizationsRouteImport } from './routes/_admin.admin.organizations'
+import { Route as AdminAdminUsersRouteImport } from './routes/_admin.admin.users'
 import { Route as AppEventsIndexRouteImport } from './routes/_app.events.index'
 import { Route as AppEventsNewRouteImport } from './routes/_app.events.new'
 import { Route as AppEventsEventIdRouteImport } from './routes/_app.events_.$eventId'
@@ -34,6 +39,8 @@ import { Route as AppOrganizationNotificationsRouteImport } from './routes/_app.
 import { Route as AppOrganizationPaymentsRouteImport } from './routes/_app.organization.payments'
 import { Route as AppOrganizationSettingsRouteImport } from './routes/_app.organization.settings'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiCronEventRemindersRouteImport } from './routes/api/cron/event-reminders'
+import { Route as ApiCronExpireOrdersRouteImport } from './routes/api/cron/expire-orders'
 import { Route as EvenementenSlugAfrekenenRouteImport } from './routes/evenementen.$slug_.afrekenen'
 import { Route as AppEventsEventIdIndexRouteImport } from './routes/_app.events_.$eventId.index'
 import { Route as AppEventsEventIdDetailsRouteImport } from './routes/_app.events_.$eventId.details'
@@ -46,6 +53,10 @@ import { Route as AppEventsEventIdTicketsRouteImport } from './routes/_app.event
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/_admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -121,6 +132,26 @@ const TicketTicketNumberRoute = TicketTicketNumberRouteImport.update({
   path: '/ticket/$ticketNumber',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminEventsRoute = AdminAdminEventsRouteImport.update({
+  id: '/admin/events',
+  path: '/admin/events',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminOrganizationsRoute = AdminAdminOrganizationsRouteImport.update({
+  id: '/admin/organizations',
+  path: '/admin/organizations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AppEventsIndexRoute = AppEventsIndexRouteImport.update({
   id: '/events/',
   path: '/events/',
@@ -165,6 +196,16 @@ const AppOrganizationSettingsRoute = AppOrganizationSettingsRouteImport.update({
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCronEventRemindersRoute = ApiCronEventRemindersRouteImport.update({
+  id: '/api/cron/event-reminders',
+  path: '/api/cron/event-reminders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCronExpireOrdersRoute = ApiCronExpireOrdersRouteImport.update({
+  id: '/api/cron/expire-orders',
+  path: '/api/cron/expire-orders',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EvenementenSlugAfrekenenRoute =
@@ -225,6 +266,9 @@ export interface FileRoutesByFullPath {
   '/ticket/$ticketNumber': typeof TicketTicketNumberRoute
   '/evenementen/': typeof EvenementenIndexRoute
   '/organisator/': typeof OrganisatorIndexRoute
+  '/admin/events': typeof AdminAdminEventsRoute
+  '/admin/organizations': typeof AdminAdminOrganizationsRoute
+  '/admin/users': typeof AdminAdminUsersRoute
   '/events/new': typeof AppEventsNewRoute
   '/events/$eventId': typeof AppEventsEventIdRouteWithChildren
   '/organization/details': typeof AppOrganizationDetailsRoute
@@ -232,7 +276,10 @@ export interface FileRoutesByFullPath {
   '/organization/payments': typeof AppOrganizationPaymentsRoute
   '/organization/settings': typeof AppOrganizationSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/event-reminders': typeof ApiCronEventRemindersRoute
+  '/api/cron/expire-orders': typeof ApiCronExpireOrdersRoute
   '/evenementen/$slug/afrekenen': typeof EvenementenSlugAfrekenenRoute
+  '/admin/': typeof AdminAdminIndexRoute
   '/events/': typeof AppEventsIndexRoute
   '/organization/': typeof AppOrganizationIndexRoute
   '/events/$eventId/details': typeof AppEventsEventIdDetailsRoute
@@ -257,13 +304,19 @@ export interface FileRoutesByTo {
   '/ticket/$ticketNumber': typeof TicketTicketNumberRoute
   '/evenementen': typeof EvenementenIndexRoute
   '/organisator': typeof OrganisatorIndexRoute
+  '/admin/events': typeof AdminAdminEventsRoute
+  '/admin/organizations': typeof AdminAdminOrganizationsRoute
+  '/admin/users': typeof AdminAdminUsersRoute
   '/events/new': typeof AppEventsNewRoute
   '/organization/details': typeof AppOrganizationDetailsRoute
   '/organization/notifications': typeof AppOrganizationNotificationsRoute
   '/organization/payments': typeof AppOrganizationPaymentsRoute
   '/organization/settings': typeof AppOrganizationSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/event-reminders': typeof ApiCronEventRemindersRoute
+  '/api/cron/expire-orders': typeof ApiCronExpireOrdersRoute
   '/evenementen/$slug/afrekenen': typeof EvenementenSlugAfrekenenRoute
+  '/admin': typeof AdminAdminIndexRoute
   '/events': typeof AppEventsIndexRoute
   '/organization': typeof AppOrganizationIndexRoute
   '/events/$eventId/details': typeof AppEventsEventIdDetailsRoute
@@ -277,6 +330,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_admin': typeof AdminRouteWithChildren
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/mijn-tickets': typeof MijnTicketsRoute
@@ -292,6 +346,9 @@ export interface FileRoutesById {
   '/ticket/$ticketNumber': typeof TicketTicketNumberRoute
   '/evenementen/': typeof EvenementenIndexRoute
   '/organisator/': typeof OrganisatorIndexRoute
+  '/_admin/admin/events': typeof AdminAdminEventsRoute
+  '/_admin/admin/organizations': typeof AdminAdminOrganizationsRoute
+  '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_app/events/new': typeof AppEventsNewRoute
   '/_app/events_/$eventId': typeof AppEventsEventIdRouteWithChildren
   '/_app/organization/details': typeof AppOrganizationDetailsRoute
@@ -299,7 +356,10 @@ export interface FileRoutesById {
   '/_app/organization/payments': typeof AppOrganizationPaymentsRoute
   '/_app/organization/settings': typeof AppOrganizationSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/event-reminders': typeof ApiCronEventRemindersRoute
+  '/api/cron/expire-orders': typeof ApiCronExpireOrdersRoute
   '/evenementen/$slug_/afrekenen': typeof EvenementenSlugAfrekenenRoute
+  '/_admin/admin/': typeof AdminAdminIndexRoute
   '/_app/events/': typeof AppEventsIndexRoute
   '/_app/organization/': typeof AppOrganizationIndexRoute
   '/_app/events_/$eventId/details': typeof AppEventsEventIdDetailsRoute
@@ -327,6 +387,9 @@ export interface FileRouteTypes {
     | '/ticket/$ticketNumber'
     | '/evenementen/'
     | '/organisator/'
+    | '/admin/events'
+    | '/admin/organizations'
+    | '/admin/users'
     | '/events/new'
     | '/events/$eventId'
     | '/organization/details'
@@ -334,7 +397,10 @@ export interface FileRouteTypes {
     | '/organization/payments'
     | '/organization/settings'
     | '/api/auth/$'
+    | '/api/cron/event-reminders'
+    | '/api/cron/expire-orders'
     | '/evenementen/$slug/afrekenen'
+    | '/admin/'
     | '/events/'
     | '/organization/'
     | '/events/$eventId/details'
@@ -359,13 +425,19 @@ export interface FileRouteTypes {
     | '/ticket/$ticketNumber'
     | '/evenementen'
     | '/organisator'
+    | '/admin/events'
+    | '/admin/organizations'
+    | '/admin/users'
     | '/events/new'
     | '/organization/details'
     | '/organization/notifications'
     | '/organization/payments'
     | '/organization/settings'
     | '/api/auth/$'
+    | '/api/cron/event-reminders'
+    | '/api/cron/expire-orders'
     | '/evenementen/$slug/afrekenen'
+    | '/admin'
     | '/events'
     | '/organization'
     | '/events/$eventId/details'
@@ -378,6 +450,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_admin'
     | '/_app'
     | '/_auth'
     | '/mijn-tickets'
@@ -393,6 +466,9 @@ export interface FileRouteTypes {
     | '/ticket/$ticketNumber'
     | '/evenementen/'
     | '/organisator/'
+    | '/_admin/admin/events'
+    | '/_admin/admin/organizations'
+    | '/_admin/admin/users'
     | '/_app/events/new'
     | '/_app/events_/$eventId'
     | '/_app/organization/details'
@@ -400,7 +476,10 @@ export interface FileRouteTypes {
     | '/_app/organization/payments'
     | '/_app/organization/settings'
     | '/api/auth/$'
+    | '/api/cron/event-reminders'
+    | '/api/cron/expire-orders'
     | '/evenementen/$slug_/afrekenen'
+    | '/_admin/admin/'
     | '/_app/events/'
     | '/_app/organization/'
     | '/_app/events_/$eventId/details'
@@ -414,6 +493,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   MijnTicketsRoute: typeof MijnTicketsRoute
@@ -424,6 +504,8 @@ export interface RootRouteChildren {
   EvenementenIndexRoute: typeof EvenementenIndexRoute
   OrganisatorIndexRoute: typeof OrganisatorIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiCronEventRemindersRoute: typeof ApiCronEventRemindersRoute
+  ApiCronExpireOrdersRoute: typeof ApiCronExpireOrdersRoute
   EvenementenSlugAfrekenenRoute: typeof EvenementenSlugAfrekenenRoute
 }
 
@@ -434,6 +516,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_admin': {
+      id: '/_admin'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -541,6 +630,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TicketTicketNumberRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_admin/admin/': {
+      id: '/_admin/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminAdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/events': {
+      id: '/_admin/admin/events'
+      path: '/admin/events'
+      fullPath: '/admin/events'
+      preLoaderRoute: typeof AdminAdminEventsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/organizations': {
+      id: '/_admin/admin/organizations'
+      path: '/admin/organizations'
+      fullPath: '/admin/organizations'
+      preLoaderRoute: typeof AdminAdminOrganizationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/users': {
+      id: '/_admin/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminAdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_app/events/': {
       id: '/_app/events/'
       path: '/events'
@@ -604,6 +721,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cron/event-reminders': {
+      id: '/api/cron/event-reminders'
+      path: '/api/cron/event-reminders'
+      fullPath: '/api/cron/event-reminders'
+      preLoaderRoute: typeof ApiCronEventRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/expire-orders': {
+      id: '/api/cron/expire-orders'
+      path: '/api/cron/expire-orders'
+      fullPath: '/api/cron/expire-orders'
+      preLoaderRoute: typeof ApiCronExpireOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/evenementen/$slug_/afrekenen': {
       id: '/evenementen/$slug_/afrekenen'
       path: '/evenementen/$slug/afrekenen'
@@ -662,6 +793,22 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AdminRouteChildren {
+  AdminAdminEventsRoute: typeof AdminAdminEventsRoute
+  AdminAdminOrganizationsRoute: typeof AdminAdminOrganizationsRoute
+  AdminAdminUsersRoute: typeof AdminAdminUsersRoute
+  AdminAdminIndexRoute: typeof AdminAdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAdminEventsRoute: AdminAdminEventsRoute,
+  AdminAdminOrganizationsRoute: AdminAdminOrganizationsRoute,
+  AdminAdminUsersRoute: AdminAdminUsersRoute,
+  AdminAdminIndexRoute: AdminAdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AppOrganizationRouteChildren {
   AppOrganizationDetailsRoute: typeof AppOrganizationDetailsRoute
@@ -742,6 +889,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   MijnTicketsRoute: MijnTicketsRoute,
@@ -752,6 +900,8 @@ const rootRouteChildren: RootRouteChildren = {
   EvenementenIndexRoute: EvenementenIndexRoute,
   OrganisatorIndexRoute: OrganisatorIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiCronEventRemindersRoute: ApiCronEventRemindersRoute,
+  ApiCronExpireOrdersRoute: ApiCronExpireOrdersRoute,
   EvenementenSlugAfrekenenRoute: EvenementenSlugAfrekenenRoute,
 }
 export const routeTree = rootRouteImport

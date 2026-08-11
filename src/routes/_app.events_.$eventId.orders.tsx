@@ -41,6 +41,7 @@ import {
 import { OrderDetailDialog } from '#/components/app/order-detail-dialog.tsx'
 import { PaymentConfirmedDialog } from '#/components/app/payment-confirmed-dialog.tsx'
 import { toast } from '#/components/ui/sonner.tsx'
+import { errorMessage } from '#/lib/error-message.ts'
 
 export const Route = createFileRoute('/_app/events_/$eventId/orders')({
   loader: async ({ params }) => ({
@@ -142,9 +143,7 @@ function EventOrders() {
       await router.invalidate()
       toast.success(success)
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Actie is niet gelukt.',
-      )
+      toast.error(errorMessage(error, 'Actie is niet gelukt.'))
     }
   }
 
@@ -160,9 +159,7 @@ function EventOrders() {
       setConfirmed(result)
       await router.invalidate()
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Actie is niet gelukt.',
-      )
+      toast.error(errorMessage(error, 'Actie is niet gelukt.'))
     }
   }
 
@@ -308,11 +305,7 @@ function EventOrders() {
                 toast.error('Er is geen betaalbewijs gevonden.')
               }
             } catch (error) {
-              toast.error(
-                error instanceof Error
-                  ? error.message
-                  : 'Bewijs ophalen is mislukt.',
-              )
+              toast.error(errorMessage(error, 'Bewijs ophalen is mislukt.'))
             }
           }}
           onSendPush={(title, body) =>
@@ -336,9 +329,7 @@ function EventOrders() {
               toast.success('Tickets zijn gemaild.')
               await router.invalidate()
             } catch (error) {
-              toast.error(
-                error instanceof Error ? error.message : 'Mailen is mislukt.',
-              )
+              toast.error(errorMessage(error, 'Mailen is mislukt.'))
             }
           }}
           onSendPush={(title, body) =>

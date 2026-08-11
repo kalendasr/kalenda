@@ -32,6 +32,7 @@ import { dateToSurinameLocal } from '#/lib/datetime.ts'
 import { useZodForm } from '#/lib/use-zod-form.ts'
 import { cn } from '#/lib/utils.ts'
 import { toast } from '#/components/ui/sonner.tsx'
+import { errorMessage } from '#/lib/error-message.ts'
 import {
   Card,
   CardContent,
@@ -403,9 +404,7 @@ function CoverAndIntro({ event }: { event: EventData }) {
       await router.invalidate()
       toast.success('De coverfoto is bijgewerkt.')
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Uploaden is niet gelukt.',
-      )
+      toast.error(errorMessage(error, 'Uploaden is niet gelukt.'))
     } finally {
       setUploading(false)
     }

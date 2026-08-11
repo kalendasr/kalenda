@@ -42,6 +42,7 @@ import { FormField } from '#/components/ui/form-field.tsx'
 import { FormError } from '#/components/auth/form-error.tsx'
 import { Alert, AlertDescription } from '#/components/ui/alert.tsx'
 import { toast } from '#/components/ui/sonner.tsx'
+import { errorMessage } from '#/lib/error-message.ts'
 
 /**
  * Gedeelde ticketaanvraag- en orderstatusflow (SCREENS §4.3), gerenderd door
@@ -911,9 +912,7 @@ function BankProofUpload({
       await router.invalidate()
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : 'Uploaden is niet gelukt. Probeer het opnieuw.',
+        errorMessage(error, 'Uploaden is niet gelukt. Probeer het opnieuw.'),
       )
     } finally {
       setUploading(false)

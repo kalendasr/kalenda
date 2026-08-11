@@ -47,10 +47,11 @@ function Login() {
         )
       }
 
-      const { organization } = await loadAppContext()
+      const { user, organization } = await loadAppContext()
       window.location.href = postAuthDestination({
         redirectTo: safeRedirectTo,
         hasOrganization: Boolean(organization),
+        isPlatformAdmin: user?.isPlatformAdmin,
       })
     },
   })

@@ -21,6 +21,7 @@ import {
 } from '#/components/ui/card.tsx'
 import { Switch } from '#/components/ui/switch.tsx'
 import { toast } from '#/components/ui/sonner.tsx'
+import { errorMessage } from '#/lib/error-message.ts'
 import { ConfirmDialog } from '#/components/app/confirm-dialog.tsx'
 
 export const Route = createFileRoute('/_app/organization/notifications')({
@@ -111,7 +112,7 @@ function OrganizationNotifications() {
         )
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Er is iets misgegaan.')
+      toast.error(errorMessage(err, 'Er is iets misgegaan.'))
     }
   }
 

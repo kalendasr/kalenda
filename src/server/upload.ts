@@ -2,6 +2,8 @@ import { createServerFn } from '@tanstack/react-start'
 
 import { db } from '#/lib/db.server.ts'
 import { requireUser } from '#/lib/session.server.ts'
+import { requireOwnedOrganization } from '#/lib/org-guard.server.ts'
+import { requireOwnedEvent } from '#/lib/event-guard.server.ts'
 import { getPublicUrl, uploadObject } from '#/lib/storage.server.ts'
 import { validateImageFile } from '#/lib/upload-file.server.ts'
 
@@ -19,7 +21,7 @@ async function storeImage(file: File, key: string): Promise<string> {
   return getPublicUrl(key)
 }
 
-function parseOrganizationUpload(data: unknown) {
+async function parseOrganizationUpload(data: unknown) {
   if (!(data instanceof FormData)) {
     throw new Error('Er is geen bestand ontvangen.')
   }
@@ -27,7 +29,7 @@ function parseOrganizationUpload(data: unknown) {
   if (kind !== 'logo' && kind !== 'coverImage') {
     throw new Error('Onbekend soort afbeelding.')
   }
-  const { file, extension } = validateImageFile(data.get('file'))
+  const { file, extension } = await validateImageFile(data.get('file'))
   return { file, extension, kind }
 }
 
@@ -35,14 +37,7 @@ export const uploadOrganizationImage = createServerFn({ method: 'POST' })
   .validator(parseOrganizationUpload)
   .handler(async ({ data }): Promise<{ url: string }> => {
     const user = await requireUser()
-
-    const organization = await db.organization.findFirst({
-      where: { ownerId: user.id, deletedAt: null },
-    })
-
-    if (!organization) {
-      throw new Error('ORGANIZATION_NOT_FOUND')
-    }
+    const organization = await requireOwnedOrganization(user.id)
 
     const { file, extension, kind } = data
     const key = `organizations/${organization.id}/${kind}-${crypto.randomUUID()}.${extension}`
@@ -56,7 +51,7 @@ export const uploadOrganizationImage = createServerFn({ method: 'POST' })
     return { url }
   })
 
-function parseEventCoverUpload(data: unknown) {
+async function parseEventCoverUpload(data: unknown) {
   if (!(data instanceof FormData)) {
     throw new Error('Er is geen bestand ontvangen.')
   }
@@ -64,7 +59,7 @@ function parseEventCoverUpload(data: unknown) {
   if (typeof eventId !== 'string' || eventId === '') {
     throw new Error('Onbekend evenement.')
   }
-  const { file, extension } = validateImageFile(data.get('file'))
+  const { file, extension } = await validateImageFile(data.get('file'))
   return { file, extension, eventId }
 }
 
@@ -72,19 +67,7 @@ export const uploadEventCover = createServerFn({ method: 'POST' })
   .validator(parseEventCoverUpload)
   .handler(async ({ data }): Promise<{ url: string }> => {
     const user = await requireUser()
-
-    // Eigenaarschap: het event moet bij de organisatie van de gebruiker horen.
-    const event = await db.event.findFirst({
-      where: {
-        id: data.eventId,
-        deletedAt: null,
-        organization: { ownerId: user.id, deletedAt: null },
-      },
-    })
-
-    if (!event) {
-      throw new Error('EVENT_NOT_FOUND')
-    }
+    const event = await requireOwnedEvent(user.id, data.eventId)
 
     const key = `events/${event.id}/cover-${crypto.randomUUID()}.${data.extension}`
     const url = await storeImage(data.file, key)

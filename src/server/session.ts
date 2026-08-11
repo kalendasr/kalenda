@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 
-import { getSession } from '#/lib/session.server.ts'
+import { getActiveUser } from '#/lib/session.server.ts'
 import type { SessionUser } from '#/lib/session.server.ts'
 import { getServerEnv } from '#/lib/env.server.ts'
 
@@ -10,28 +10,7 @@ import { getServerEnv } from '#/lib/env.server.ts'
  * importeren daarom deze module, niet `session.server.ts` rechtstreeks.
  */
 export const fetchSessionUser = createServerFn({ method: 'GET' }).handler(
-  async (): Promise<SessionUser | null> => {
-    const session = await getSession()
-    if (!session?.user) return null
-
-    const { id, name, email, image } = session.user
-    // additionalFields: better-auth geeft ze mee via de server-config, maar
-    // het type van getSession() kent ze niet automatisch — vandaar de cast.
-    const u = session.user as typeof session.user & {
-      firstName: string
-      lastName: string
-      phone?: string | null
-    }
-    return {
-      id,
-      name,
-      email,
-      image: image ?? null,
-      firstName: u.firstName,
-      lastName: u.lastName,
-      phone: u.phone ?? null,
-    }
-  },
+  async (): Promise<SessionUser | null> => getActiveUser(),
 )
 
 /** Of "Doorgaan met Google" getoond mag worden (afhankelijk van env-config). */

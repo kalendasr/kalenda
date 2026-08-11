@@ -37,6 +37,7 @@ export const Route = createFileRoute('/_auth')({
         href: postAuthDestination({
           redirectTo,
           hasOrganization: Boolean(context.organization),
+          isPlatformAdmin: context.user.isPlatformAdmin,
         }),
       })
     }

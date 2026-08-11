@@ -15,8 +15,8 @@ import {
   unpublishEvent,
 } from '#/server/event.ts'
 import { eventPublishReadiness } from '#/lib/event-readiness.ts'
-import { cn } from '#/lib/utils.ts'
 import { toast } from '#/components/ui/sonner.tsx'
+import { errorMessage } from '#/lib/error-message.ts'
 import {
   Card,
   CardContent,
@@ -28,9 +28,10 @@ import { Button } from '#/components/ui/button.tsx'
 import { ConfirmDialog } from '#/components/app/confirm-dialog.tsx'
 
 /**
- * Instellingen-tab: alléén beheer van dit evenement — publicatie, meldingen en
- * levensduur. Alles wat bezoekers zien staat onder Details, verkoopregels onder
- * Tickets.
+ * Instellingen-tab: alléén beheer van dit evenement — publicatie en
+ * levensduur. Alles wat bezoekers zien staat onder Details, verkoopregels
+ * onder Tickets. Meldingsvoorkeuren staan op organisatieniveau (zie
+ * Organisatie → Meldingen).
  */
 export const Route = createFileRoute('/_app/events_/$eventId/settings')({
   component: EventSettings,
@@ -46,12 +47,11 @@ function EventSettings() {
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <p className="text-sm text-pretty text-muted-foreground">
-        Alleen beheer van dit evenement — publicatie, meldingen en levensduur.
-        Alles wat bezoekers zien staat onder <strong>Details</strong>,
-        verkoopregels onder <strong>Tickets</strong>.
+        Alleen beheer van dit evenement — publicatie en levensduur. Alles wat
+        bezoekers zien staat onder <strong>Details</strong>, verkoopregels onder{' '}
+        <strong>Tickets</strong>.
       </p>
       <PublicationCard event={event} />
-      <NotificationsCard />
       <DangerZone event={event} />
     </div>
   )
@@ -73,7 +73,7 @@ function PublicationCard({ event }: { event: EventData }) {
       await router.invalidate()
       toast.success(message)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Er ging iets mis.')
+      toast.error(errorMessage(error, 'Er ging iets mis.'))
     } finally {
       setBusy(false)
     }
@@ -216,76 +216,6 @@ const READINESS_ITEMS: Array<{
   { key: 'payment', label: 'Actieve betaalmethode' },
 ]
 
-/**
- * Per-event meldingen. Front-end-only in deze ronde — persistentie van
- * meldingsvoorkeuren volgt in een vervolgronde.
- */
-function NotificationsCard() {
-  const [toggles, setToggles] = React.useState({
-    newOrder: true,
-    dailyDigest: true,
-    payoutMail: false,
-  })
-
-  const rows: Array<{ key: keyof typeof toggles; title: string; sub: string }> =
-    [
-      {
-        key: 'newOrder',
-        title: 'Mail bij nieuwe order',
-        sub: 'Direct bericht zodra iemand koopt.',
-      },
-      {
-        key: 'dailyDigest',
-        title: 'Dagelijkse samenvatting',
-        sub: 'Elke ochtend één mail met de stand.',
-      },
-      {
-        key: 'payoutMail',
-        title: 'Mail bij uitbetaling',
-        sub: 'Bericht wanneer geld is overgemaakt.',
-      },
-    ]
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Meldingen</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col divide-y">
-        {rows.map((row) => (
-          <div
-            key={row.key}
-            className="flex flex-wrap items-center gap-4 py-3 first:pt-0"
-          >
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-medium">{row.title}</span>
-              <span className="block text-sm text-muted-foreground">
-                {row.sub}
-              </span>
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={toggles[row.key]}
-              onClick={() =>
-                setToggles((t) => ({ ...t, [row.key]: !t[row.key] }))
-              }
-              className={cn(
-                'min-h-8 rounded-full border px-3 text-xs font-semibold transition-colors',
-                toggles[row.key]
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-input bg-background text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {toggles[row.key] ? 'Aan' : 'Uit'}
-            </button>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  )
-}
-
 function DangerZone({ event }: { event: EventData }) {
   const navigate = useNavigate()
   const router = useRouter()
@@ -298,7 +228,7 @@ function DangerZone({ event }: { event: EventData }) {
       await router.invalidate()
       toast.success('Het evenement is gearchiveerd.')
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Er ging iets mis.')
+      toast.error(errorMessage(error, 'Er ging iets mis.'))
     } finally {
       setBusy(false)
     }
@@ -311,9 +241,7 @@ function DangerZone({ event }: { event: EventData }) {
       toast.success('Het concept is verwijderd.')
       await navigate({ to: '/events' })
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Verwijderen mislukt.',
-      )
+      toast.error(errorMessage(error, 'Verwijderen mislukt.'))
     }
   }
 

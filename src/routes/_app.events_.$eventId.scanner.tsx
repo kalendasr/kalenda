@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from '#/components/ui/card.tsx'
 import { toast } from '#/components/ui/sonner.tsx'
+import { errorMessage } from '#/lib/error-message.ts'
 import { ScannerCamera } from '#/components/app/scanner-camera.tsx'
 import { ScannerFeedback } from '#/components/app/scanner-feedback.tsx'
 import { ScannerManual } from '#/components/app/scanner-manual.tsx'
@@ -73,9 +74,7 @@ function EventScanner() {
       // Na ~2,5s weer klaar voor de volgende scan (auto-rearm).
       window.setTimeout(() => setFeedback(null), 2500)
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Scan is niet gelukt.',
-      )
+      toast.error(errorMessage(error, 'Scan is niet gelukt.'))
     } finally {
       setBusy(false)
     }

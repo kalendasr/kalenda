@@ -22,14 +22,16 @@ import {
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu.tsx'
 
-type NavItem = {
+export type NavItem = {
   to: string
   label: string
   icon: React.ComponentType<{ className?: string }>
+  /** Alleen exact matchen (anders is het menu-item ook actief op subroutes). */
+  exact?: boolean
 }
 
 const NAV_ITEMS: Array<NavItem> = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { to: '/events', label: 'Evenementen', icon: Ticket },
   { to: '/organization', label: 'Organisatie', icon: Building2 },
 ]
@@ -61,7 +63,7 @@ function NavLink({
         className: cn('bg-accent font-bold text-accent-foreground'),
         'aria-current': 'page',
       }}
-      activeOptions={{ exact: item.to === '/dashboard' }}
+      activeOptions={{ exact: item.exact ?? false }}
     >
       <Icon className="size-[17px]" />
       {item.label}
@@ -131,9 +133,14 @@ function Wordmark() {
 
 export function AppShell({
   user,
+  navItems = NAV_ITEMS,
+  primaryAction = { to: '/events/new', label: 'Nieuw evenement' },
   children,
 }: {
   user: ShellUser
+  navItems?: Array<NavItem>
+  /** `null` verbergt de knop (bijv. voor workspaces zonder events). */
+  primaryAction?: { to: string; label: string } | null
   children: React.ReactNode
 }) {
   const [mobileOpen, setMobileOpen] = React.useState(false)
@@ -146,21 +153,23 @@ export function AppShell({
           <Wordmark />
         </div>
         <nav className="flex flex-col gap-0.5 px-3 py-2" aria-label="Hoofdmenu">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <NavLink key={item.to} item={item} />
           ))}
         </nav>
         <div className="flex-1" />
-        <div className="px-3 pb-3">
-          <Button
-            asChild
-            className="min-h-11 w-full rounded-xl text-[14.5px] font-bold"
-          >
-            <Link to="/events/new">
-              <Plus /> Nieuw evenement
-            </Link>
-          </Button>
-        </div>
+        {primaryAction ? (
+          <div className="px-3 pb-3">
+            <Button
+              asChild
+              className="min-h-11 w-full rounded-xl text-[14.5px] font-bold"
+            >
+              <Link to={primaryAction.to}>
+                <Plus /> {primaryAction.label}
+              </Link>
+            </Button>
+          </div>
+        ) : null}
         <div className="border-t px-4 py-3.5">
           <UserMenu user={user} />
         </div>
@@ -192,7 +201,7 @@ export function AppShell({
           className="border-b bg-background px-3 py-2 md:hidden"
           aria-label="Hoofdmenu"
         >
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               item={item}

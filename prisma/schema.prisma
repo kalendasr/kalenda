@@ -42,6 +42,14 @@ model User {
   locale    String  @default("nl")
   timezone  String  @default("America/Paramaribo")
 
+  // Platformbeheer (Fase 11). Losstaand van het organisator/klant-onderscheid:
+  // een platformbeheerder heeft geen eigen Organization. `blockedAt` is een
+  // aparte, omkeerbare toestand naast `deletedAt` (echte soft delete) — een
+  // geblokkeerde gebruiker blijft bestaan maar kan niet inloggen totdat een
+  // beheerder de blokkade opheft.
+  isPlatformAdmin Boolean   @default(false)
+  blockedAt       DateTime?
+
   sessions                Session[]
   accounts                Account[]
   organization            Organization?

@@ -8,6 +8,7 @@ import { organizationGeneralSchema } from '#/lib/validation/organization.ts'
 import { useZodForm } from '#/lib/use-zod-form.ts'
 import { cn } from '#/lib/utils.ts'
 import { toast } from '#/components/ui/sonner.tsx'
+import { errorMessage } from '#/lib/error-message.ts'
 import {
   Card,
   CardContent,
@@ -315,9 +316,7 @@ function ImageUpload({
       toast.success(`${title} is bijgewerkt.`)
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : 'Uploaden is niet gelukt. Probeer het opnieuw.',
+        errorMessage(error, 'Uploaden is niet gelukt. Probeer het opnieuw.'),
       )
     } finally {
       setUploading(false)

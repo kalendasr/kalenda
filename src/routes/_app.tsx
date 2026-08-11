@@ -32,7 +32,11 @@ export const Route = createFileRoute('/_app')({
     }
 
     if (!organization) {
-      throw redirect({ to: '/organisator/starten' })
+      // Een platformbeheerder heeft nooit een eigen organisatie en hoort
+      // niet in het organisatorstraject terecht te komen.
+      throw redirect({
+        to: user.isPlatformAdmin ? '/admin' : '/organisator/starten',
+      })
     }
 
     return { user, organization }

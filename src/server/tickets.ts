@@ -51,16 +51,21 @@ export const resendOrderTickets = createServerFn({ method: 'POST' })
  */
 async function registerWhatsAppDelivery(orderId: string): Promise<void> {
   const now = new Date()
-  const result = await db.ticket.updateMany({
-    where: { orderItem: { orderId } },
-    data: { status: 'Sent', sentAt: now, sentVia: 'WhatsApp' },
-  })
-  if (result.count === 0) {
-    throw new Error('Voor deze bestelling zijn geen tickets beschikbaar.')
-  }
-  await db.order.updateMany({
-    where: { id: orderId, orderStatus: 'Paid' },
-    data: { orderStatus: 'Completed' },
+  // Zelfde transactiepatroon als de e-mailvariant (tickets.server.ts): beide
+  // updates horen atomisch te zijn, anders kan een order bij een fout ertussen
+  // op `Paid` blijven staan terwijl de tickets al op `Sent` staan.
+  await db.$transaction(async (tx) => {
+    const result = await tx.ticket.updateMany({
+      where: { orderItem: { orderId } },
+      data: { status: 'Sent', sentAt: now, sentVia: 'WhatsApp' },
+    })
+    if (result.count === 0) {
+      throw new Error('Voor deze bestelling zijn geen tickets beschikbaar.')
+    }
+    await tx.order.updateMany({
+      where: { id: orderId, orderStatus: 'Paid' },
+      data: { orderStatus: 'Completed' },
+    })
   })
 }
 

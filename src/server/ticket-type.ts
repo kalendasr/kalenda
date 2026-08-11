@@ -6,6 +6,7 @@ import { requireUser } from '#/lib/session.server.ts'
 import { requireOwnedEvent } from '#/lib/event-guard.server.ts'
 import { surinameLocalToDate } from '#/lib/datetime.ts'
 import { ticketTypeSchema } from '#/lib/validation/ticket-type.ts'
+import { reservedByTicketType } from '#/server/reservations.server.ts'
 
 /**
  * Server functions voor tickettypes (BR-300..BR-304). Owner-geguard via
@@ -68,6 +69,17 @@ export const updateTicketType = createServerFn({ method: 'POST' })
     const user = await requireUser()
     await requireOwnedEvent(user.id, data.eventId)
 
+    // BR-304: de capaciteit mag niet onder wat al verkocht/gereserveerd is
+    // zakken — anders verdwijnt het overschot stilzwijgend (availableQuantity
+    // klemt op 0) zonder dat iemand het ziet.
+    const reserved = await reservedByTicketType([data.ticketTypeId])
+    const reservedCount = reserved[data.ticketTypeId] ?? 0
+    if (data.quantity < reservedCount) {
+      throw new Error(
+        `Er zijn al ${reservedCount} tickets verkocht of gereserveerd — de capaciteit kan niet lager dan dat.`,
+      )
+    }
+
     return db.ticketType.update({
       where: { id: data.ticketTypeId, eventId: data.eventId },
       data: toRecord(data),
@@ -98,6 +110,13 @@ export const deleteTicketType = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser()
     await requireOwnedEvent(user.id, data.eventId)
+
+    const reserved = await reservedByTicketType([data.ticketTypeId])
+    if ((reserved[data.ticketTypeId] ?? 0) > 0) {
+      throw new Error(
+        'Dit tickettype heeft al verkochte of gereserveerde tickets en kan niet verwijderd worden.',
+      )
+    }
 
     await db.ticketType.update({
       where: { id: data.ticketTypeId, eventId: data.eventId },

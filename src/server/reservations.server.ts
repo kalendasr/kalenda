@@ -26,10 +26,16 @@ export async function reservedByTicketType(
       ticketTypeId: { in: ticketTypeIds },
       order: {
         deletedAt: null,
+        // Moet exact overeenkomen met `RESERVING_STATUSES`/`EXPIRABLE_STATUSES`
+        // in order-status.ts: alleen `PendingPayment` verloopt vanzelf. Zodra
+        // een klant bewijs heeft ingediend (`AwaitingReview`) houdt de order
+        // capaciteit vast totdat de organisator hem goed- of afkeurt, ook na
+        // 48 uur — anders worden diezelfde plaatsen dubbel verkocht terwijl
+        // de order nog in behandeling is.
         OR: [
-          { orderStatus: { in: ['Paid', 'Completed'] } },
+          { orderStatus: { in: ['AwaitingReview', 'Paid', 'Completed'] } },
           {
-            orderStatus: { in: ['PendingPayment', 'AwaitingReview'] },
+            orderStatus: 'PendingPayment',
             expiresAt: { gt: now },
           },
         ],

@@ -13,7 +13,11 @@ import { eventAvailability } from '#/lib/ticket-sales.ts'
  * teruggegeven.
  */
 
-const publishedWhere = { status: 'Published', deletedAt: null } as const
+const publishedWhere = {
+  status: 'Published',
+  deletedAt: null,
+  organization: { deletedAt: null },
+} as const
 
 /**
  * Lijst van gepubliceerde events voor de publieke storefront (homepage én

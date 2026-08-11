@@ -1,6 +1,7 @@
 import { getRequest } from '@tanstack/react-start/server'
 
 import { auth } from '#/lib/auth.server.ts'
+import { db } from '#/lib/db.server.ts'
 
 /**
  * Sessiehulpen voor de serverkant.
@@ -25,19 +26,29 @@ export type SessionUser = {
   firstName: string
   lastName: string
   phone: string | null
+  isPlatformAdmin: boolean
 }
 
 /**
- * Vereist een ingelogde gebruiker. Gooit een fout wanneer er geen sessie is,
- * zodat aanroepers nooit per ongeluk zonder gebruiker verder werken.
- * (Security: gebruikers zien uitsluitend hun eigen gegevens — BR §13.)
+ * Sessiegebruiker inclusief blokkade-check, of `null` zonder geldige sessie.
+ * Eén bron van waarheid voor `requireUser`, `fetchSessionUser` en
+ * `loadAppContext`, die hiervoor eerst ieder hun eigen sessiemapping hadden.
+ *
+ * Better Auth kent `isPlatformAdmin`/`blockedAt` niet (geen additionalFields,
+ * bewust — dit zijn geen door de gebruiker bewerkbare velden), dus die worden
+ * hier los uit de database gehaald. Een geblokkeerde gebruiker wordt
+ * behandeld als niet ingelogd: geen foutmelding die een sessie lekt, gewoon
+ * `null` zodat bestaande route-guards vanzelf naar het inlogscherm sturen.
  */
-export async function requireUser(): Promise<SessionUser> {
+export async function getActiveUser(): Promise<SessionUser | null> {
   const session = await getSession()
+  if (!session?.user) return null
 
-  if (!session?.user) {
-    throw new Error('UNAUTHENTICATED')
-  }
+  const dbUser = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { blockedAt: true, deletedAt: true, isPlatformAdmin: true },
+  })
+  if (!dbUser || dbUser.blockedAt || dbUser.deletedAt) return null
 
   const { id, name, email, image } = session.user
   const u = session.user as typeof session.user & {
@@ -53,5 +64,20 @@ export async function requireUser(): Promise<SessionUser> {
     firstName: u.firstName,
     lastName: u.lastName,
     phone: u.phone ?? null,
+    isPlatformAdmin: dbUser.isPlatformAdmin,
   }
+}
+
+/**
+ * Vereist een ingelogde gebruiker. Gooit een fout wanneer er geen sessie is
+ * (of de gebruiker geblokkeerd is), zodat aanroepers nooit per ongeluk zonder
+ * gebruiker verder werken. (Security: gebruikers zien uitsluitend hun eigen
+ * gegevens — BR §13.)
+ */
+export async function requireUser(): Promise<SessionUser> {
+  const user = await getActiveUser()
+  if (!user) {
+    throw new Error('UNAUTHENTICATED')
+  }
+  return user
 }
