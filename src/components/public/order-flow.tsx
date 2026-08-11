@@ -1255,13 +1255,15 @@ function PaidScreen({ order }: { order: OrderDetail }) {
             <span aria-hidden="true">🎫</span>
           </span>
           <h1 className="mt-3.5 text-[20px] font-extrabold tracking-tight">
-            {allTickets.length === 1
-              ? 'Je ticket is onderweg'
-              : 'Je tickets zijn onderweg'}
+            {allTickets.length === 0
+              ? 'Je tickets zijn onderweg'
+              : `${allTickets.length === 1 ? 'Hier is je ticket' : 'Hier zijn je tickets'} voor ${order.event.title}`}
           </h1>
-          <p className="mt-1.5 text-[14px] text-white/70">
-            De organisator heeft je betaling bevestigd.
-          </p>
+          {allTickets.length === 0 ? (
+            <p className="mt-1.5 text-[14px] text-white/70">
+              De organisator heeft je betaling bevestigd.
+            </p>
+          ) : null}
         </div>
 
         <div className="px-5 py-6">
@@ -1292,9 +1294,19 @@ function PaidScreen({ order }: { order: OrderDetail }) {
                     <div className="text-[14.5px] font-bold">
                       {ticket.ticketTypeName}
                     </div>
+                    {/* Zelfde korte code als op de ticketpagina en in het
+                        orderdetail van de organisator — anders leest de klant
+                        aan de balie een andere code voor dan de scanner kent. */}
                     <div className="mt-1 font-mono text-[12px] text-muted-foreground">
-                      {ticket.ticketNumber}
+                      {ticket.ticketNumber.slice(0, 8).toUpperCase()}
                     </div>
+                    <Link
+                      to="/ticket/$ticketNumber"
+                      params={{ ticketNumber: ticket.ticketNumber }}
+                      className="mt-2 inline-block text-[12.5px] font-semibold underline-offset-2 hover:underline"
+                    >
+                      Open dit ticket
+                    </Link>
                   </div>
                 </div>
               ))}

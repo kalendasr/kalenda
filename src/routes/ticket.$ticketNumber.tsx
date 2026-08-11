@@ -111,10 +111,13 @@ function TicketPage() {
           </dl>
         </div>
 
+        {/* Geen "typ de code hierboven in": handmatige check-in matcht het
+            volledige ticketnummer, niet deze korte weergave. Aan de deur zoekt
+            de organisator op deze code of op je naam. */}
         <p className="mt-4 text-center text-[12.5px] text-muted-foreground">
-          Laat deze QR-code scannen bij de ingang. Lukt scannen niet, dan kan de
-          code hierboven handmatig ingevoerd worden. Tip: maak een screenshot,
-          dan werkt je ticket ook zonder internet.
+          Laat deze QR-code scannen bij de ingang. Lukt scannen niet, noem dan
+          de code hierboven of je naam — de organisator zoekt je ermee op. Tip:
+          maak een screenshot, dan werkt je ticket ook zonder internet.
         </p>
       </main>
     </div>
