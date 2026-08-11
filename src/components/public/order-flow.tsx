@@ -246,40 +246,40 @@ function NewOrderForm({
                       ? 'De organisator stuurt je een betaalverzoek.'
                       : 'Maak het bedrag over en upload je betaalbewijs.'
                   }
-                />
-              ))}
-
-              {form.values.paymentMethod === 'WhatsApp' &&
-              data.payment.whatsappApps.length > 0 ? (
-                <fieldset className="min-w-0 rounded-[14px] bg-muted px-3.5 py-3">
-                  <legend className="text-[12.5px] font-semibold text-muted-foreground">
-                    Met welke app betaal je?
-                  </legend>
-                  <div className="mt-2 flex gap-2">
-                    {data.payment.whatsappApps.map((app) => (
-                      <button
-                        key={app}
-                        type="button"
-                        aria-pressed={form.values.paymentApp === app}
-                        onClick={() => form.setValue('paymentApp', app)}
-                        className={cn(
-                          'h-10 flex-1 cursor-pointer rounded-full border text-[14px] font-bold transition-colors',
-                          form.values.paymentApp === app
-                            ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-input bg-card hover:bg-accent',
-                        )}
-                      >
-                        {app}
-                      </button>
-                    ))}
-                  </div>
-                  {form.errorFor('paymentApp') ? (
-                    <p className="mt-2 text-[13px] font-medium text-destructive">
-                      {form.errorFor('paymentApp')}
-                    </p>
+                >
+                  {method === 'WhatsApp' &&
+                  data.payment.whatsappApps.length > 0 ? (
+                    <fieldset className="min-w-0">
+                      <legend className="text-[12.5px] font-semibold text-muted-foreground">
+                        Met welke app betaal je?
+                      </legend>
+                      <div className="mt-2 flex gap-2">
+                        {data.payment.whatsappApps.map((app) => (
+                          <button
+                            key={app}
+                            type="button"
+                            aria-pressed={form.values.paymentApp === app}
+                            onClick={() => form.setValue('paymentApp', app)}
+                            className={cn(
+                              'h-10 flex-1 cursor-pointer rounded-full border text-[14px] font-bold transition-colors',
+                              form.values.paymentApp === app
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-input bg-card hover:bg-accent',
+                            )}
+                          >
+                            {app}
+                          </button>
+                        ))}
+                      </div>
+                      {form.errorFor('paymentApp') ? (
+                        <p className="mt-2 text-[13px] font-medium text-destructive">
+                          {form.errorFor('paymentApp')}
+                        </p>
+                      ) : null}
+                    </fieldset>
                   ) : null}
-                </fieldset>
-              ) : null}
+                </OptionRow>
+              ))}
 
               <div
                 aria-disabled="true"
@@ -350,6 +350,11 @@ function NewOrderForm({
   )
 }
 
+/**
+ * Een keuzerij met een optioneel vervolgblok (`children`) dat alleen zichtbaar
+ * is zolang de rij gekozen is. Dat blok staat bewust buiten het `<label>`: een
+ * knop binnen een label zou bij elke klik ook de radio aanvinken.
+ */
 function OptionRow({
   name,
   checked,
@@ -357,6 +362,7 @@ function OptionRow({
   icoon,
   title,
   description,
+  children,
 }: {
   name: string
   checked: boolean
@@ -364,41 +370,49 @@ function OptionRow({
   icoon: React.ReactNode
   title: string
   description?: string
+  children?: React.ReactNode
 }) {
+  const heeftVervolg = checked && children
+
   return (
-    <label
+    <div
       className={cn(
-        'flex cursor-pointer items-start gap-3 rounded-[14px] border p-3.5 transition-colors',
+        'rounded-[14px] border transition-colors',
         checked ? 'border-primary bg-primary/5' : 'hover:bg-accent',
       )}
     >
-      <input
-        type="radio"
-        name={name}
-        checked={checked}
-        onChange={onSelect}
-        className="mt-1 size-4 accent-primary"
-      />
-      <span
-        className={cn(
-          'mt-0.5 shrink-0',
-          checked ? 'text-primary' : 'text-muted-foreground',
-        )}
-        aria-hidden="true"
-      >
-        {icoon}
-      </span>
-      <span className="min-w-0">
-        <span className="block text-[14.5px] font-bold tracking-tight">
-          {title}
+      <label className="flex cursor-pointer items-start gap-3 p-3.5">
+        <input
+          type="radio"
+          name={name}
+          checked={checked}
+          onChange={onSelect}
+          className="mt-1 size-4 accent-primary"
+        />
+        <span
+          className={cn(
+            'mt-0.5 shrink-0',
+            checked ? 'text-primary' : 'text-muted-foreground',
+          )}
+          aria-hidden="true"
+        >
+          {icoon}
         </span>
-        {description ? (
-          <span className="mt-0.5 block text-[13px] text-muted-foreground">
-            {description}
+        <span className="min-w-0">
+          <span className="block text-[14.5px] font-bold tracking-tight">
+            {title}
           </span>
-        ) : null}
-      </span>
-    </label>
+          {description ? (
+            <span className="mt-0.5 block text-[13px] text-muted-foreground">
+              {description}
+            </span>
+          ) : null}
+        </span>
+      </label>
+      {heeftVervolg ? (
+        <div className="border-t border-primary/20 px-3.5 py-3">{children}</div>
+      ) : null}
+    </div>
   )
 }
 
