@@ -15,6 +15,7 @@ import {
 } from '#/lib/validation/event.ts'
 import { notifyEventChanged } from '#/server/event-notifications.server.ts'
 import { eventPublishReadiness } from '#/lib/event-readiness.ts'
+import { REALISED_ORDER_STATUSES } from '#/lib/order-status.ts'
 import {
   assertLifecycle,
   canDeleteEvent,
@@ -98,7 +99,7 @@ export const listMyEventsSummary = createServerFn({ method: 'GET' }).handler(
               where: {
                 order: {
                   deletedAt: null,
-                  orderStatus: { in: ['Paid', 'Completed'] },
+                  orderStatus: { in: [...REALISED_ORDER_STATUSES] },
                 },
               },
               select: { quantity: true, unitPriceCents: true },

@@ -4,6 +4,7 @@ import { db } from '#/lib/db.server.ts'
 import { getCronEnv } from '#/lib/env.server.ts'
 import { formatTimeNl, isSurinameToday } from '#/lib/datetime.ts'
 import { orderReminderKey } from '#/lib/notifications/claim-key.ts'
+import { REALISED_ORDER_STATUSES } from '#/lib/order-status.ts'
 import { claimNotification, notify } from '#/server/notifications.server.ts'
 import { timingSafeEqualString } from '#/lib/timing-safe-equal.ts'
 
@@ -48,7 +49,7 @@ export const Route = createFileRoute('/api/cron/event-reminders')({
             orders: {
               where: {
                 deletedAt: null,
-                orderStatus: { in: ['Paid', 'Completed'] },
+                orderStatus: { in: [...REALISED_ORDER_STATUSES] },
               },
               select: { id: true, orderNumber: true, customerId: true },
             },

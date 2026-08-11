@@ -217,7 +217,14 @@ const listTicketsSchema = z.object({
   query: z.string().trim().optional(),
 })
 
-/** Doorzoekbare ticketlijst voor handmatige check-in. */
+/**
+ * Doorzoekbare ticketlijst aan de deur (BR-800-reeks, ROADMAP "Ticket zoeken").
+ *
+ * Voor de bezoeker die geen QR kan tonen én zijn ticketnummer niet weet — dan
+ * blijft alleen zijn naam over. Zoekt daarom op voornaam, achternaam, de twee
+ * samen ("Rajesh Panday"), het e-mailadres, het bestelnummer en het
+ * ticketnummer: aan de deur weet je vooraf niet wat de bezoeker paraat heeft.
+ */
 export const listEventTickets = createServerFn({ method: 'GET' })
   .validator(listTicketsSchema)
   .handler(async ({ data }) => {
@@ -225,34 +232,69 @@ export const listEventTickets = createServerFn({ method: 'GET' })
     await requireOwnedEvent(user.id, data.eventId)
 
     const query = data.query?.trim()
+    const insensitive = { mode: 'insensitive' as const }
+    const inThisEvent = { eventId: data.eventId, deletedAt: null }
+
     const where = query
       ? {
-          orderItem: {
-            order: {
-              eventId: data.eventId,
-              deletedAt: null,
-              OR: [
-                {
-                  customer: {
-                    firstName: {
-                      contains: query,
-                      mode: 'insensitive' as const,
+          OR: [
+            { ticketNumber: { contains: query, ...insensitive } },
+            {
+              orderItem: {
+                order: {
+                  ...inThisEvent,
+                  OR: [
+                    { orderNumber: { contains: query, ...insensitive } },
+                    {
+                      customer: {
+                        OR: [
+                          { firstName: { contains: query, ...insensitive } },
+                          { lastName: { contains: query, ...insensitive } },
+                          { email: { contains: query, ...insensitive } },
+                        ],
+                      },
                     },
-                  },
+                    // "Rajesh Panday" valt tussen de losse velden door; de
+                    // twee namen los matchen dekt de volledige naam wel.
+                    ...(query.includes(' ')
+                      ? [
+                          {
+                            customer: {
+                              AND: query
+                                .split(/\s+/)
+                                .filter(Boolean)
+                                .map((deel) => ({
+                                  OR: [
+                                    {
+                                      firstName: {
+                                        contains: deel,
+                                        ...insensitive,
+                                      },
+                                    },
+                                    {
+                                      lastName: {
+                                        contains: deel,
+                                        ...insensitive,
+                                      },
+                                    },
+                                  ],
+                                })),
+                            },
+                          },
+                        ]
+                      : []),
+                  ],
                 },
-                {
-                  customer: {
-                    lastName: { contains: query, mode: 'insensitive' as const },
-                  },
-                },
-              ],
+              },
             },
-          },
+          ],
+          // Het ticketnummer-alternatief hierboven kent geen eventfilter, dus
+          // die grens hier alsnog afdwingen: een ticket van een ánder evenement
+          // mag nooit in deze lijst opduiken.
+          orderItem: { order: inThisEvent },
         }
       : {
-          orderItem: {
-            order: { eventId: data.eventId, deletedAt: null },
-          },
+          orderItem: { order: inThisEvent },
         }
 
     return db.ticket.findMany({

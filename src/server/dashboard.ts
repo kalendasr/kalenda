@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { db } from '#/lib/db.server.ts'
 import { requireUser } from '#/lib/session.server.ts'
 import { requireOwnedOrganization } from '#/lib/org-guard.server.ts'
+import { REALISED_ORDER_STATUSES } from '#/lib/order-status.ts'
 
 /**
  * Server functions voor het organisatiedashboard (Fase 8).
@@ -68,7 +69,10 @@ export const getDashboardStats = createServerFn({ method: 'GET' }).handler(
           where: {
             eventId: { in: eventIds },
             deletedAt: null,
-            orderStatus: { in: ['Paid', 'Completed'] },
+            // Niet de statussen hier herhalen: dit is hetzelfde omzetcijfer
+            // als in de rapportages en het adminworkspace, en die moeten
+            // samen bewegen (zie REALISED_ORDER_STATUSES).
+            orderStatus: { in: [...REALISED_ORDER_STATUSES] },
           },
           _sum: { totalCents: true },
         }),

@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { createFileRoute, getRouteApi, useRouter } from '@tanstack/react-router'
-import { CameraOff, History, Link2, ScanLine, UserPlus } from 'lucide-react'
+import {
+  CameraOff,
+  History,
+  Link2,
+  ScanLine,
+  Search,
+  UserPlus,
+} from 'lucide-react'
 
 import { listEventCheckIns, resolveScan } from '#/server/scanner.ts'
 import { formatDateTimeNl } from '#/lib/datetime.ts'
@@ -19,6 +26,7 @@ import { errorMessage } from '#/lib/error-message.ts'
 import { ScannerCamera } from '#/components/app/scanner-camera.tsx'
 import { ScannerFeedback } from '#/components/app/scanner-feedback.tsx'
 import { ScannerManual } from '#/components/app/scanner-manual.tsx'
+import { ScannerSearch } from '#/components/app/scanner-search.tsx'
 import {
   RouteErrorState,
   RoutePendingState,
@@ -180,6 +188,17 @@ function EventScanner() {
           ) : null}
         </div>
       )}
+
+      {/* Bezoeker zoeken — voor wie geen QR én geen ticketnummer heeft. */}
+      {scannerOpen ? (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Search className="size-4 text-muted-foreground" aria-hidden />
+            <h3 className="text-sm font-medium">Bezoeker zoeken</h3>
+          </div>
+          <ScannerSearch eventId={event.id} onScan={handleScan} />
+        </section>
+      ) : null}
 
       {/* Scangeschiedenis */}
       <section className="flex flex-col gap-3">
