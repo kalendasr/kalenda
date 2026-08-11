@@ -5,6 +5,10 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import appCss from '#/styles.css?url'
 import { loadAppContext } from '#/server/app-context.ts'
 import { Toaster } from '#/components/ui/sonner.tsx'
+import {
+  AppErrorPage,
+  NotFoundPage,
+} from '#/components/app/full-page-states.tsx'
 
 export const Route = createRootRoute({
   beforeLoad: async () => {
@@ -37,6 +41,13 @@ export const Route = createRootRoute({
     ],
   }),
   shellComponent: RootDocument,
+  // Vangnet voor onbekende URL's en voor fouten die geen enkele route zelf
+  // afvangt; zonder deze twee valt de gebruiker terug op het kale scherm van
+  // de router.
+  notFoundComponent: NotFoundPage,
+  errorComponent: ({ error, reset }) => (
+    <AppErrorPage error={error} reset={reset} />
+  ),
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {

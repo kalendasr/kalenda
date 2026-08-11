@@ -35,6 +35,10 @@ import { PublicHeader } from '#/components/public/public-header.tsx'
 import { PublicFooter } from '#/components/public/public-footer.tsx'
 import { EventCard } from '#/components/public/event-card.tsx'
 import { categoryColor } from '#/components/public/category-colors.ts'
+import {
+  AppErrorPage,
+  StorefrontPendingState,
+} from '#/components/app/full-page-states.tsx'
 
 export const Route = createFileRoute('/')({
   loader: async () => ({
@@ -57,6 +61,10 @@ export const Route = createFileRoute('/')({
     ],
   }),
   component: Home,
+  pendingComponent: () => <StorefrontPendingState />,
+  errorComponent: ({ error, reset }) => (
+    <AppErrorPage error={error} reset={reset} />
+  ),
 })
 
 const STEPS = [

@@ -12,6 +12,10 @@ import { Badge } from '#/components/ui/badge.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import { PublicHeader } from '#/components/public/public-header.tsx'
 import { PublicFooter } from '#/components/public/public-footer.tsx'
+import {
+  AppErrorPage,
+  StorefrontPendingState,
+} from '#/components/app/full-page-states.tsx'
 
 export const Route = createFileRoute('/mijn-tickets')({
   head: () => ({
@@ -27,6 +31,10 @@ export const Route = createFileRoute('/mijn-tickets')({
   },
   loader: () => listMyOrders(),
   component: MijnTickets,
+  pendingComponent: () => <StorefrontPendingState cards={2} />,
+  errorComponent: ({ error, reset }) => (
+    <AppErrorPage error={error} reset={reset} />
+  ),
 })
 
 function MijnTickets() {

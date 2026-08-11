@@ -13,9 +13,9 @@ import { canDeleteEvent, canUnpublishEvent } from '#/lib/event-lifecycle.ts'
 import { errorMessage } from '#/lib/error-message.ts'
 import { AdminPageHeader } from '#/components/app/admin/page-header.tsx'
 import {
-  AdminErrorState,
-  AdminPendingState,
-} from '#/components/app/admin/route-states.tsx'
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 import { ConfirmDialog } from '#/components/app/confirm-dialog.tsx'
 import { EventStatusBadge } from '#/components/app/event-status-badge.tsx'
 import { StatCard } from '#/components/app/stat-card.tsx'
@@ -41,9 +41,9 @@ export const Route = createFileRoute('/_admin/admin/events/$eventId')({
   loader: async ({ params }) =>
     getEventDetail({ data: { eventId: params.eventId } }),
   component: AdminEventDetail,
-  pendingComponent: () => <AdminPendingState rows={4} />,
+  pendingComponent: () => <RoutePendingState rows={4} />,
   errorComponent: ({ error, reset }) => (
-    <AdminErrorState error={error} reset={reset} />
+    <RouteErrorState error={error} reset={reset} />
   ),
 })
 

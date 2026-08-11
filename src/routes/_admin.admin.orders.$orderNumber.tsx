@@ -24,9 +24,9 @@ import {
 } from '#/lib/ticket-status.ts'
 import { AdminPageHeader } from '#/components/app/admin/page-header.tsx'
 import {
-  AdminErrorState,
-  AdminPendingState,
-} from '#/components/app/admin/route-states.tsx'
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 import { Badge } from '#/components/ui/badge.tsx'
 import {
   Card,
@@ -39,9 +39,9 @@ export const Route = createFileRoute('/_admin/admin/orders/$orderNumber')({
   loader: async ({ params }) =>
     getOrderDetail({ data: { orderNumber: params.orderNumber } }),
   component: AdminOrderDetail,
-  pendingComponent: () => <AdminPendingState rows={4} />,
+  pendingComponent: () => <RoutePendingState rows={4} />,
   errorComponent: ({ error, reset }) => (
-    <AdminErrorState error={error} reset={reset} />
+    <RouteErrorState error={error} reset={reset} />
   ),
 })
 

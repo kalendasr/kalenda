@@ -7,9 +7,9 @@ import { formatDateNl } from '#/lib/datetime.ts'
 import { AdminPageHeader } from '#/components/app/admin/page-header.tsx'
 import { FilterPills } from '#/components/app/admin/list-toolbar.tsx'
 import {
-  AdminErrorState,
-  AdminPendingState,
-} from '#/components/app/admin/route-states.tsx'
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 import { StatCard } from '#/components/app/stat-card.tsx'
 import {
   Card,
@@ -33,9 +33,9 @@ export const Route = createFileRoute('/_admin/admin/reports')({
     report: await getPlatformReport({ data: deps }),
   }),
   component: AdminReports,
-  pendingComponent: () => <AdminPendingState rows={5} />,
+  pendingComponent: () => <RoutePendingState rows={5} />,
   errorComponent: ({ error, reset }) => (
-    <AdminErrorState error={error} reset={reset} />
+    <RouteErrorState error={error} reset={reset} />
   ),
 })
 

@@ -13,9 +13,9 @@ import { USER_ROLE_LABELS, userRoleBadgeVariant } from '#/lib/admin-labels.ts'
 import { StatCard } from '#/components/app/stat-card.tsx'
 import { AdminPageHeader } from '#/components/app/admin/page-header.tsx'
 import {
-  AdminErrorState,
-  AdminPendingState,
-} from '#/components/app/admin/route-states.tsx'
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 import { Badge } from '#/components/ui/badge.tsx'
 import { EventStatusBadge } from '#/components/app/event-status-badge.tsx'
 import {
@@ -34,9 +34,9 @@ export const Route = createFileRoute('/_admin/admin/')({
     return { stats, activity }
   },
   component: AdminOverview,
-  pendingComponent: () => <AdminPendingState rows={4} />,
+  pendingComponent: () => <RoutePendingState rows={4} />,
   errorComponent: ({ error, reset }) => (
-    <AdminErrorState error={error} reset={reset} />
+    <RouteErrorState error={error} reset={reset} />
   ),
 })
 

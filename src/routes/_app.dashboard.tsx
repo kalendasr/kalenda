@@ -27,6 +27,10 @@ import { Badge } from '#/components/ui/badge.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import { EventStatusBadge } from '#/components/app/event-status-badge.tsx'
 import { StatCard } from '#/components/app/stat-card.tsx'
+import {
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 
 export const Route = createFileRoute('/_app/dashboard')({
   loader: async () => {
@@ -39,6 +43,10 @@ export const Route = createFileRoute('/_app/dashboard')({
     return { stats, recentOrders, events, reviewOrder }
   },
   component: Dashboard,
+  pendingComponent: () => <RoutePendingState rows={4} />,
+  errorComponent: ({ error, reset }) => (
+    <RouteErrorState error={error} reset={reset} />
+  ),
 })
 
 type RecentOrder = Awaited<ReturnType<typeof listRecentOrders>>[number]

@@ -22,9 +22,9 @@ import { USER_ROLE_LABELS, userRoleBadgeVariant } from '#/lib/admin-labels.ts'
 import { errorMessage } from '#/lib/error-message.ts'
 import { AdminPageHeader } from '#/components/app/admin/page-header.tsx'
 import {
-  AdminErrorState,
-  AdminPendingState,
-} from '#/components/app/admin/route-states.tsx'
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 import { ConfirmDialog } from '#/components/app/confirm-dialog.tsx'
 import { Badge } from '#/components/ui/badge.tsx'
 import { Button } from '#/components/ui/button.tsx'
@@ -40,9 +40,9 @@ export const Route = createFileRoute('/_admin/admin/users/$userId')({
   loader: async ({ params }) =>
     getUserDetail({ data: { userId: params.userId } }),
   component: AdminUserDetail,
-  pendingComponent: () => <AdminPendingState rows={4} />,
+  pendingComponent: () => <RoutePendingState rows={4} />,
   errorComponent: ({ error, reset }) => (
-    <AdminErrorState error={error} reset={reset} />
+    <RouteErrorState error={error} reset={reset} />
   ),
 })
 

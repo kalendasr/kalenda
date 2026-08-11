@@ -6,20 +6,24 @@ import { Skeleton } from '#/components/ui/skeleton.tsx'
 import { errorMessage } from '#/lib/error-message.ts'
 
 /**
- * Laad- en foutschermen voor de beheerdersroutes.
+ * Laad- en foutschermen voor routes met een `loader`.
  *
- * Elke adminroute hangt aan een `loader`; zonder deze twee ziet een beheerder
- * bij een trage of mislukte query een leeg scherm zonder uitleg. De foutstaat
- * vertelt wat er misging en biedt één herstelactie — nooit alleen een
- * stacktrace.
+ * Zonder deze twee ziet een gebruiker bij een trage of mislukte query een leeg
+ * scherm zonder uitleg. De foutstaat vertelt wat er misging en biedt één
+ * herstelactie — nooit alleen een stacktrace.
+ *
+ * Gedeeld door het beheerders- en het organisatorwerkgebied: hetzelfde
+ * probleem hoort er overal hetzelfde uit te zien (CLAUDE.md §3).
  */
 
-export function AdminErrorState({
+export function RouteErrorState({
   error,
   reset,
+  title = 'Dit scherm kon niet laden',
 }: {
   error: Error
   reset?: () => void
+  title?: string
 }) {
   return (
     <Card className="items-center gap-4 px-6 py-14 text-center">
@@ -27,7 +31,7 @@ export function AdminErrorState({
         <AlertTriangle className="size-6" />
       </span>
       <div className="max-w-md">
-        <h2 className="text-lg font-semibold">Dit scherm kon niet laden</h2>
+        <h2 className="text-lg font-semibold">{title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {errorMessage(error, 'De gegevens konden niet opgehaald worden.')}
         </p>
@@ -41,7 +45,7 @@ export function AdminErrorState({
   )
 }
 
-export function AdminPendingState({ rows = 8 }: { rows?: number }) {
+export function RoutePendingState({ rows = 8 }: { rows?: number }) {
   return (
     <div className="flex flex-col gap-6" aria-busy="true" aria-live="polite">
       <span className="sr-only">Gegevens worden geladen…</span>

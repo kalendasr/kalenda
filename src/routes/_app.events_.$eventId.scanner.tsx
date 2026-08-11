@@ -19,12 +19,20 @@ import { errorMessage } from '#/lib/error-message.ts'
 import { ScannerCamera } from '#/components/app/scanner-camera.tsx'
 import { ScannerFeedback } from '#/components/app/scanner-feedback.tsx'
 import { ScannerManual } from '#/components/app/scanner-manual.tsx'
+import {
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 
 export const Route = createFileRoute('/_app/events_/$eventId/scanner')({
   loader: async ({ params }) => ({
     history: await listEventCheckIns({ data: { eventId: params.eventId } }),
   }),
   component: EventScanner,
+  pendingComponent: () => <RoutePendingState rows={3} />,
+  errorComponent: ({ error, reset }) => (
+    <RouteErrorState error={error} reset={reset} />
+  ),
 })
 
 type HistoryRow = Awaited<ReturnType<typeof listEventCheckIns>>[number]

@@ -23,6 +23,10 @@ import { Switch } from '#/components/ui/switch.tsx'
 import { toast } from '#/components/ui/sonner.tsx'
 import { errorMessage } from '#/lib/error-message.ts'
 import { ConfirmDialog } from '#/components/app/confirm-dialog.tsx'
+import {
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 
 export const Route = createFileRoute('/_app/organization/notifications')({
   loader: async () => ({
@@ -30,6 +34,10 @@ export const Route = createFileRoute('/_app/organization/notifications')({
     preferences: await getMyNotificationPreferences(),
   }),
   component: OrganizationNotifications,
+  pendingComponent: () => <RoutePendingState rows={5} />,
+  errorComponent: ({ error, reset }) => (
+    <RouteErrorState error={error} reset={reset} />
+  ),
 })
 
 /** Relatiefformat voor lastSeenAt. Eenvoudig en taalspecifiek. */

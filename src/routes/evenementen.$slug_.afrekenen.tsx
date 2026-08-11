@@ -7,6 +7,10 @@ import { decodeSelection } from '#/lib/selection.ts'
 import { OrderFlow } from '#/components/public/order-flow.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import { PublicHeader } from '#/components/public/public-header.tsx'
+import {
+  AppErrorPage,
+  StorefrontPendingState,
+} from '#/components/app/full-page-states.tsx'
 
 export const Route = createFileRoute('/evenementen/$slug_/afrekenen')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -41,6 +45,10 @@ export const Route = createFileRoute('/evenementen/$slug_/afrekenen')({
     ],
   }),
   component: Checkout,
+  pendingComponent: () => <StorefrontPendingState cards={1} />,
+  errorComponent: ({ error, reset }) => (
+    <AppErrorPage error={error} reset={reset} />
+  ),
 })
 
 function Checkout() {

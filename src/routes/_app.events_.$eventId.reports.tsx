@@ -12,12 +12,20 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card.tsx'
+import {
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 
 export const Route = createFileRoute('/_app/events_/$eventId/reports')({
   loader: async ({ params }) => ({
     report: await getEventReport({ data: { eventId: params.eventId } }),
   }),
   component: EventReports,
+  pendingComponent: () => <RoutePendingState rows={5} />,
+  errorComponent: ({ error, reset }) => (
+    <RouteErrorState error={error} reset={reset} />
+  ),
 })
 
 const workspaceRoute = getRouteApi('/_app/events_/$eventId')

@@ -42,12 +42,20 @@ import { OrderDetailDialog } from '#/components/app/order-detail-dialog.tsx'
 import { PaymentConfirmedDialog } from '#/components/app/payment-confirmed-dialog.tsx'
 import { toast } from '#/components/ui/sonner.tsx'
 import { errorMessage } from '#/lib/error-message.ts'
+import {
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 
 export const Route = createFileRoute('/_app/events_/$eventId/orders')({
   loader: async ({ params }) => ({
     orders: await listEventOrders({ data: { eventId: params.eventId } }),
   }),
   component: EventOrders,
+  pendingComponent: () => <RoutePendingState />,
+  errorComponent: ({ error, reset }) => (
+    <RouteErrorState error={error} reset={reset} />
+  ),
 })
 
 type OrdersResult = Awaited<ReturnType<typeof listEventOrders>>

@@ -12,9 +12,9 @@ import {
   ListToolbar,
 } from '#/components/app/admin/list-toolbar.tsx'
 import {
-  AdminErrorState,
-  AdminPendingState,
-} from '#/components/app/admin/route-states.tsx'
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 import { EmptyState } from '#/components/app/empty-state.tsx'
 import { Badge } from '#/components/ui/badge.tsx'
 import { Card } from '#/components/ui/card.tsx'
@@ -35,9 +35,9 @@ export const Route = createFileRoute('/_admin/admin/organizations/')({
     result: await listOrganizations({ data: deps }),
   }),
   component: AdminOrganizations,
-  pendingComponent: () => <AdminPendingState />,
+  pendingComponent: () => <RoutePendingState />,
   errorComponent: ({ error, reset }) => (
-    <AdminErrorState error={error} reset={reset} />
+    <RouteErrorState error={error} reset={reset} />
   ),
 })
 

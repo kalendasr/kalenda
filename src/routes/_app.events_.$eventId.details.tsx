@@ -61,6 +61,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '#/components/ui/dialog.tsx'
+import {
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 
 /**
  * Details-tab: alles wat bezoekers van dit evenement zien staat op één plek —
@@ -70,6 +74,10 @@ import {
 export const Route = createFileRoute('/_app/events_/$eventId/details')({
   loader: async () => ({ categories: await listCategories() }),
   component: EventDetailsTab,
+  pendingComponent: () => <RoutePendingState rows={5} />,
+  errorComponent: ({ error, reset }) => (
+    <RouteErrorState error={error} reset={reset} />
+  ),
 })
 
 const workspaceRoute = getRouteApi('/_app/events_/$eventId')

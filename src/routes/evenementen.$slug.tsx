@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, notFound } from '@tanstack/react-router'
 import {
   CalendarDays,
   Globe,
@@ -28,11 +28,20 @@ import {
 import { PublicHeader } from '#/components/public/public-header.tsx'
 import { PublicFooter } from '#/components/public/public-footer.tsx'
 import { TicketSelector } from '#/components/public/ticket-selector.tsx'
+import {
+  AppErrorPage,
+  StorefrontNotFound,
+  StorefrontPendingState,
+} from '#/components/app/full-page-states.tsx'
 
 export const Route = createFileRoute('/evenementen/$slug')({
-  loader: async ({ params }) => ({
-    event: await getPublishedEventBySlug({ data: { slug: params.slug } }),
-  }),
+  loader: async ({ params }) => {
+    const event = await getPublishedEventBySlug({ data: { slug: params.slug } })
+    // Een verwijderd of gedepubliceerd evenement moet ook echt 404 antwoorden:
+    // anders blijft de URL als geldige pagina in zoekresultaten staan.
+    if (!event) throw notFound()
+    return { event }
+  },
   head: ({ loaderData }) => ({
     meta: [
       {
@@ -55,6 +64,17 @@ export const Route = createFileRoute('/evenementen/$slug')({
     ],
   }),
   component: PublicEventDetail,
+  notFoundComponent: () => (
+    <StorefrontNotFound
+      title="Evenement niet gevonden"
+      description="Dit evenement bestaat niet (meer) of is niet gepubliceerd."
+      linkLabel="Bekijk alle evenementen"
+    />
+  ),
+  pendingComponent: () => <StorefrontPendingState cards={2} />,
+  errorComponent: ({ error, reset }) => (
+    <AppErrorPage error={error} reset={reset} />
+  ),
 })
 
 /**
@@ -84,30 +104,6 @@ function PublicEventDetail() {
   const { currency } = useCurrency()
   const [saved, setSaved] = React.useState(false)
   const [shared, setShared] = React.useState(false)
-
-  if (!event) {
-    return (
-      <div className="storefront">
-        <PublicHeader />
-        <main
-          id="main"
-          className="mx-auto w-full max-w-(--container-content) px-4 py-20 text-center sm:px-6"
-        >
-          <h1 className="text-2xl font-semibold">Evenement niet gevonden</h1>
-          <p className="mt-2 text-muted-foreground">
-            Dit evenement bestaat niet (meer) of is niet gepubliceerd.
-          </p>
-          <Link
-            to="/evenementen"
-            className="mt-6 inline-block font-medium text-primary hover:underline"
-          >
-            Bekijk alle evenementen
-          </Link>
-        </main>
-        <PublicFooter />
-      </div>
-    )
-  }
 
   const eventTitle = event.title
 

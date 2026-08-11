@@ -6,6 +6,10 @@ import { cn } from '#/lib/utils.ts'
 import { formatDateTimeNl } from '#/lib/datetime.ts'
 import { Button } from '#/components/ui/button.tsx'
 import { EventStatusBadge } from '#/components/app/event-status-badge.tsx'
+import {
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 
 /**
  * Event-workspace (PRODUCT_ARCHITECTURE.md §5). De organisator blijft binnen
@@ -29,6 +33,10 @@ export const Route = createFileRoute('/_app/events_/$eventId')({
     }
   },
   component: EventWorkspace,
+  pendingComponent: () => <RoutePendingState rows={5} />,
+  errorComponent: ({ error, reset }) => (
+    <RouteErrorState error={error} reset={reset} />
+  ),
 })
 
 type TabGroup = {

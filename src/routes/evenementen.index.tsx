@@ -23,6 +23,10 @@ import {
 import { PublicHeader } from '#/components/public/public-header.tsx'
 import { PublicFooter } from '#/components/public/public-footer.tsx'
 import { EventCard } from '#/components/public/event-card.tsx'
+import {
+  AppErrorPage,
+  StorefrontPendingState,
+} from '#/components/app/full-page-states.tsx'
 
 type SortOption = 'relevantie' | 'datum' | 'prijs'
 type PayFilter = 'gratis' | 'betaald'
@@ -88,6 +92,10 @@ export const Route = createFileRoute('/evenementen/')({
     ],
   }),
   component: PublicEvents,
+  pendingComponent: () => <StorefrontPendingState cards={6} />,
+  errorComponent: ({ error, reset }) => (
+    <AppErrorPage error={error} reset={reset} />
+  ),
 })
 
 function matchesDateFilter(startsAt: Date | string | null, filter: DateFilter) {

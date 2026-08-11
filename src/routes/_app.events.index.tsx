@@ -9,10 +9,18 @@ import { listMyEventsSummary } from '#/server/event.ts'
 import { Button } from '#/components/ui/button.tsx'
 import { Card } from '#/components/ui/card.tsx'
 import { EventStatusBadge } from '#/components/app/event-status-badge.tsx'
+import {
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 
 export const Route = createFileRoute('/_app/events/')({
   loader: async () => ({ events: await listMyEventsSummary() }),
   component: EventsList,
+  pendingComponent: () => <RoutePendingState rows={5} />,
+  errorComponent: ({ error, reset }) => (
+    <RouteErrorState error={error} reset={reset} />
+  ),
 })
 
 type EventSummary = Awaited<ReturnType<typeof listMyEventsSummary>>[number]

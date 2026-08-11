@@ -1,19 +1,26 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, notFound } from '@tanstack/react-router'
 
 import { getOrderByNumber } from '#/server/checkout.ts'
 import { OrderFlow } from '#/components/public/order-flow.tsx'
 import { PublicHeader } from '#/components/public/public-header.tsx'
+import {
+  AppErrorPage,
+  StorefrontNotFound,
+  StorefrontPendingState,
+} from '#/components/app/full-page-states.tsx'
 
 export const Route = createFileRoute('/bestelling/$orderNumber')({
   validateSearch: (search: Record<string, unknown>): { nieuw?: boolean } => {
     const nieuw = search.nieuw === true || search.nieuw === 'true'
     return nieuw ? { nieuw: true } : {}
   },
-  loader: async ({ params }) => ({
-    order: await getOrderByNumber({
+  loader: async ({ params }) => {
+    const order = await getOrderByNumber({
       data: { orderNumber: params.orderNumber },
-    }),
-  }),
+    })
+    if (!order) throw notFound()
+    return { order }
+  },
   head: ({ params }) => ({
     meta: [{ title: `Bestelling ${params.orderNumber} · Kalenda` }],
     links: [
@@ -30,34 +37,22 @@ export const Route = createFileRoute('/bestelling/$orderNumber')({
     ],
   }),
   component: OrderStatusPage,
+  notFoundComponent: () => (
+    <StorefrontNotFound
+      title="Bestelling niet gevonden"
+      description="Controleer de link uit je bevestigingsmail."
+      linkLabel="Bekijk evenementen"
+    />
+  ),
+  pendingComponent: () => <StorefrontPendingState cards={1} />,
+  errorComponent: ({ error, reset }) => (
+    <AppErrorPage error={error} reset={reset} />
+  ),
 })
 
 function OrderStatusPage() {
   const { order } = Route.useLoaderData()
   const { nieuw } = Route.useSearch()
-
-  if (!order) {
-    return (
-      <div className="storefront">
-        <PublicHeader />
-        <main
-          id="main"
-          className="mx-auto w-full max-w-md px-4 py-20 text-center sm:px-6"
-        >
-          <h1 className="text-2xl font-semibold">Bestelling niet gevonden</h1>
-          <p className="mt-2 text-muted-foreground">
-            Controleer de link uit je bevestigingsmail.
-          </p>
-          <Link
-            to="/evenementen"
-            className="mt-6 inline-block font-medium text-primary hover:underline"
-          >
-            Bekijk evenementen
-          </Link>
-        </main>
-      </div>
-    )
-  }
 
   return (
     <div className="storefront">

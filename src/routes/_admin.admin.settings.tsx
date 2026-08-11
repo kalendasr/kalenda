@@ -10,9 +10,9 @@ import {
 import { errorMessage } from '#/lib/error-message.ts'
 import { AdminPageHeader } from '#/components/app/admin/page-header.tsx'
 import {
-  AdminErrorState,
-  AdminPendingState,
-} from '#/components/app/admin/route-states.tsx'
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 import { Badge } from '#/components/ui/badge.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import {
@@ -45,9 +45,9 @@ import { toast } from '#/components/ui/sonner.tsx'
 export const Route = createFileRoute('/_admin/admin/settings')({
   loader: async () => ({ categories: await listCategoriesAdmin() }),
   component: AdminSettings,
-  pendingComponent: () => <AdminPendingState rows={6} />,
+  pendingComponent: () => <RoutePendingState rows={6} />,
   errorComponent: ({ error, reset }) => (
-    <AdminErrorState error={error} reset={reset} />
+    <RouteErrorState error={error} reset={reset} />
   ),
 })
 

@@ -23,6 +23,10 @@ import {
 import { Button } from '#/components/ui/button.tsx'
 import { Badge } from '#/components/ui/badge.tsx'
 import { StatCard } from '#/components/app/stat-card.tsx'
+import {
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 
 export const Route = createFileRoute('/_app/events_/$eventId/')({
   loader: async ({ params }) => {
@@ -33,6 +37,10 @@ export const Route = createFileRoute('/_app/events_/$eventId/')({
     return { report, orders }
   },
   component: EventOverview,
+  pendingComponent: () => <RoutePendingState rows={4} />,
+  errorComponent: ({ error, reset }) => (
+    <RouteErrorState error={error} reset={reset} />
+  ),
 })
 
 const workspaceRoute = getRouteApi('/_app/events_/$eventId')

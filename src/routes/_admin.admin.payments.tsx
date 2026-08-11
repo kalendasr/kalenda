@@ -24,9 +24,9 @@ import {
   ListToolbar,
 } from '#/components/app/admin/list-toolbar.tsx'
 import {
-  AdminErrorState,
-  AdminPendingState,
-} from '#/components/app/admin/route-states.tsx'
+  RouteErrorState,
+  RoutePendingState,
+} from '#/components/app/route-states.tsx'
 import { EmptyState } from '#/components/app/empty-state.tsx'
 import { StatCard } from '#/components/app/stat-card.tsx'
 import { Badge } from '#/components/ui/badge.tsx'
@@ -52,9 +52,9 @@ export const Route = createFileRoute('/_admin/admin/payments')({
     return { result, summary }
   },
   component: AdminPayments,
-  pendingComponent: () => <AdminPendingState />,
+  pendingComponent: () => <RoutePendingState />,
   errorComponent: ({ error, reset }) => (
-    <AdminErrorState error={error} reset={reset} />
+    <RouteErrorState error={error} reset={reset} />
   ),
 })
 

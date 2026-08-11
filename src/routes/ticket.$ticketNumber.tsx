@@ -1,10 +1,15 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, notFound } from '@tanstack/react-router'
 
 import { getTicketByNumber } from '#/server/tickets.ts'
 import { formatDateTimeNl } from '#/lib/datetime.ts'
 import { cn } from '#/lib/utils.ts'
 import { TicketQr } from '#/components/public/ticket-qr.tsx'
 import { PublicHeader } from '#/components/public/public-header.tsx'
+import {
+  AppErrorPage,
+  StorefrontNotFound,
+  StorefrontPendingState,
+} from '#/components/app/full-page-states.tsx'
 
 /**
  * Publieke ticketpagina (Fase 9, BR-700/701/704).
@@ -19,42 +24,32 @@ const CARD =
   'rounded-[14px] border bg-card shadow-[0_22px_50px_-34px_rgba(11,18,32,0.4)]'
 
 export const Route = createFileRoute('/ticket/$ticketNumber')({
-  loader: async ({ params }) => ({
-    ticket: await getTicketByNumber({
+  loader: async ({ params }) => {
+    const ticket = await getTicketByNumber({
       data: { ticketNumber: params.ticketNumber },
-    }),
-  }),
+    })
+    if (!ticket) throw notFound()
+    return { ticket }
+  },
   head: ({ params }) => ({
     meta: [{ title: `Ticket ${params.ticketNumber.slice(0, 8)} · Kalenda` }],
   }),
   component: TicketPage,
+  notFoundComponent: () => (
+    <StorefrontNotFound
+      title="Ticket niet gevonden"
+      description="Controleer de link of QR-code uit je ticketmail."
+      linkLabel="Bekijk evenementen"
+    />
+  ),
+  pendingComponent: () => <StorefrontPendingState cards={1} />,
+  errorComponent: ({ error, reset }) => (
+    <AppErrorPage error={error} reset={reset} />
+  ),
 })
 
 function TicketPage() {
   const { ticket } = Route.useLoaderData()
-
-  if (!ticket) {
-    return (
-      <div className="storefront">
-        <PublicHeader />
-        <main
-          id="main"
-          className="mx-auto w-full max-w-md px-4 py-20 text-center sm:px-6"
-        >
-          <h1 className="text-2xl font-semibold">Ticket niet gevonden</h1>
-          <p className="mt-2 text-muted-foreground">
-            Controleer de link of QR-code uit je ticketmail.
-          </p>
-          <Link
-            to="/evenementen"
-            className="mt-6 inline-block font-medium text-primary hover:underline"
-          >
-            Bekijk evenementen
-          </Link>
-        </main>
-      </div>
-    )
-  }
 
   const venue = [ticket.venueName, ticket.venueDistrict]
     .filter(Boolean)
